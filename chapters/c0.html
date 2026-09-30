@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>C0 課程導論</title>
+  <meta name="description" content="電腦視覺 C0：什麼是電腦視覺、四大任務、傳統與現代電腦視覺">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+  <link rel="stylesheet" href="../assets/style.css">
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"></script>
+  <script defer src="../assets/common.js"></script>
+  <script defer src="c0.js"></script>
+</head>
+<body data-chapter="c0">
+<div class="layout">
+<nav class="toc" aria-label="本頁目錄"></nav>
+<main>
+  <p class="eyebrow">C0 · 講義：c0_introduction</p>
+  <h1>🧭 課程導論：什麼是電腦視覺</h1>
+
+  <h2 id="summary">1. 本章重點摘要</h2>
+  <p>本章是整門課的開場，先交代課程規則（成績計算、遲交與補考、考試日期），再說明電腦視覺（Computer Vision, CV）的定義：讓電腦像人一樣「理解」影像與影片中的視覺資訊。接著介紹四大基本任務：<strong>圖像分類、物件定位、物件偵測、圖像分割</strong>，並比較「傳統電腦視覺（手動設計特徵）」與「現代電腦視覺（自動學習特徵）」的差別，用瑕疵檢測與自駕車行人辨識兩個情境說明兩者各自適用的場合。最後列出整學期的課綱，下一章（C1）會從傳統機器學習模型與神經網路基礎開始。</p>
+
+  <h2 id="outline">2. 章節大綱</h2>
+
+  <h3>2.1 課程資訊</h3>
+  <ul>
+    <li>授課老師：楊景明（研究室：理學大樓 812，Email：<a href="mailto:albert.yang@nchu.edu.tw">albert.yang@nchu.edu.tw</a>）</li>
+    <li>助教：實驗室在理學大樓 902（Email：<a href="mailto:howard92419@gmail.com">howard92419@gmail.com</a>），<strong>強烈建議先用 email 預約</strong></li>
+    <li>成績計算：期中考 20%、期末考 20%、課堂練習 30%、期末專題 20%、出席 10%</li>
+    <li>遲交規定：以「繳交時間」為評分依據；遲交最高只能拿 80 分；不要任意撤回已繳交的作業</li>
+    <li>補考規定：至少在上課前三小時完成請假（以請假系統紀錄或 email 為準）；必須提供有效證明文件；期中考補考的成績會與期末考合併計算</li>
+    <li>考試日期：期中考 2026-10-29、期末考 2026-12-17</li>
+  </ul>
+
+  <h3>2.2 什麼是電腦視覺</h3>
+  <ul>
+    <li>跨領域研究：結合電腦科學、機器學習（Machine Learning, ML）、人工智慧（Artificial Intelligence, AI）</li>
+    <li>目標：讓電腦能像人類一樣<strong>解釋和理解</strong>數位影像或影片中的視覺資訊</li>
+  </ul>
+
+  <h3>2.3 電腦視覺四大任務</h3>
+  <ul>
+    <li><strong>圖像分類（Image Classification）</strong>：整張圖屬於哪一類</li>
+    <li><strong>物件定位（Object Localization）</strong>：找出圖中（主要）物體的位置並分類</li>
+    <li><strong>物件偵測（Object Detection）</strong>：找出圖中<strong>所有</strong>物體的位置與類別</li>
+    <li><strong>圖像分割（Segmentation）</strong>：以像素（pixel）為單位標出每個區域屬於哪個類別／物體</li>
+    <li>其他應用：Instagram 濾鏡、車牌辨識、自駕車、運動分析、臉部辨識、Deep Fakes（換臉）、人體姿態辨識、圖像生成等</li>
+  </ul>
+
+  <div class="widget" id="w-tasks">
+    <p class="w-title">同一張圖，四種任務的輸出</p>
+    <p class="w-desc">下面是一張 20×14 像素的小圖，裡面有一顆蘋果和一個杯子。切換任務，看模型「交出來的答案」長什麼樣子。<span class="tag add">補充</span>講義的原圖無法從文字擷取，這裡用自製的示意圖。</p>
+    <div class="controls"><div class="seg" id="task-seg"></div></div>
+    <div class="canvas-wrap"><canvas id="task-canvas" aria-label="四大任務示意圖"></canvas></div>
+    <div class="readout" id="task-out"></div>
+  </div>
+
+  <h3>2.4 傳統 vs 現代電腦視覺</h3>
+  <ul>
+    <li>傳統電腦視覺（Traditional CV）：<strong>人工手動選擇特徵</strong>。講義例子：判斷蘋果時，人工定義「直徑 5～5.1 公分、紅色、圓形」</li>
+    <li>現代電腦視覺（Modern CV）：<strong>模型自動學習特徵</strong>（深度學習），直接從大量圖片學出「蘋果長什麼樣子」</li>
+  </ul>
+
+  <div class="widget" id="w-rules">
+    <p class="w-title">試試看講義的「手寫規則」</p>
+    <p class="w-desc">傳統 CV 用講義的三條規則判斷蘋果：直徑 5～5.1 公分、紅色、圓形。調整下面這顆水果，看規則會不會認出它。</p>
+    <div class="controls">
+      <label>直徑 <input type="range" id="r-d" min="3" max="9" step="0.1" value="5.05"> <span class="val" data-for="r-d"></span> cm</label>
+      <label>顏色 <select id="r-c"><option value="red">紅色</option><option value="green">綠色</option><option value="yellow">黃色</option></select></label>
+      <label>形狀 <select id="r-s"><option value="round">圓形</option><option value="oval">橢圓</option><option value="square">方形</option></select></label>
+    </div>
+    <div class="row">
+      <div class="col" style="flex:0 0 140px"><svg class="plot" id="r-svg" viewBox="0 0 140 140" width="140" height="140" aria-label="水果示意"></svg></div>
+      <div class="col" style="flex:1 1 260px"><div class="readout" id="r-out" style="margin-top:0"></div></div>
+    </div>
+    <div class="controls">
+      <button class="btn" data-preset="5.05,red,round">講義的蘋果</button>
+      <button class="btn" data-preset="7.5,red,round">大一點的紅蘋果</button>
+      <button class="btn" data-preset="6.8,green,round">青蘋果</button>
+      <button class="btn" data-preset="5.05,red,round,ball">紅色小球</button>
+    </div>
+  </div>
+
+  <h3>2.5 全部都用現代 CV 嗎？兩個情境</h3>
+  <div class="table-wrap">
+    <table>
+      <tr><th></th><th>情境一：工廠生產線瑕疵檢測</th><th>情境二：自駕車辨識行人</th></tr>
+      <tr><td><strong>傳統方法</strong></td>
+        <td class="good" style="font-weight:400"><strong>非常適用</strong>：瑕疵的形狀、大小、顏色通常固定，工程師可以明確寫規則（如「長度超過 2mm 的刮痕」、「顏色偏離標準色號 X 的斑點」）。快速、穩定、不需大量資料。</td>
+        <td><strong class="bad">幾乎不可能</strong>：行人的穿著、姿勢、高矮、膚色各不相同，加上天氣、光線、遮擋，人類無法寫出涵蓋所有可能性的規則。</td></tr>
+      <tr><td><strong>現代方法</strong></td>
+        <td>也可以用，但有點「殺雞用牛刀」；除非瑕疵種類千變萬化、難以用規則定義，否則傳統方法更具成本效益。</td>
+        <td><strong class="good">發揮長處</strong>：看過數百萬張道路圖片後，模型能自己學會行人的抽象特徵（有頭、身體、四肢的移動物體），無論怎麼變化都能辨識。</td></tr>
+    </table>
+  </div>
+
+  <h3>2.6 課程大綱（之後可能調整）</h3>
+  <ol>
+    <li>Computer Vision Models（電腦視覺模型）</li>
+    <li>Convolutional Neural Networks（卷積神經網路）</li>
+    <li>Model Performance and Improvement（模型表現與改善）</li>
+    <li>Advanced Computer Vision Models（進階電腦視覺模型）</li>
+    <li>Preprocessing, Transfer Learning, Fine-Tuning（前處理、遷移學習、微調）</li>
+    <li>Object Detection（物件偵測）</li>
+    <li>Segmentation（圖像分割）</li>
+    <li>Advanced Computer Vision Tasks（進階電腦視覺任務）</li>
+    <li>Autoencoders and GAN（自編碼器與生成對抗網路）</li>
+    <li>Network Compression（網路壓縮）</li>
+  </ol>
+
+  <h2 id="glossary">3. 關鍵名詞表</h2>
+  <div class="table-wrap">
+    <table class="glossary">
+      <tr><th>名詞（中／英）</th><th>定義</th><th>一句話直覺解釋</th></tr>
+      <tr><td>電腦視覺（Computer Vision, CV）</td><td>讓電腦解釋並理解影像、影片中視覺資訊的跨領域研究</td><td>教電腦「看懂」圖片</td></tr>
+      <tr><td>圖像分類（Image Classification）</td><td>判斷整張圖屬於哪一個類別</td><td>回答「這是什麼？」</td></tr>
+      <tr><td>物件定位（Object Localization）</td><td>找出圖中物體的位置（通常用框表示）並分類</td><td>回答「它是什麼、在哪裡？」</td></tr>
+      <tr><td>物件偵測（Object Detection）</td><td>找出圖中所有物體的位置與類別</td><td>把每個東西都框出來並貼標籤</td></tr>
+      <tr><td>圖像分割（Segmentation）</td><td>以像素為單位，標出每個像素屬於哪個類別或物體</td><td>用「描邊著色」取代「畫框」</td></tr>
+      <tr><td>傳統電腦視覺（Traditional CV）</td><td>由人工設計、選擇特徵與規則來辨識</td><td>工程師自己寫判斷規則</td></tr>
+      <tr><td>現代電腦視覺（Modern CV）</td><td>由模型（深度學習）從資料中自動學習特徵</td><td>給模型大量例子讓它自己歸納</td></tr>
+      <tr><td>特徵（Feature）</td><td>用來描述、區分物體的屬性，如大小、顏色、形狀</td><td>辨認東西時依據的「線索」</td></tr>
+    </table>
+  </div>
+
+  <h2 id="formula">4. 公式與計算</h2>
+  <p>本章沒有技術公式，以下整理學期成績的計算方式。</p>
+  $$\text{總成績} = 0.2\,M + 0.2\,F + 0.3\,E + 0.2\,P + 0.1\,A$$
+  <p>\(M\)：期中考、\(F\)：期末考、\(E\)：課堂練習、\(P\)：期末專題、\(A\)：出席。遲交作業分數上限 80 分。</p>
+
+  <div class="widget" id="w-grade">
+    <p class="w-title">學期成績計算器</p>
+    <p class="w-desc">預設值是 Notion 筆記的數值例子<span class="tag add">補充</span>：期中 70、期末 80、課堂練習 90、期末專題 85、出席 100 → 84 分。</p>
+    <div class="controls" id="grade-ctrls"></div>
+    <div class="readout" id="grade-out"></div>
+  </div>
+
+  <h2 id="compare">5. 方法比較</h2>
+  <h3>5.1 四大任務比較</h3>
+  <div class="table-wrap">
+    <table>
+      <tr><th>任務</th><th>輸出</th><th>細緻程度</th><th>應用例子 <span class="tag add">補充</span></th></tr>
+      <tr><td>圖像分類</td><td>一個類別標籤</td><td>最粗（整張圖）</td><td>相簿自動分類</td></tr>
+      <tr><td>物件定位</td><td>類別 ＋ 一個框</td><td>物體層級</td><td>找出照片中主角的位置</td></tr>
+      <tr><td>物件偵測</td><td>多個類別 ＋ 多個框</td><td>多物體層級</td><td>自駕車偵測行人、車牌辨識</td></tr>
+      <tr><td>圖像分割</td><td>每個像素的類別</td><td>最細（像素）</td><td>醫學影像病灶範圍、去背</td></tr>
+    </table>
+  </div>
+  <h3>5.2 傳統 vs 現代電腦視覺</h3>
+  <div class="table-wrap">
+    <table>
+      <tr><th>比較項目</th><th>傳統電腦視覺</th><th>現代電腦視覺</th></tr>
+      <tr><td>核心想法</td><td>人工手動選擇特徵、寫規則</td><td>模型從大量資料自動學習特徵</td></tr>
+      <tr><td>優點</td><td>快速、穩定、不需大量資料、成本低</td><td>能處理變化極大、規則寫不完的情況</td></tr>
+      <tr><td>缺點</td><td>情況複雜多變時規則寫不完，幾乎無法實現</td><td>需要大量資料；簡單問題上「殺雞用牛刀」</td></tr>
+      <tr><td>適用情境</td><td>工廠瑕疵檢測（瑕疵形狀、顏色固定）</td><td>自駕車辨識行人（外觀、光線、遮擋千變萬化）</td></tr>
+    </table>
+  </div>
+
+  <h2 id="figures">6. 圖表說明</h2>
+  <ul>
+    <li><strong>四大任務示意圖</strong>（來源 infolks.info，重複出現四頁，每頁依序強調一種任務）：用同一張圖對照四種任務的輸出，從「整張圖一個標籤」→「一個框」→「多個框」→「逐像素上色」，細緻程度逐步提高。圖中的具體物體無法從講義文字擷取 <span class="tag chk">待確認</span>，上方互動元件用自製圖示範同樣的概念。</li>
+    <li><strong>蘋果例子對照圖</strong>：左邊是傳統 CV，人工寫出「直徑 5～5.1 公分、紅色、圓形」三個特徵後判斷為蘋果；右邊是現代 CV，把圖片丟進模型，由模型自動學出一連串特徵後輸出「蘋果」。重點在於<strong>特徵是誰決定的</strong>。</li>
+    <li><strong>應用例子圖</strong>：Instagram 濾鏡、車牌辨識、自駕車、運動分析、臉部辨識、換臉、姿態辨識、圖像生成，說明 CV 的應用範圍很廣。</li>
+  </ul>
+
+  <h2 id="traps">7. 常見觀念陷阱</h2>
+  <ul>
+    <li><strong>物件定位 ≠ 物件偵測</strong>：定位通常針對圖中單一（主要）物體；偵測要找出<strong>所有</strong>物體。<span class="tag add">補充</span></li>
+    <li><strong>分割是像素層級</strong>，不是畫框；畫框的是定位與偵測。</li>
+    <li><strong>現代 CV 不是萬能、傳統 CV 也沒被淘汰</strong>：規則明確、變化少的場景（如瑕疵檢測），傳統方法更快、更穩、更省成本。</li>
+    <li>判斷該用哪種方法的關鍵：<strong>能不能用明確規則描述目標？</strong> 能 → 傳統方法；變化太多寫不完 → 現代方法。</li>
+    <li>遲交不是零分，但<strong>上限 80 分</strong>；也不要任意撤回已繳交的作業。</li>
+    <li>補考請假要在<strong>上課前至少三小時</strong>完成，且要有有效證明。</li>
+  </ul>
+
+  <h2 id="quiz">8. 自我測驗</h2>
+  <div class="quiz" data-answer="C">
+    <p class="q">1.（選擇）一張圖片中有三隻狗和兩隻貓，要把每一隻動物都用框標出並註明類別，屬於哪一種任務？</p>
+    <div class="opts">
+      <button data-opt="A">(A) 圖像分類</button><button data-opt="B">(B) 物件定位</button>
+      <button data-opt="C">(C) 物件偵測</button><button data-opt="D">(D) 圖像分割</button>
+    </div>
+    <div class="explain" hidden><strong>(C)</strong>。要找出「所有」物體並畫框加類別，是物件偵測；分類只輸出一個標籤，定位通常只針對一個物體，分割則是逐像素標記。</div>
+  </div>
+  <div class="quiz" data-answer="B">
+    <p class="q">2.（選擇）下列哪個情境最適合使用傳統電腦視覺？</p>
+    <div class="opts">
+      <button data-opt="A">(A) 自駕車辨識行人</button><button data-opt="B">(B) 生產線上檢測固定尺寸的刮痕</button>
+      <button data-opt="C">(C) 臉部辨識</button><button data-opt="D">(D) 圖像生成</button>
+    </div>
+    <div class="explain" hidden><strong>(B)</strong>。瑕疵形狀、大小固定，可以寫明確規則，傳統方法快速、穩定又不需大量資料。其他選項變化太多，需要現代方法。</div>
+  </div>
+  <div class="quiz">
+    <p class="q">3.（簡答）用一句話說明傳統電腦視覺與現代電腦視覺最根本的差異。</p>
+    <details class="answer"><summary>看解答</summary><div>傳統 CV 由<strong>人工</strong>設計、選擇特徵；現代 CV 由<strong>模型從資料中自動學習</strong>特徵。</div></details>
+  </div>
+  <div class="quiz">
+    <p class="q">4.（簡答）為什麼傳統方法幾乎不可能用在自駕車行人辨識？請舉出至少三個困難來源。</p>
+    <details class="answer"><summary>看解答</summary><div>行人的穿著、姿勢、高矮、膚色各不相同，加上天氣、光線、遮擋等情況，人類無法寫出涵蓋所有可能性的規則。</div></details>
+  </div>
+  <div class="quiz">
+    <p class="q">5.（計算）某同學期中 60、期末 75、課堂練習 95、期末專題 80、出席 100，學期總成績是多少？</p>
+    <details class="answer"><summary>看解答</summary><div>\(0.2(60)+0.2(75)+0.3(95)+0.2(80)+0.1(100)=12+15+28.5+16+10=81.5\) 分。可以用上面的成績計算器驗算。</div></details>
+  </div>
+
+  <footer>講義來源：<a href="https://drive.google.com/file/d/1qR5ynZ7-701-0jLAMEpYYyPmkH09Oalr/view" target="_blank" rel="noopener">c0_introduction.pptx.pdf</a> · 文字筆記：<a href="https://app.notion.com/p/3eb75b0b5a1381d1a83bdedd2126afd3" target="_blank" rel="noopener">Notion C0</a></footer>
+</main>
+</div>
+</body>
+</html>

@@ -1,0 +1,110 @@
+# 電腦視覺 互動式網頁筆記
+
+國立中興大學「電腦視覺」課程（授課：楊景明）的互動式網頁筆記。每章一頁，把講義內容整理成可以操作的網頁，例如可以拖拉參數、逐步執行，讓公式與計算「動起來」，用於準備期中考與期末考。
+
+- 期中考：2026-10-29
+- 期末考：2026-12-17
+
+## 資料來源
+
+| 來源 | 位置 | 用途 |
+|---|---|---|
+| 講義 PDF | Google 雲端硬碟「電腦視覺」資料夾 `1G3x-BhZKfFVIzODrT6K7tVmPdqv1o2bp` | 原始內容，以此為準 |
+| 文字筆記 | Notion「👁️ 電腦視覺筆記」 https://app.notion.com/p/3eb75b0b5a1381e69740c95b51caedf6 | 已整理好的逐章筆記，網頁內容以此為底稿 |
+| 程式碼 | https://github.com/hobartXIII/ComputerVision （`main`） | 本專案 |
+
+- 讀講義：用 Google Drive 工具搜尋 `parentId = '1G3x-BhZKfFVIzODrT6K7tVmPdqv1o2bp'`，找新章節也用同樣的方式。
+- 讀筆記：用 Notion fetch 讀主頁，再讀各章子頁面。
+- **講義 PDF 不可放進 repo**：講義有著作權，repo 可能公開，所以只能連回雲端硬碟。`.gitignore` 已排除 `*.pdf`。
+
+## 目前進度
+
+| 章 | 講義 | Notion 筆記 | 網頁 |
+|---|---|---|---|
+| C0 課程導論：什麼是電腦視覺 | c0_introduction.pptx.pdf | ✅ | ✅ |
+| C1 視覺機器學習模型 | c1_computer_vision_models \| iLearning 3.pdf | ✅ | ✅ |
+| C2 卷積神經網路（CNN） | c2_cnn.pdf | ✅ | ✅ |
+
+新增或完成章節時，請更新這張表，也要更新 `assets/common.js` 裡的 `CHAPTERS`。
+
+## 技術架構
+
+- 純靜態網站：HTML + CSS + 原生 JavaScript，**不需建置步驟**，直接用瀏覽器開啟 `index.html` 就能用，之後也可以直接部署到 GitHub Pages。
+- 數學公式用 KaTeX，外部函式庫一律從 CDN 載入（cdnjs 或 jsDelivr），不引入 npm 或打包工具。
+- 互動圖用 `<canvas>` 或 inline SVG 自己畫，除非真的必要，不引入大型圖表庫。
+- 支援手機寬度與深色模式（色彩用 CSS 變數定義在 `:root`）。
+
+```
+index.html            首頁：考試倒數、章節卡片（由 CHAPTERS 產生）
+assets/style.css      共用樣式與色彩 tokens（淺色／深色）
+assets/common.js      CHAPTERS 與 EXAMS 清單、頁首、目錄、主題切換、KaTeX、測驗、
+                      matrix()、setupCanvas()、onRedraw()、bindRange() 等工具，掛在 window.CV
+chapters/c<n>.html    每章一頁，檔名與講義章號一致
+chapters/c<n>.js      該章的互動元件，每個元件一個 IIFE，對應 HTML 裡的 .widget#w-xxx
+```
+
+- 所有 script 都用 `defer` 載入，順序是 KaTeX → `common.js` → `c<n>.js`。不能用 ES modules，因為用 `file://` 直接開啟時會被擋。
+- 頁首、目錄、測驗行為由 `common.js` 自動產生，章節頁只需寫 `<body data-chapter="c<n>">` 和 `<nav class="toc">`。
+- 靜態文字的公式用 `\( \)`（行內）與 `$$ $$`（區塊），在 `load` 時由 auto-render 處理；互動元件的動態公式用 `CV.tex(el, str)`。
+- 畫布元件用 `CV.onRedraw(draw)` 註冊，視窗縮放與切換主題時會自動重畫；顏色一律從 CSS 變數讀取（`CV.cssVar('--c-a')`）。
+- 測驗：選擇題寫 `<div class="quiz" data-answer="B">`，選項 `<button data-opt="A">`，解析放 `.explain[hidden]`；簡答題用 `<details class="answer">`。
+
+## 每章頁面的結構
+
+沿用 Notion 筆記的章節順序，讓兩邊可以對照：
+
+1. 本章重點摘要
+2. 章節大綱
+3. 關鍵名詞表（中文、英文、定義、一句話直覺解釋）
+4. 公式與計算：每個公式都要附數值例子，能做成互動的就做成互動
+5. 方法比較表
+6. 圖表說明：講義裡的圖儘量用互動元件重現
+7. 常見觀念陷阱
+8. 自我測驗：答案預設隱藏，點開才顯示；選擇題可即時判斷對錯
+
+## 寫作規範
+
+- 使用**繁體中文**。專有名詞第一次出現時寫成「中文（English, 縮寫）」，例如「卷積神經網路（Convolutional Neural Network, CNN）」。
+- 沿用 Notion 的標註方式：
+  - 【補充】：講義沒寫、但有助於理解的內容
+  - 【待確認】：講義文字無法擷取（多半是圖片），或講義本身前後不一致
+- 講義與正確計算不一致時，網頁要**顯示正確值**，並用【待確認】說明講義原本寫的是什麼。已知的不一致（C2）：
+  - Conv 層參數量範例：講義寫 `(3×3×3)+1=10`、×16=160，正確應為 28×16=448（160 是輸入深度為 1 的情況）
+  - Simple CNN 的 Conv_2：有一頁寫 18,494，正確值為 18,496
+  - Padding 頁的 5×5 輸出矩陣與實際計算不符，應以重算結果為準
+- 互動元件的預設值要用**講義的原例子**，讓頁面一打開看到的就和上課內容相同。
+
+## 各章的互動元件與驗證值
+
+修改元件後，預設值必須仍然算出右欄的結果：
+
+| 章 | 元件 | 預設值應得到 |
+|---|---|---|
+| C0 | 四大任務切換（`#w-tasks`）、手寫規則判斷蘋果（`#w-rules`）、成績計算器（`#w-grade`） | 成績 70/80/90/85/100 → 84 |
+| C1 | RGB 像素（`#w-rgb`）、SVM 間隔（`#w-svm`）、Kernel Trick（`#w-kernel`）、KNN（`#w-knn`）、PCA（`#w-pca`） | 224×224×3 = 150,528 |
+| C1 | 距離比較（`#w-dist`） | 歐幾里得 10.05 vs 9.9；曼哈頓 11 vs 14 |
+| C1 | Softmax＋交叉熵（`#w-soft`）、Sigmoid（`#w-sig`） | z=(2,1,0) → (0.665, 0.245, 0.090)，損失 0.408 |
+| C1 | 梯度下降（`#w-gd`），\(L(w)=0.1w^4-w^2+0.9w\)，w₀=3 | GD η=0.05 卡在局部最小值；η=0.5 震盪；η=0.8 發散；Momentum η=0.05 到全域最小值 |
+| C1 | 編碼比較（`#w-enc`）、混淆矩陣（`#w-met`） | TP40/FP10/FN20/TN30 → 0.8、0.667、0.7 |
+| C2 | 卷積逐步（`#w-conv`） | p0 s1 → [[2,1,−1],[−1,1,3],[2,1,1]]；s2 → [[2,−1],[2,1]]；左亮右暗＋垂直邊緣 → 每列 3 3 0 |
+| C2 | 多頻道卷積（`#w-rgb`）、覆蓋次數（`#w-cover`）、天使與魔鬼（`#w-why`）、ReLU＋Pooling（`#w-pool`） | 覆蓋次數：p0 角落 1 次、p1 角落 4 次 |
+| C2 | 尺寸計算器（`#w-size`）、MNIST CNN（`#w-cnn`） | 合計 1,199,882 |
+
+梯度下降曲線的係數是模擬後才選定的：換係數或學習率範圍之前，先用 Node 模擬確認上面這幾種現象仍然成立，頁面上的「試試看」說明才不會與實際行為不符。
+
+## 新增一章的流程
+
+1. 在雲端硬碟找到新講義，讀取內容。
+2. 讀取 Notion 上對應的章節筆記；如果還沒有，先依照同樣的格式建立 Notion 子頁面（「C<n> 中文標題」）。
+3. 以現有章節為範本，建立 `chapters/c<n>.html` 與 `chapters/c<n>.js`，在 `assets/common.js` 的 `CHAPTERS` 加一行（首頁與頁首會自動出現），並更新本檔的進度表與驗證值表。
+4. 驗證：
+   - `node --check chapters/c<n>.js` 確認沒有語法錯誤。
+   - 在專案根目錄執行 `python -m http.server 8765`，用瀏覽器開啟 `http://localhost:8765/chapters/c<n>.html`。
+   - 確認互動元件預設值算出來的結果和 Notion 筆記的數值例子相同。
+   - 確認頁面上沒有 `.katex-error`（公式都有正確顯示）。
+   - 在 390px 寬度下，`document.documentElement.scrollWidth` 不可以超過視窗寬度，淺色和深色主題都要看一次。
+
+## Git
+
+- 預設分支是 `main`，remote 是 `origin`。
+- 使用者要求時才 commit 或 push。

@@ -1,0 +1,294 @@
+/* 共用：章節清單、頁首、目錄、主題切換、KaTeX、測驗、矩陣與畫布工具 */
+(function () {
+  'use strict';
+
+  // 新增一章時，在這裡加一行（done: 網頁是否完成）
+  const CHAPTERS = [
+    { id: 'c0', no: 'C0', title: '課程導論：什麼是電腦視覺', desc: '四大任務、傳統 vs 現代電腦視覺、課程規則', done: true },
+    { id: 'c1', no: 'C1', title: '視覺機器學習模型', desc: 'SVM、KNN、PCA、神經網路、損失函數、梯度下降、優化器', done: true },
+    { id: 'c2', no: 'C2', title: '卷積神經網路（CNN）', desc: '卷積、padding、stride、ReLU、pooling、參數量計算', done: true },
+  ];
+  const EXAMS = [
+    { name: '期中考', date: '2026-10-29' },
+    { name: '期末考', date: '2026-12-17' },
+  ];
+
+  const $ = (sel, root = document) => root.querySelector(sel);
+  const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
+
+  function el(tag, attrs = {}, children = []) {
+    const e = document.createElement(tag);
+    for (const [k, v] of Object.entries(attrs)) {
+      if (k === 'class') e.className = v;
+      else if (k === 'text') e.textContent = v;
+      else if (k === 'html') e.innerHTML = v;
+      else if (k.startsWith('on')) e.addEventListener(k.slice(2), v);
+      else e.setAttribute(k, v);
+    }
+    for (const c of [].concat(children)) if (c != null) e.append(c);
+    return e;
+  }
+
+  // 數字格式：去掉多餘的 0
+  function fmt(n, d = 3) {
+    if (!isFinite(n)) return String(n);
+    const r = Number(n.toFixed(d));
+    return Object.is(r, -0) ? '0' : String(r);
+  }
+  const int = (n) => Math.round(n).toLocaleString('en-US');
+
+  function cssVar(name) {
+    return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  }
+
+  function store(key, val) {
+    try {
+      if (val === undefined) return localStorage.getItem(key);
+      localStorage.setItem(key, val);
+    } catch (e) { return null; }
+  }
+
+  /* ---------- 主題 ---------- */
+  function applyTheme(t) {
+    if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t);
+    else document.documentElement.removeAttribute('data-theme');
+    document.dispatchEvent(new Event('themechange'));
+  }
+  applyTheme(store('cv-theme'));
+  if (window.matchMedia) {
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+      document.dispatchEvent(new Event('themechange'));
+    });
+  }
+  function isDark() {
+    const t = document.documentElement.getAttribute('data-theme');
+    if (t) return t === 'dark';
+    return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  }
+
+  /* ---------- 頁首 ---------- */
+  function buildTopbar() {
+    const current = document.body.dataset.chapter || 'home';
+    const inChapter = current !== 'home';
+    const prefix = inChapter ? '../' : '';
+    const nav = el('nav', { class: 'chapnav', 'aria-label': '章節' });
+    nav.append(el('a', { href: prefix + 'index.html', text: '首頁', class: current === 'home' ? 'active' : '' }));
+    for (const c of CHAPTERS) {
+      if (!c.done) continue;
+      nav.append(el('a', {
+        href: prefix + 'chapters/' + c.id + '.html',
+        text: c.no, title: c.title, class: current === c.id ? 'active' : '',
+      }));
+    }
+    const themeBtn = el('button', { class: 'icon-btn', type: 'button', title: '切換深色／淺色' });
+    const label = () => { themeBtn.textContent = isDark() ? '☀ 淺色' : '☾ 深色'; };
+    label();
+    themeBtn.addEventListener('click', () => {
+      const next = isDark() ? 'light' : 'dark';
+      store('cv-theme', next);
+      applyTheme(next);
+      label();
+    });
+    const bar = el('header', { class: 'topbar' }, [
+      el('div', { class: 'topbar-inner' }, [
+        el('a', { class: 'brand', href: prefix + 'index.html', text: '👁️ 電腦視覺筆記' }),
+        nav, themeBtn,
+      ]),
+    ]);
+    document.body.prepend(bar);
+  }
+
+  /* ---------- 目錄 ---------- */
+  function buildToc() {
+    const toc = $('.toc');
+    const main = $('main');
+    if (!toc || !main) return;
+    const heads = $$('h2, h3', main).filter((h) => !h.closest('.widget, .quiz, .callout'));
+    let n = 0;
+    const links = [];
+    for (const h of heads) {
+      if (!h.id) h.id = 'sec-' + (++n);
+      const a = el('a', { href: '#' + h.id, text: h.textContent, class: h.tagName === 'H3' ? 'sub' : '' });
+      toc.append(a);
+      links.push([h, a]);
+    }
+    // 目前位置 = 最後一個已捲過頁首的標題
+    let ticking = false;
+    const sync = () => {
+      ticking = false;
+      let cur = links[0];
+      for (const l of links) { if (l[0].getBoundingClientRect().top < 110) cur = l; else break; }
+      links.forEach(([, a]) => a.classList.toggle('active', cur && a === cur[1]));
+      if (cur) {
+        const a = cur[1], t = toc.getBoundingClientRect(), r = a.getBoundingClientRect();
+        if (r.top < t.top || r.bottom > t.bottom) toc.scrollTop += r.top - t.top - t.height / 3;
+      }
+    };
+    window.addEventListener('scroll', () => { if (!ticking) { ticking = true; requestAnimationFrame(sync); } }, { passive: true });
+    sync();
+  }
+
+  /* ---------- KaTeX ---------- */
+  function renderMath(root = document.body) {
+    if (!window.renderMathInElement) return;
+    window.renderMathInElement(root, {
+      delimiters: [
+        { left: '$$', right: '$$', display: true },
+        { left: '\\(', right: '\\)', display: false },
+      ],
+      throwOnError: false,
+    });
+  }
+  // 把 TeX 字串渲染進元素（互動元件用）
+  function tex(elm, s, display = false) {
+    if (window.katex) window.katex.render(s, elm, { displayMode: display, throwOnError: false });
+    else elm.textContent = s;
+  }
+
+  /* ---------- 測驗 ---------- */
+  function initQuizzes() {
+    for (const q of $$('.quiz[data-answer]')) {
+      const ans = q.dataset.answer;
+      const explain = $('.explain', q);
+      const btns = $$('.opts button', q);
+      for (const b of btns) {
+        b.type = 'button';
+        b.addEventListener('click', () => {
+          const ok = b.dataset.opt === ans;
+          b.classList.add(ok ? 'right' : 'wrong');
+          if (ok) {
+            btns.forEach((x) => { x.disabled = true; });
+            if (explain) explain.hidden = false;
+          } else {
+            b.disabled = true;
+          }
+        });
+      }
+      if (explain) {
+        const reveal = el('button', { class: 'btn', type: 'button', text: '直接看解答', style: 'margin-top:8px' });
+        reveal.addEventListener('click', () => {
+          btns.forEach((x) => {
+            x.disabled = true;
+            if (x.dataset.opt === ans) x.classList.add('right');
+          });
+          explain.hidden = false;
+          reveal.remove();
+        });
+        explain.before(reveal);
+      }
+    }
+  }
+
+  /* ---------- 矩陣 ---------- */
+  // M: 2D 陣列；opts.cls(i,j,v) 回傳 class 字串；opts.onClick(i,j)；opts.text(i,j,v)
+  function matrix(M, opts = {}) {
+    const rows = M.length;
+    const cols = rows ? M[0].length : 0;
+    const g = el('div', { class: 'matrix' + (opts.small ? ' small' : '') });
+    g.style.gridTemplateColumns = `repeat(${cols}, auto)`;
+    for (let i = 0; i < rows; i++) {
+      for (let j = 0; j < cols; j++) {
+        const v = M[i][j];
+        const txt = opts.text ? opts.text(i, j, v) : (v === null || v === undefined ? '' : fmt(v, 2));
+        let cls = 'cell';
+        if (v === null || v === undefined) cls += ' empty';
+        else if (typeof v === 'number' && v < 0) cls += ' neg';
+        if (opts.cls) cls += ' ' + (opts.cls(i, j, v) || '');
+        if (opts.onClick) cls += ' click';
+        const c = el('div', { class: cls, text: txt || (v == null ? '·' : '') });
+        if (opts.onClick) c.addEventListener('click', () => opts.onClick(i, j));
+        g.append(c);
+      }
+    }
+    if (!opts.caption) return g;
+    return el('div', { class: 'matrix-block' }, [g, el('div', { class: 'cap', text: opts.caption })]);
+  }
+
+  /* ---------- 畫布 ---------- */
+  // 建立高解析度畫布，回傳 { ctx, w, h }（w,h 為 CSS 像素，依 aspect 比例）
+  function setupCanvas(canvas, aspect) {
+    const w = canvas.clientWidth || canvas.parentElement.clientWidth || 600;
+    const h = Math.round(w * aspect);
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = Math.round(w * dpr);
+    canvas.height = Math.round(h * dpr);
+    canvas.style.height = h + 'px';
+    const ctx = canvas.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.font = '13px system-ui, sans-serif';
+    return { ctx, w, h };
+  }
+  // 元件重畫：主題切換、視窗縮放時自動呼叫
+  const redrawers = [];
+  function onRedraw(fn) { redrawers.push(fn); fn(); }
+  let rt = null;
+  const redrawAll = () => redrawers.forEach((f) => f());
+  window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(redrawAll, 120); });
+  document.addEventListener('themechange', () => requestAnimationFrame(redrawAll));
+
+  // 指標座標（CSS 像素）
+  function pointer(canvas, ev) {
+    const r = canvas.getBoundingClientRect();
+    return { x: ev.clientX - r.left, y: ev.clientY - r.top };
+  }
+
+  // 可重現的亂數
+  function rng(seed) {
+    let s = seed >>> 0;
+    return () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; };
+  }
+  function gauss(r) {
+    let u = 0, v = 0;
+    while (u === 0) u = r();
+    while (v === 0) v = r();
+    return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+  }
+
+  // 綁定滑桿與數值顯示：<input id=x> 旁邊的 <span data-for=x>
+  function bindRange(input, onChange, format = (v) => v) {
+    const out = document.querySelector(`[data-for="${input.id}"]`);
+    const upd = () => { if (out) out.textContent = format(Number(input.value)); onChange(Number(input.value)); };
+    input.addEventListener('input', upd);
+    upd();
+  }
+
+  /* ---------- 首頁 ---------- */
+  function buildHome() {
+    const cards = $('#chapter-cards');
+    if (cards) {
+      for (const c of CHAPTERS) {
+        cards.append(el('a', { class: 'card' + (c.done ? '' : ' todo'), href: 'chapters/' + c.id + '.html' }, [
+          el('span', { class: 'num', text: c.no }),
+          el('h3', { text: c.title }),
+          el('p', { text: c.done ? c.desc : '尚未完成' }),
+        ]));
+      }
+    }
+    const cd = $('#countdown');
+    if (cd) {
+      const today = new Date(); today.setHours(0, 0, 0, 0);
+      for (const e of EXAMS) {
+        const d = new Date(e.date + 'T00:00:00');
+        const days = Math.round((d - today) / 86400000);
+        cd.append(el('div', { class: 'count-card' }, [
+          el('div', { class: 'n', text: days > 0 ? days + ' 天' : days === 0 ? '今天！' : '已結束' }),
+          el('div', { class: 'l', text: `${e.name}　${e.date}` }),
+        ]));
+      }
+    }
+  }
+
+  window.CV = {
+    CHAPTERS, $, $$, el, fmt, int, cssVar, tex, matrix, setupCanvas, onRedraw, pointer, rng, gauss,
+    bindRange, renderMath, isDark,
+  };
+
+  document.addEventListener('DOMContentLoaded', () => {
+    buildTopbar();
+    buildHome();
+    initQuizzes();
+    buildToc();
+  });
+  // KaTeX 以 defer 載入，等全部載完再渲染
+  window.addEventListener('load', () => renderMath());
+})();

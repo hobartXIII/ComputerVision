@@ -1,0 +1,416 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>C2 卷積神經網路</title>
+  <meta name="description" content="電腦視覺 C2：卷積、padding、stride、ReLU、pooling、全連接層與參數量計算">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+  <link rel="stylesheet" href="../assets/style.css">
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"></script>
+  <script defer src="../assets/common.js"></script>
+  <script defer src="c2.js"></script>
+</head>
+<body data-chapter="c2">
+<div class="layout">
+<nav class="toc" aria-label="本頁目錄"></nav>
+<main>
+  <p class="eyebrow">C2 · 講義：c2_cnn</p>
+  <h1>🧠 卷積神經網路（CNN）</h1>
+
+  <h2 id="summary">1. 本章重點摘要</h2>
+  <p>本章介紹卷積神經網路（Convolutional Neural Network, CNN），是現代電腦視覺的核心模型。CNN 用「濾波器（filter／kernel）」當作特徵偵測器，在圖上滑動做卷積運算得到特徵圖（feature map），再經過 ReLU 激活、池化（pooling）縮小尺寸，最後用全連接層整合特徵、Softmax 分類。本章重點是理解<strong>卷積的計算方式</strong>、<strong>padding 與 stride 對輸出尺寸的影響</strong>，以及<strong>如何計算每層的輸出尺寸與參數量</strong>。它延續 C1 的神經網路訓練觀念（激活函數、Softmax、反向傳播），並說明為什麼 CNN 比一般全連接神經網路更適合處理影像。</p>
+
+  <h2 id="outline">2. 章節大綱</h2>
+
+  <h3>2.1 CNN 的直覺</h3>
+  <ul>
+    <li>人靠許多特徵分辨貓狗：鬍鬚、臉型、眼睛、毛、顏色…</li>
+    <li>CNN 讓模型自己學會偵測這些特徵</li>
+    <li>特徵偵測器：講義以「上邊、下邊、左邊、右邊偵測器」為例，不同偵測器負責找不同的形狀</li>
+  </ul>
+
+  <h3>2.2 卷積（Convolution）運算</h3>
+  <ul>
+    <li>圖片在電腦中是數字矩陣（講義展示一張手寫數字的像素值，多為 255 的白色背景）</li>
+    <li>濾波器（Filter 或 Kernel）在輸入圖上滑動，每個位置做「<strong>對應元素相乘再相加</strong>」，得到一個輸出值</li>
+    <li>所有輸出值組成「輸出」或「特徵圖（Feature Map）」</li>
+    <li>濾波器 = 特徵偵測器；特徵圖 = 偵測結果</li>
+    <li>垂直邊緣偵測器（Vertical Edge Detector）：每列都是 1, 0, −1 的 3×3 濾波器，在左亮右暗的邊界處輸出大值</li>
+    <li>卷積過程動畫也可參考 <a href="https://deeplizard.com/learn/video/YRhxdVk_sIs" target="_blank" rel="noopener">deeplizard Convolution demo</a></li>
+  </ul>
+
+  <div class="widget" id="w-conv">
+    <p class="w-title">卷積逐步計算</p>
+    <p class="w-desc">預設是講義的 5×5 輸入與 3×3 濾波器。按「下一步」看濾波器滑過每個位置；點輸入或濾波器的格子可以改數值（點一下 +1，Shift＋點 −1）。padding 與 stride 也可以切換，對照 2.5、2.6。</p>
+    <div class="controls">
+      <label>輸入 <select id="cv-in">
+        <option value="lec">講義例子</option>
+        <option value="edge">左亮右暗（1 1 0 0 0）</option>
+        <option value="hedge">上亮下暗</option>
+      </select></label>
+      <label>濾波器 <select id="cv-k">
+        <option value="lec">講義濾波器</option>
+        <option value="v">垂直邊緣偵測器</option>
+        <option value="h">水平邊緣偵測器</option>
+      </select></label>
+      <label>Padding <select id="cv-p"><option value="0">0</option><option value="1">1</option></select></label>
+      <label>Stride <select id="cv-s"><option value="1">1</option><option value="2">2</option></select></label>
+    </div>
+    <div class="controls">
+      <button class="btn" id="cv-prev" type="button">◀ 上一步</button>
+      <button class="btn primary" id="cv-next" type="button">下一步 ▶</button>
+      <button class="btn" id="cv-play" type="button">▶ 自動播放</button>
+      <button class="btn" id="cv-all" type="button">全部算完</button>
+      <button class="btn" id="cv-clear" type="button">清空輸出</button>
+    </div>
+    <div class="mat-row" id="cv-mats"></div>
+    <div class="readout" id="cv-out"></div>
+  </div>
+
+  <h3>2.3 彩色圖片的卷積</h3>
+  <ul>
+    <li>彩色圖有 3 個頻道（R、G、B），濾波器也要有<strong>相同的頻道數</strong></li>
+    <li>一個濾波器在三個頻道各自相乘後全部加總（dot product），得到<strong>一張</strong>單頻道的特徵圖</li>
+    <li>用 \(n_f\) 個濾波器 → 輸出 \(n_f\) 張特徵圖（輸出深度 = 濾波器數量）</li>
+    <li>講義圖中標註「Sliding filter with 48 weights」、「+Padding」，濾波器大小未能從文字確認 <span class="tag chk">待確認</span>48 = 4×4×3？</li>
+  </ul>
+
+  <div class="widget" id="w-rgb">
+    <p class="w-title">一個 3×3×3 濾波器 → 一個數字</p>
+    <p class="w-desc">彩色圖在某個位置的 3×3 區塊有三層（R、G、B），濾波器也有三層。每層各自「相乘再相加」，三層的結果再加總（加上 bias），才得到特徵圖上的一個值。</p>
+    <div class="controls"><button class="btn" id="rgb-new" type="button">換一組數字</button><label>bias <input type="number" id="rgb-bias" value="0" step="1"></label></div>
+    <div id="rgb-mats"></div>
+    <div class="readout" id="rgb-out"></div>
+  </div>
+
+  <h3>2.4 卷積濾波器的超參數</h3>
+  <ul>
+    <li><strong>Kernel size（k×k）</strong>：濾波器大小</li>
+    <li><strong>Depth</strong>：濾波器數量（Number of filters）</li>
+    <li><strong>Padding</strong>：在圖片周圍補 0</li>
+    <li><strong>Stride</strong>：濾波器每次移動的格數</li>
+  </ul>
+
+  <h3>2.5 填充（Padding）</h3>
+  <ul>
+    <li>問題：隨著卷積次數增加，圖會越變越小</li>
+    <li>解法：在圖片外圍補一圈 0（如 5×5 補成 7×7），輸出就能維持 5×5</li>
+    <li>為什麼需要 padding：
+      <ul>
+        <li>模型較深時，避免 feature map 持續變小</li>
+        <li>增加角落像素的貢獻：沒有 padding 時角落像素只被卷積一次，中間像素則被卷積好幾次</li>
+      </ul>
+    </li>
+  </ul>
+
+  <div class="widget" id="w-cover">
+    <p class="w-title">每個像素被卷到幾次？</p>
+    <p class="w-desc">5×5 輸入、3×3 濾波器、stride 1。格子裡的數字是這個像素參與了幾次卷積。切換 padding 看角落像素的貢獻怎麼變。</p>
+    <div class="controls"><div class="seg"><button class="btn" type="button" data-cp="0" aria-pressed="true">padding = 0</button><button class="btn" type="button" data-cp="1" aria-pressed="false">padding = 1</button></div></div>
+    <div class="mat-row" id="cover-mat"></div>
+    <div class="readout" id="cover-out"></div>
+  </div>
+
+  <h3>2.6 步幅（Stride）</h3>
+  <ul>
+    <li>stride = 1：濾波器每次移一格；5×5 輸入、卷 3×3 → 3×3 輸出</li>
+    <li>stride = 2：每次移兩格；5×5 輸入、卷 3×3 → 2×2 輸出（可以在上面的卷積元件把 stride 改成 2 試試）</li>
+    <li>使用不同 stride 的好處：增加模型訓練效率、減少重複使用相同的像素、控制 feature map 的大小</li>
+  </ul>
+
+  <h3>2.7 激活層 ReLU</h3>
+  <ul>
+    <li>ReLU（Rectified Linear Unit）：<strong>負數轉為 0、正數保留</strong></li>
+    <li>為什麼用 ReLU：
+      <ul>
+        <li><strong>正負意義分開處理</strong>：若一個神經元的正值代表「由暗到亮」、負值代表「由亮到暗」，下一層只能乘上同一個權重 \(w\)，一個加分另一個就自動扣分，兩種特徵被綁在一起無法獨立評估（講義比喻：體內的天使與魔鬼給相反意見時，你只能選一個）</li>
+        <li><strong>引入非線性</strong>：沒有激活函數時，不管疊幾層卷積（線性）都能合併成一層（公式見 4.3）</li>
+        <li><strong>計算快、訓練穩定</strong>：Sigmoid／Tanh 要算指數，ReLU 只需比大小；Sigmoid／Tanh 在極大極小值時梯度趨近 0（<strong>梯度消失</strong>），ReLU 在正值區梯度永遠是 1</li>
+      </ul>
+    </li>
+    <li>ReLU 的侷限：
+      <ul>
+        <li>模型為了學習負向特徵，可能佔用有限的 filters（造成浪費）</li>
+        <li><strong>Dying ReLU</strong>：神經元一旦持續輸出負值，梯度變 0，就永久停止學習</li>
+        <li>衍生版本：LeakyReLU、ELU 等</li>
+      </ul>
+    </li>
+  </ul>
+
+  <div class="widget" id="w-why">
+    <p class="w-title">天使與魔鬼：為什麼要把正負分開？</p>
+    <p class="w-desc">一個神經元偵測邊緣：+3 代表「由暗到亮」，−3 代表「由亮到暗」。下一層想讓<strong>兩種邊緣都加分</strong>，試試看調整權重做不做得到。<span class="tag add">補充</span>右邊的做法（把正、負拆成兩個 ReLU 通道）是講義「ReLU 侷限：學負向特徵要多佔 filter」的由來。</p>
+    <div class="row">
+      <div class="col" style="flex:1 1 280px">
+        <p style="margin:0 0 6px"><strong>沒有 ReLU：只有一個權重</strong></p>
+        <div class="controls"><label>\(w\) <input type="range" id="why-w" min="-2" max="2" step="0.1" value="1"> <span class="val" data-for="why-w"></span></label></div>
+        <div class="readout" id="why-a"></div>
+      </div>
+      <div class="col" style="flex:1 1 280px">
+        <p style="margin:0 0 6px"><strong>有 ReLU：拆成兩個通道，各有權重</strong></p>
+        <div class="controls">
+          <label>\(w_1\) <input type="range" id="why-w1" min="-2" max="2" step="0.1" value="1"> <span class="val" data-for="why-w1"></span></label>
+          <label>\(w_2\) <input type="range" id="why-w2" min="-2" max="2" step="0.1" value="1"> <span class="val" data-for="why-w2"></span></label>
+        </div>
+        <div class="readout" id="why-b"></div>
+      </div>
+    </div>
+  </div>
+
+  <h3>2.8 池化層（Pooling Layer）</h3>
+  <ul>
+    <li>減少 feature map 大小，在不丟失重要資訊的情況下減少訓練參數；又叫 Subsampling 或 Downsampling</li>
+    <li>最大池化（Max Pooling）：每個區塊取最大值</li>
+    <li>常用設定：<strong>2×2 kernel、stride = 2、no padding</strong> → feature map 變成輸入的一半</li>
+    <li>其他：平均池化（Average Pooling）、加總池化（Sum Pooling）</li>
+    <li>為什麼 pooling 有用：相鄰像素通常具有相似特徵（尤其是前幾層）；避免模型受到微小特徵差異影響；在不丟失重要資訊的情況下減少訓練參數；但 stride 太大會丟失重要資訊</li>
+  </ul>
+
+  <div class="widget" id="w-pool">
+    <p class="w-title">ReLU → Pooling</p>
+    <p class="w-desc">4×4 特徵圖先經過 ReLU（負數變 0），再做 2×2、stride 2 的池化。同色的 2×2 區塊會被壓成一個數字。點格子可以改數值（點一下 +1，Shift＋點 −1）。</p>
+    <div class="controls">
+      <label>池化方式 <select id="pool-t"><option value="max">Max Pooling</option><option value="avg">Average Pooling</option><option value="sum">Sum Pooling</option></select></label>
+      <label><input type="checkbox" id="pool-relu" checked> 先做 ReLU</label>
+      <button class="btn" id="pool-rand" type="button">隨機產生</button>
+    </div>
+    <div class="mat-row" id="pool-mats"></div>
+    <div class="readout" id="pool-out"></div>
+  </div>
+
+  <h3>2.9 全連接層與 Softmax 層</h3>
+  <ul>
+    <li>全連接層（Fully Connected Layer, FC）：整合前面卷積層與池化層抽出的特徵。FC 層的每個點都和下一層的每個點連接，又叫 Dense Layer</li>
+    <li>進 FC 前要先把多維特徵圖「展平（Flatten）」成一維向量</li>
+    <li>Softmax 層：根據抽出的特徵進行分類，輸出各類別機率（計算方式見 C1）</li>
+  </ul>
+
+  <h3>2.10 整合：簡易 CNN（MNIST 的 4 層 CNN）</h3>
+  <ul>
+    <li>輸入 28×28×1 → Conv_1（32 個 3×3）＋ReLU → Conv_2（64 個 3×3）＋ReLU → Max Pool（2×2）→ Flatten → FC（128）→ Softmax（10）</li>
+    <li>設定：stride = 1、padding = 0（不使用）、Max Pool stride = 2</li>
+    <li>逐層尺寸與參數量見 <a href="#w-cnn">4.4 的互動表格</a></li>
+  </ul>
+
+  <h3>2.11 參數 vs 超參數</h3>
+  <ul>
+    <li>參數（Parameter）：訓練過程中由模型學習的變數，又叫可學習參數或權重（weights）；卷積層與全連接層有權重</li>
+    <li>超參數（Hyperparameter）：訓練前手動設定，例如節點數、激活函數</li>
+    <li><strong>沒有可訓練參數的層：ReLU、Max Pool、Flatten</strong></li>
+  </ul>
+
+  <h3>2.12 為什麼 CNN 有用</h3>
+  <ul>
+    <li>若用一般神經網路處理 28×28 灰階圖（784 個像素），並讓下一層有與 Conv_1 一樣多的節點（26×26×32 = 21,632），這一層就需要 784 × 21,632 = <strong>16,959,488</strong> 個參數</li>
+    <li>CNN 的 Conv_1 只需要 <strong>320</strong> 個參數</li>
+    <li><span class="tag add">補充</span>差距來自兩個特性：<strong>局部連接</strong>（每個輸出只看 3×3 小區域）與<strong>權重共享</strong>（同一個濾波器在整張圖上重複使用）</li>
+  </ul>
+
+  <h2 id="glossary">3. 關鍵名詞表</h2>
+  <div class="table-wrap">
+    <table class="glossary">
+      <tr><th>名詞（中／英）</th><th>定義</th><th>一句話直覺解釋</th></tr>
+      <tr><td>卷積神經網路（CNN）</td><td>以卷積層抽取影像特徵的神經網路</td><td>會自己學「該看哪些小圖案」的網路</td></tr>
+      <tr><td>卷積（Convolution）</td><td>濾波器在圖上滑動，對應元素相乘後相加</td><td>拿放大鏡一格格掃過整張圖</td></tr>
+      <tr><td>濾波器／核（Filter／Kernel）</td><td>卷積用的小權重矩陣，是可學習的參數</td><td>特徵偵測器，專找某種圖案</td></tr>
+      <tr><td>特徵圖（Feature Map）</td><td>卷積的輸出矩陣</td><td>標出「哪裡有這個特徵」的地圖</td></tr>
+      <tr><td>垂直邊緣偵測器（Vertical Edge Detector）</td><td>各列為 1, 0, −1 的濾波器</td><td>找左亮右暗的直線</td></tr>
+      <tr><td>填充（Padding）</td><td>在輸入外圍補 0</td><td>幫圖加一圈邊框，讓尺寸不縮水</td></tr>
+      <tr><td>步幅（Stride）</td><td>濾波器每次移動的格數</td><td>每次跳幾格看</td></tr>
+      <tr><td>深度（Depth）</td><td>講義中指濾波器數量，決定輸出特徵圖張數</td><td>同時派幾個偵測器去找特徵</td></tr>
+      <tr><td>ReLU（Rectified Linear Unit）</td><td>\(\max(0, x)\)，負數變 0、正數不變</td><td>只留下「有偵測到」的訊號</td></tr>
+      <tr><td>梯度消失（Vanishing Gradient）</td><td>梯度太小導致權重幾乎不更新</td><td>模型「學不動」</td></tr>
+      <tr><td>Dying ReLU</td><td>神經元持續輸出負值，梯度為 0 而永久停止學習</td><td>神經元「死掉」了</td></tr>
+      <tr><td>池化（Pooling）</td><td>將區塊摘要成一個值以縮小特徵圖，又稱 Subsampling／Downsampling</td><td>把圖縮小但保留重點</td></tr>
+      <tr><td>最大池化（Max Pooling）</td><td>區塊取最大值</td><td>每區只留最強的訊號</td></tr>
+      <tr><td>展平（Flatten）</td><td>把多維特徵圖拉成一維向量</td><td>把一疊紙排成一長條</td></tr>
+      <tr><td>全連接層（Fully Connected／Dense Layer）</td><td>每個點與下一層每個點都相連</td><td>把各處找到的線索彙整起來下結論</td></tr>
+      <tr><td>參數（Parameter）</td><td>訓練中由模型學習的變數（權重、bias）</td><td>模型自己調的旋鈕</td></tr>
+      <tr><td>偏差（Bias）</td><td>每個濾波器／節點加上的一個純量</td><td>整體調高或調低的基準值</td></tr>
+    </table>
+  </div>
+
+  <h2 id="formula">4. 公式與計算</h2>
+
+  <h3>4.1 卷積運算</h3>
+  $$Y(i,j)=\sum_{a=1}^{f}\sum_{b=1}^{f}X(i+a-1,\,j+b-1)\,K(a,b)$$
+  <p>\(X\)：輸入；\(K\)：\(f\times f\) 濾波器；\(Y\)：特徵圖（stride = 1）<span class="tag add">補充</span>講義以逐步圖解說明，此為對應公式。</p>
+  <p><strong>講義例子</strong>（5×5 輸入、卷 3×3 濾波器）：</p>
+  $$X=\begin{bmatrix}1&0&1&0&1\\1&0&0&1&1\\0&1&1&0&0\\1&0&0&1&0\\0&0&1&1&0\end{bmatrix},\quad K=\begin{bmatrix}0&1&0\\1&0&-1\\0&1&0\end{bmatrix},\quad Y=\begin{bmatrix}2&1&-1\\-1&1&3\\2&1&1\end{bmatrix}$$
+  <ul>
+    <li>左上角：\((1\times0)+(0\times1)+(1\times0)+(1\times1)+(0\times0)+(0\times-1)+(0\times0)+(1\times1)+(1\times0)=2\)</li>
+    <li>往右一格：\((0\times0)+(1\times1)+(0\times0)+(0\times1)+(0\times0)+(1\times-1)+(1\times0)+(1\times1)+(0\times0)=1\)</li>
+  </ul>
+  <p><strong>垂直邊緣偵測例子</strong>：輸入每列都是 1 1 0 0 0（左亮右暗），濾波器每列都是 1 0 −1 → 輸出每列都是 3 3 0，在亮暗交界處出現大值 3。（在 <a href="#w-conv">卷積元件</a>選「左亮右暗」＋「垂直邊緣偵測器」驗證。）</p>
+
+  <h3>4.2 特徵圖尺寸</h3>
+  <p>講義公式（無 padding、stride = 1）：</p>
+  $$m=n-f+1$$
+  <p>\(n\)：輸入邊長；\(f\)：濾波器邊長；\(m\)：輸出邊長。例：\(5-3+1=3\)；padding 1 後輸入變 7×7：\(7-3+1=5\)。</p>
+  <p>彩色圖（多頻道）：</p>
+  $$(n\times n\times n_c)*(f\times f\times n_c)=(n-f+1)\times(n-f+1)\times n_f$$
+  <p>\(n_c\)：輸入頻道數（濾波器頻道數必須相同）；\(n_f\)：濾波器數量。例（講義）：\((5\times5\times3)*(3\times3\times3)\)，用 2 個濾波器 → \(3\times3\times2\)。</p>
+  <p>一般式（含 padding 與 stride）<span class="tag add">補充</span>：</p>
+  $$m=\left\lfloor\frac{n+2p-f}{s}\right\rfloor+1$$
+  <p>\(p\)：padding 圈數；\(s\)：stride。池化也適用這個公式。</p>
+
+  <div class="widget" id="w-size">
+    <p class="w-title">輸出尺寸與參數量計算器</p>
+    <p class="w-desc">輸入一層卷積（或池化）的設定，算出輸出尺寸與參數量。可以直接套講義例子，或拿來驗算自我測驗第 4 題。</p>
+    <div class="controls">
+      <label>類型 <select id="sz-type"><option value="conv">卷積層</option><option value="pool">池化層</option></select></label>
+      <label>輸入 n <input type="number" id="sz-n" value="5" min="1"></label>
+      <label>頻道 n<sub>c</sub> <input type="number" id="sz-c" value="3" min="1"></label>
+      <label>濾波器 f <input type="number" id="sz-f" value="3" min="1"></label>
+      <label>padding p <input type="number" id="sz-p" value="0" min="0"></label>
+      <label>stride s <input type="number" id="sz-s" value="1" min="1"></label>
+      <label id="sz-nf-l">濾波器數 n<sub>f</sub> <input type="number" id="sz-nf" value="2" min="1"></label>
+    </div>
+    <div class="controls">
+      <span class="muted" style="font-size:.9rem">套用：</span>
+      <button class="btn" type="button" data-sz="conv,5,3,3,0,1,2">講義 5×5×3 * 3×3×3 ×2</button>
+      <button class="btn" type="button" data-sz="conv,5,1,3,0,2,1">stride 2</button>
+      <button class="btn" type="button" data-sz="conv,5,1,3,1,1,1">padding 1</button>
+      <button class="btn" type="button" data-sz="conv,28,1,3,0,1,32">MNIST Conv_1</button>
+      <button class="btn" type="button" data-sz="pool,24,64,2,0,2,1">MNIST Max Pool</button>
+      <button class="btn" type="button" data-sz="conv,32,3,5,0,1,10">32×32×3、10 個 5×5</button>
+    </div>
+    <div class="readout" id="sz-out"></div>
+  </div>
+
+  <h3>4.3 ReLU 與「為何需要非線性」</h3>
+  $$\text{ReLU}(x)=\max(0,x)$$
+  <p>例：對特徵圖 \(\begin{bmatrix}2&1&-1\\-1&1&3\\2&1&1\end{bmatrix}\) 使用 ReLU → \(\begin{bmatrix}2&1&0\\0&1&3\\2&1&1\end{bmatrix}\)</p>
+  <p>沒有激活函數時，兩層線性運算可合併成一層：</p>
+  $$y=W_1x,\quad z=W_2y=W_2(W_1x)=(W_2W_1)x=W_{new}\,x$$
+  <p>加上激活函數 \(f\) 後：\(z=W_2\,f(W_1x)\)，\(W_2\) 與 \(f\) 無法合併。</p>
+
+  <h3>4.4 參數量</h3>
+  $$\text{Conv 層}=\big((f_h\times f_w\times d)+1\big)\times N_f,\qquad \text{FC 層}=(L+1)\times N_{nodes}$$
+  <p>\(f_h, f_w\)：濾波器高、寬；\(d\)：輸入深度（頻道數）；\(+1\)：每個濾波器一個 bias（純量）；\(N_f\)：濾波器數；\(L\)：輸入向量長度；\(N_{nodes}\)：該層節點數。</p>
+
+  <div class="widget" id="w-cnn">
+    <p class="w-title">簡易 CNN 逐層計算（MNIST）</p>
+    <p class="w-desc">預設是講義的 4 層 CNN，合計應為 <strong>1,199,882</strong> 個參數。改改看濾波器數或 FC 節點數，觀察哪一層的參數量變化最大。</p>
+    <div class="controls">
+      <label>輸入邊長 <input type="number" id="cnn-in" value="28" min="8"></label>
+      <label>Conv_1 濾波器數 <input type="number" id="cnn-c1" value="32" min="1"></label>
+      <label>Conv_2 濾波器數 <input type="number" id="cnn-c2" value="64" min="1"></label>
+      <label>kernel <select id="cnn-k"><option value="3">3×3</option><option value="5">5×5</option></select></label>
+      <label>FC 節點數 <input type="number" id="cnn-fc" value="128" min="1"></label>
+      <label>類別數 <input type="number" id="cnn-out" value="10" min="2"></label>
+      <button class="btn" id="cnn-reset" type="button">講義設定</button>
+    </div>
+    <div class="table-wrap" id="cnn-table"></div>
+    <div class="bars" id="cnn-bars"></div>
+    <div class="readout" id="cnn-cmp"></div>
+  </div>
+
+  <h2 id="compare">5. 模型／方法比較</h2>
+  <h3>5.1 CNN 各層比較</h3>
+  <div class="table-wrap">
+    <table>
+      <tr><th>層</th><th>功能</th><th>有無可訓練參數</th><th>對尺寸的影響</th></tr>
+      <tr><td>卷積層（Conv）</td><td>抽取特徵</td><td>有（濾波器權重 ＋ bias）</td><td>高寬變小（無 padding 時），深度 = 濾波器數</td></tr>
+      <tr><td>ReLU</td><td>引入非線性</td><td>無</td><td>不變</td></tr>
+      <tr><td>池化層（Pooling）</td><td>縮小特徵圖、減少參數</td><td>無</td><td>2×2、s=2 時高寬減半，深度不變</td></tr>
+      <tr><td>Flatten</td><td>轉成一維向量</td><td>無</td><td>高×寬×深 → 一維</td></tr>
+      <tr><td>全連接層（FC）</td><td>整合特徵</td><td>有（通常最多）</td><td>輸出長度 = 節點數</td></tr>
+      <tr><td>Softmax</td><td>轉成各類機率進行分類</td><td>本身無 <span class="tag add">補充</span></td><td>長度 = 類別數</td></tr>
+    </table>
+  </div>
+  <h3>5.2 激活函數比較</h3>
+  <div class="table-wrap">
+    <table>
+      <tr><th>函數</th><th>優點</th><th>缺點</th></tr>
+      <tr><td>Sigmoid／Tanh</td><td>輸出平滑有界 <span class="tag add">補充</span></td><td>有指數運算較慢；極大極小值時梯度消失</td></tr>
+      <tr><td>ReLU</td><td>只需比大小、快；正值區梯度恆為 1；正負特徵分開處理</td><td>Dying ReLU；學負向特徵要多佔 filters</td></tr>
+      <tr><td>LeakyReLU／ELU</td><td>負值區仍有小梯度，改善 Dying ReLU <span class="tag add">補充</span></td><td>講義未詳述</td></tr>
+    </table>
+  </div>
+  <h3>5.3 池化方法比較</h3>
+  <div class="table-wrap">
+    <table>
+      <tr><th>方法</th><th>做法</th><th>特性 <span class="tag add">補充</span></th></tr>
+      <tr><td>Max Pooling</td><td>取區塊最大值</td><td>保留最強特徵，最常用</td></tr>
+      <tr><td>Average Pooling</td><td>取區塊平均</td><td>較平滑，保留整體資訊</td></tr>
+      <tr><td>Sum Pooling</td><td>取區塊總和</td><td>與平均池化只差一個倍數</td></tr>
+    </table>
+  </div>
+
+  <h2 id="figures">6. 圖表說明</h2>
+  <ul>
+    <li><strong>特徵偵測器圖</strong>：一個圖案被拆成「上邊、下邊、左邊、右邊」四種偵測器，每個偵測器只負責一種邊，組合起來就能辨識整個形狀。</li>
+    <li><strong>手寫數字像素圖</strong>：展示一張灰階圖的每個像素值，背景幾乎都是 255（白），筆畫處數值較小（深色），說明電腦看到的只是數字矩陣。數字內容無法從文字擷取 <span class="tag chk">待確認</span></li>
+    <li><strong>卷積逐步圖解</strong>：3×3 濾波器從 5×5 輸入的左上角開始，一格一格往右、往下滑，每次得到輸出的一個值，最後完成 3×3 的特徵圖。</li>
+    <li><strong>彩色圖卷積示意圖</strong>：三層 R、G、B 疊在一起，濾波器也有三層一起滑動，點積後得到單一輸出值。</li>
+    <li><strong>如何分類 image（兩頁圖）</strong>：多層卷積依序抽出由簡單到複雜的特徵，最後分類 <span class="tag chk">待確認</span>圖片內容未能擷取，此為依標題推測。</li>
+    <li><strong>Padding 圖</strong>：5×5 外圍補一圈 0 變成 7×7，輸出維持 5×5；另一張圖用顏色標出角落像素只被卷到一次、中間像素被卷到好幾次。</li>
+    <li><strong>Stride 圖</strong>：對照 stride 1（輸出 3×3）與 stride 2（輸出 2×2）的濾波器移動路徑。</li>
+    <li><strong>Max Pooling 圖</strong>：4×4 特徵圖切成四個 2×2 區塊，各取最大值得到 2×2 輸出 <span class="tag chk">待確認</span>圖中實際數值。</li>
+    <li><strong>4 層 CNN for MNIST 架構圖</strong>：28×28 輸入 → 26×26×32 → 24×24×64 → 12×12×64 → 9216 → 128 → 10，立體方塊的厚度代表深度（濾波器數），長寬代表空間尺寸，越往後空間越小、深度越深。</li>
+  </ul>
+
+  <h2 id="traps">7. 常見觀念陷阱</h2>
+  <ul>
+    <li><strong>ReLU、Max Pool、Flatten 沒有可訓練參數</strong>，算參數量時記得跳過。</li>
+    <li><strong>每個濾波器只有一個 bias</strong>，不是每個權重一個，也不是每個頻道一個。</li>
+    <li><strong>算 Conv 參數時的 d 是「輸入」的深度</strong>：Conv_2 要用 Conv_1 的輸出深度 32，不是 1。</li>
+    <li><strong>「Depth」有兩種意思</strong>：講義超參數頁的 Depth 指「濾波器數量」（決定輸出深度）；算參數時的 depth 指「濾波器本身的頻道數」（= 輸入深度）。</li>
+    <li><strong>濾波器頻道數必須等於輸入頻道數</strong>，但輸出深度由濾波器「數量」決定。</li>
+    <li><strong>FC 層通常佔最多參數</strong>：MNIST 例子中 FC 佔 1,179,776／1,199,882，約 98%。</li>
+    <li><strong>Padding 的目的</strong>不只是維持尺寸，還有增加角落像素的貢獻。</li>
+    <li><strong>Pooling 的 stride 不能太大</strong>，否則會丟失重要資訊。</li>
+    <li><strong>Dying ReLU</strong>：輸出持續為負 → 梯度 0 → 永久不學；解法是 LeakyReLU、ELU。</li>
+    <li><span class="tag add">補充</span>深度學習中的「卷積」實際上是數學上的互相關（cross-correlation），濾波器不翻轉，考試計算時直接對應位置相乘即可。</li>
+  </ul>
+
+  <div class="callout warn">
+    <p><strong>⚠️ 講義前後不一致處</strong> <span class="tag chk">待確認</span></p>
+    <ol>
+      <li>「Conv layer 上的參數量」頁寫 \((3\times3\times3)+1=10\)、乘 16 個濾波器 \(=160\)。但 \(3\times3\times3+1=28\)，16 個應為 \(448\)；講義的 10 與 160 對應的是輸入深度 1 的情況 \((3\times3\times1+1)\times16=160\)。請向老師確認原意。該頁公式寫成「weight × width × depth」，應為「height × width × depth」。</li>
+      <li>「Simple CNN 的參數量」有兩頁，第二頁 Conv_2 寫成 18,494，正確值為 \(289\times64=18{,}496\)（第一頁與合計 1,199,882 皆以 18,496 計算）。</li>
+      <li>Padding 頁的 5×5 輸出矩陣（第一列 2 1 −1 2 2）與講義輸入、濾波器實際計算不符。對補 0 後的 7×7 輸入重算，結果應為 \(\begin{bmatrix}1&0&0&1&1\\1&2&1&-1&2\\1&-1&1&3&1\\0&2&1&1&1\\1&-1&-1&2&1\end{bmatrix}\)（中間 3×3 即無 padding 時的結果）。講義重點是「尺寸維持 5×5」，數值請以重算結果為準；可以在上方卷積元件把 padding 設成 1 驗證。</li>
+    </ol>
+  </div>
+
+  <h2 id="quiz">8. 自我測驗</h2>
+  <div class="quiz" data-answer="D">
+    <p class="q">1.（選擇）下列哪一層有可訓練的參數？</p>
+    <div class="opts">
+      <button data-opt="A">(A) ReLU</button><button data-opt="B">(B) Max Pooling</button>
+      <button data-opt="C">(C) Flatten</button><button data-opt="D">(D) 全連接層</button>
+    </div>
+    <div class="explain" hidden><strong>(D)</strong>。ReLU、Max Pooling、Flatten 都只是固定運算，沒有權重；全連接層有權重與 bias。</div>
+  </div>
+  <div class="quiz" data-answer="C">
+    <p class="q">2.（選擇）關於 ReLU，下列何者<strong>錯誤</strong>？</p>
+    <div class="opts">
+      <button data-opt="A">(A) 在正值區域梯度為 1</button><button data-opt="B">(B) 比 Sigmoid 計算更快</button>
+      <button data-opt="C">(C) 可以完全避免神經元停止學習</button><button data-opt="D">(D) 能為網路引入非線性</button>
+    </div>
+    <div class="explain" hidden><strong>(C)</strong>。ReLU 會有 Dying ReLU 問題：神經元持續輸出負值時梯度為 0，會永久停止學習。</div>
+  </div>
+  <div class="quiz">
+    <p class="q">3.（簡答）請寫出 padding 的兩個目的。</p>
+    <details class="answer"><summary>看解答</summary><div>① 模型較深時，避免 feature map 持續變小；② 增加角落（邊緣）像素的貢獻，否則它們只被卷積一次。</div></details>
+  </div>
+  <div class="quiz">
+    <p class="q">4.（計算）輸入 64×64×3，經過 16 個 3×3 濾波器（stride 1、padding 1），再經過 2×2、stride 2 的 Max Pooling，輸出尺寸為何？卷積層參數量多少？</p>
+    <details class="answer"><summary>看解答</summary><div>卷積：\((64+2-3)/1+1=64\) → 64×64×16；池化：\((64-2)/2+1=32\) → <strong>32×32×16</strong>。參數量 \((3\times3\times3+1)\times16=28\times16=\) <strong>448</strong>。可以用 <a href="#w-size">4.2 的計算器</a>驗算。</div></details>
+  </div>
+  <div class="quiz">
+    <p class="q">5.（計算）對下列 4×4 特徵圖先做 ReLU，再做 2×2、stride 2 的 Max Pooling，結果為何？ \(\begin{bmatrix}1&-3&2&0\\-1&4&-2&5\\0&-1&-4&-2\\2&3&-1&-3\end{bmatrix}\)</p>
+    <details class="answer"><summary>看解答</summary><div>ReLU 後：\(\begin{bmatrix}1&0&2&0\\0&4&0&5\\0&0&0&0\\2&3&0&0\end{bmatrix}\)；四個 2×2 區塊各取最大值 → \(\begin{bmatrix}4&5\\3&0\end{bmatrix}\)。</div></details>
+  </div>
+
+  <footer>講義來源：<a href="https://drive.google.com/file/d/19liNMn22hP25qEwNZfhAqL_2hmMDHh8x/view" target="_blank" rel="noopener">c2_cnn.pdf</a> · 文字筆記：<a href="https://app.notion.com/p/3eb75b0b5a1381b0ba65eed9bd1732f1" target="_blank" rel="noopener">Notion C2</a></footer>
+</main>
+</div>
+</body>
+</html>

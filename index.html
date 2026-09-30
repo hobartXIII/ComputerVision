@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>電腦視覺互動筆記</title>
+  <meta name="description" content="國立中興大學「電腦視覺」課程的互動式網頁筆記">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap">
+  <link rel="stylesheet" href="assets/style.css">
+  <script defer src="assets/common.js"></script>
+</head>
+<body data-chapter="home">
+  <div class="layout" style="grid-template-columns:minmax(0,1fr)">
+    <main style="max-width:960px">
+      <section class="hero">
+        <p class="eyebrow">國立中興大學 · 授課老師：楊景明</p>
+        <h1>電腦視覺 互動式筆記</h1>
+        <p class="lead">依講義逐章整理，把公式與計算做成可以操作的互動元件：拖一拖、調一調，看數字怎麼變。</p>
+        <div id="countdown" class="countdown"></div>
+      </section>
+
+      <h2 style="margin-top:1.2em">各章筆記</h2>
+      <div id="chapter-cards" class="cards"></div>
+
+      <h2>使用說明</h2>
+      <ul>
+        <li>每章都分成 8 段：重點摘要 → 章節大綱 → 關鍵名詞 → 公式與計算 → 方法比較 → 圖表說明 → 常見陷阱 → 自我測驗，和 Notion 筆記的段落順序相同。</li>
+        <li>有 <strong>▶</strong> 標記的方塊是互動元件，預設值都是講義上的原例子。</li>
+        <li><span class="tag add">補充</span>：講義沒寫、但有助於理解的內容。</li>
+        <li><span class="tag chk">待確認</span>：講義文字無法擷取（多為圖片），或講義本身前後不一致；請對照原始投影片或詢問老師、助教。</li>
+      </ul>
+
+      <h2>資料來源</h2>
+      <ul>
+        <li>講義：<a href="https://drive.google.com/drive/folders/1G3x-BhZKfFVIzODrT6K7tVmPdqv1o2bp" target="_blank" rel="noopener">Google 雲端硬碟「電腦視覺」資料夾</a></li>
+        <li>文字筆記：<a href="https://app.notion.com/p/3eb75b0b5a1381e69740c95b51caedf6" target="_blank" rel="noopener">Notion「電腦視覺筆記」</a></li>
+      </ul>
+
+      <h2>成績計算</h2>
+      <div class="table-wrap">
+        <table>
+          <tr><th>項目</th><th class="num">比例</th></tr>
+          <tr><td>期中考</td><td class="num">20%</td></tr>
+          <tr><td>期末考</td><td class="num">20%</td></tr>
+          <tr><td>課堂練習</td><td class="num">30%</td></tr>
+          <tr><td>期末專題</td><td class="num">20%</td></tr>
+          <tr><td>出席</td><td class="num">10%</td></tr>
+        </table>
+      </div>
+      <p class="muted">遲交最高 80 分；補考須在上課前至少三小時請假並附證明，期中考補考成績會與期末考合併計算。</p>
+
+      <footer>課程網頁筆記 · 講義版權屬授課老師所有，本站只放整理後的筆記。</footer>
+    </main>
+  </div>
+</body>
+</html>
