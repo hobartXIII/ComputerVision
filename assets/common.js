@@ -7,6 +7,7 @@
     { id: 'c0', no: 'C0', title: '課程導論：什麼是電腦視覺', desc: '四大任務、傳統 vs 現代電腦視覺、課程規則', done: true },
     { id: 'c1', no: 'C1', title: '視覺機器學習模型', desc: 'SVM、KNN、PCA、神經網路、損失函數、梯度下降、優化器', done: true },
     { id: 'c2', no: 'C2', title: '卷積神經網路（CNN）', desc: '卷積、padding、stride、ReLU、pooling、參數量計算', done: true },
+    { id: 'c3', no: 'C3', title: '模型品質與改進', desc: '混淆矩陣、Precision／Recall／F1、Overfitting、L1／L2、Dropout、Early Stopping、BN、資料擴增', done: true },
   ];
   const EXAMS = [
     { name: '期中考', date: '2026-10-29' },

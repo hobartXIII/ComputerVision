@@ -1,0 +1,504 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>C3 模型品質與改進</title>
+  <meta name="description" content="電腦視覺 C3：Train／Val／Test、混淆矩陣、Precision／Recall／F1、Overfitting、L1／L2、Dropout、Early Stopping、Batch Normalization、資料擴增">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+  <link rel="stylesheet" href="../assets/style.css">
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"></script>
+  <script defer src="../assets/common.js"></script>
+  <script defer src="c3.js"></script>
+</head>
+<body data-chapter="c3">
+<div class="layout">
+<nav class="toc" aria-label="本頁目錄"></nav>
+<main>
+  <p class="eyebrow">C3 · 講義：c3_model_improvement</p>
+  <h1>📈 模型品質與改進</h1>
+
+  <h2 id="summary">1. 本章重點摘要</h2>
+  <p>本章處理「模型訓練好之後，怎麼知道它好不好、不好又該怎麼改」。前半講<strong>評估</strong>：訓練集、驗證集、測試集（Training／Validation／Test）三種資料集的角色，以及準確率（Accuracy）不夠用時要看的混淆矩陣（Confusion Matrix）、精確率（Precision）、召回率（Recall）、F1 等指標。後半講<strong>改進</strong>：過度擬合（Overfitting）的成因，以及四種正則化（Regularization）方法：L1／L2、Dropout、提早停止（Early Stopping）、批次正規化（Batch Normalization, BN），還有各式資料擴增（Data Augmentation）。這章延續 C1 的評估指標與 C2 的 CNN，是把模型從「能跑」推到「好用」的工具箱。</p>
+
+  <h2 id="outline">2. 章節大綱</h2>
+
+  <h3>2.1 Training、Validation、Test 資料集</h3>
+  <ul>
+    <li><strong>Training data</strong>：模型用來學習參數</li>
+    <li><strong>Validation data</strong>：訓練期間用來對模型做公正評估（每個 epoch 訓練完就評估一次）</li>
+    <li><strong>Test data</strong>：最終測試模型效能的資料集，模型從未看過（例如 Kaggle 競賽的私有測試集）</li>
+    <li>「Validation」與「Test」常常被混用</li>
+    <li>流程：每個 epoch 先用梯度下降與反向傳播在 Train 上更新權重 → 在 Val 上算 loss 與 accuracy → 重複 n 個 epoch → 最後才在 Test 上算一次</li>
+    <li>基本評估指標：Training Loss、Training Accuracy、Test／Validation Loss、Test／Validation Accuracy</li>
+  </ul>
+
+  <h3>2.2 Accuracy 不夠用：混淆矩陣</h3>
+  <ul>
+    <li>問題情境：模型分不出「3」和「8」。怎麼找出這種問題？哪個類別表現較差？模型是不是傾向把 8 判成 3？單一個 Accuracy 數字回答不了這些問題</li>
+    <li>混淆矩陣：列為真實類別、欄為預測類別 <span class="tag add">補充</span>這是慣例，有些工具相反。對角線（綠色）是預測正確、其他格（紅色）是預測錯誤</li>
+    <li>講義 MNIST 例子：<strong>4 容易被預測為 9</strong>、<strong>7 容易被預測為 2</strong></li>
+  </ul>
+
+  <div class="widget" id="w-cm">
+    <p class="w-title">MNIST 混淆矩陣與分類報告</p>
+    <p class="w-desc"><span class="tag chk">待確認</span>講義圖中的數字未能擷取，這裡用<strong>示意數字</strong>：每列的總數是 MNIST 測試集各數字的實際張數，錯誤分布依講義結論設計（4 → 9、7 → 2 最多）。點任一格看它代表什麼，下方的分類報告會同步標示該類別。</p>
+    <div class="table-wrap" id="cm-grid"></div>
+    <div class="readout" id="cm-out"></div>
+    <div class="table-wrap" id="cm-report"></div>
+  </div>
+
+  <h3>2.3 二元分類指標（COVID 例子）</h3>
+  <ul>
+    <li>準確率（Accuracy）、錯誤率（Misclassification／Error Rate）</li>
+    <li>真陽性率（True Positive Rate, TPR）＝ 敏感度（Sensitivity）＝ 召回率（Recall）：患有 COVID 的病人中，我們預測出了多少</li>
+    <li>偽陽性率（False Positive Rate, FPR）：沒有 COVID 的人中，被誤判有 COVID 的比例</li>
+    <li>真陰性率（True Negative Rate, TNR）＝ 特異度（Specificity）：沒有 COVID 的人中，正確判定的比例</li>
+    <li>精確率（Precision）：預測有 COVID 的人中，真的有的比例</li>
+    <li>數值計算見 <a href="#w-bin">4.1 的計算器</a></li>
+  </ul>
+
+  <h3>2.4 Precision、Recall、F1 與分類報告</h3>
+  <ul>
+    <li><strong>Precision／Recall 取捨（tradeoff）</strong>：通常提升其中一個，另一個就會下降</li>
+    <li>有時可以犧牲一些 Precision 來換 Recall：例如看診，寧可多抽幾個去複檢，也不要漏掉真的病人</li>
+    <li><strong>F1</strong>：Precision 與 Recall 的調和平均數（harmonic mean）</li>
+    <li><strong>分類報告（Classification Report）</strong>：列出每個類別的 Precision、Recall、F1；<strong>Support</strong> 代表該類別在資料中出現的次數（見上方 <a href="#w-cm">MNIST 元件</a>）</li>
+  </ul>
+
+  <div class="widget" id="w-thr">
+    <p class="w-title">門檻值與 Precision／Recall 取捨</p>
+    <p class="w-desc"><span class="tag add">補充</span>模型對每個人輸出一個「有 COVID 的分數」，分數 ≥ 門檻就判為陽性。預設門檻 0.5 剛好得到講義的 <strong>TP = 90、FN = 10、FP = 5、TN = 40</strong>（分數是配合講義數字產生的示意資料）。把門檻往左拉，看 Recall 和 Precision 怎麼變。</p>
+    <div class="controls">
+      <label>門檻 <input type="range" id="thr-t" min="0.05" max="0.95" step="0.01" value="0.5"> <span class="val" data-for="thr-t"></span></label>
+      <button class="btn" id="thr-reset" type="button">回到 0.5</button>
+    </div>
+    <div class="canvas-wrap"><canvas id="thr-canvas"></canvas></div>
+    <div class="readout" id="thr-out"></div>
+  </div>
+
+  <h3>2.5 過度擬合與泛化</h3>
+  <ul>
+    <li>過度擬合（Overfitting）：模型在訓練資料上過度訓練，在測試資料上表現很差（很常發生）</li>
+    <li>常見成因：訓練資料太少、用太多特徵（Features）、模型太複雜</li>
+    <li>泛化（Generalization）：模型在沒見過的資料上的表現</li>
+    <li>講義例子：模型把紅色的東西都判成「消防車」，因為它學到的是「用顏色分辨」，而不是消防車真正的特徵</li>
+    <li>如何避免：
+      <ul>
+        <li>最簡單：增加訓練資料、降低模型複雜度</li>
+        <li>使用正則化：限制模型複雜度，讓模型學「對的特徵」（例如狗的尾巴、鼻子、耳朵，而不是背景的樹、草）</li>
+      </ul>
+    </li>
+    <li>「如何欺騙模型」：講義以圖說明模型可能被不相關的特徵帶著走 <span class="tag chk">待確認</span>圖片內容未能擷取</li>
+  </ul>
+
+  <div class="widget" id="w-fit">
+    <p class="w-title">模型複雜度與 Overfitting</p>
+    <p class="w-desc"><span class="tag add">補充</span>用多項式擬合 12 個訓練點（實心），另外 40 個測試點（空心）模型沒看過。把「次方」拉高，模型變複雜：訓練誤差一路下降，測試誤差卻在某處開始上升，這就是 overfitting。再把 L2 的 λ 調大，看正則化怎麼把曲線「拉回來」。</p>
+    <div class="controls">
+      <label>多項式次方 <input type="range" id="fit-d" min="1" max="11" step="1" value="3"> <span class="val" data-for="fit-d"></span></label>
+      <label>L2 λ <input type="range" id="fit-l" min="0" max="7" step="1" value="0"> <span class="val" data-for="fit-l"></span></label>
+      <button class="btn" id="fit-new" type="button">換一組資料</button>
+    </div>
+    <div class="canvas-wrap"><canvas id="fit-canvas"></canvas></div>
+    <div class="readout" id="fit-out"></div>
+  </div>
+
+  <h3>2.6 正則化方法一：L1 與 L2</h3>
+  <ul>
+    <li>做法：<strong>Loss Function ＋ Penalty（L1 或 L2）</strong></li>
+    <li>目的：迫使模型使用較小的參數（weights 和 biases），避免特定節點產生過大影響</li>
+    <li>L1（L1-Norm、Lasso Regression）：加上權重絕對值的總和</li>
+    <li>L2（Ridge Regression）：加上權重平方的總和</li>
+    <li>強度由一個係數控制，越大 Penalty 越重 <span class="tag chk">待確認</span>講義的符號在文字擷取時是亂碼，這裡用常見的 \(\theta_j\) 與 \(\lambda\)</li>
+    <li>區別：
+      <ul>
+        <li><strong>L1 會優先把不重要特徵的權重降為 0</strong> → 有「特徵選取」的效果</li>
+        <li><strong>L2 會優先把所有權重都減小</strong> → 大的權重會產生更大的 Penalty</li>
+      </ul>
+    </li>
+    <li>總結：兩者都讓模型傾向用小權重，除非大權重能顯著降低原本的 Loss；模型在「較小權重」與「較低原始 Loss」之間取捨，由 \(\lambda\) 控制</li>
+  </ul>
+
+  <h3>2.7 正則化方法二：Dropout</h3>
+  <ul>
+    <li>出處：Srivastava et al., “Dropout: a simple way to prevent neural networks from overfitting”, JMLR 2014</li>
+    <li>Dropout 影響的不是訓練損失，而是<strong>模型本身</strong></li>
+    <li>訓練流程：
+      <ol>
+        <li>隨機關閉某一層的一些節點（例如一半）</li>
+        <li>將一個 mini-batch 前向傳遞，用反向傳遞計算梯度</li>
+        <li>只更新開著的節點的權重</li>
+        <li>恢復所有節點，再隨機關閉一批，處理下一個 mini-batch</li>
+      </ol>
+    </li>
+    <li>用 <strong>Dropout Rate</strong> 控制關閉的比例</li>
+    <li>迫使模型學更可靠的特徵（每次等於訓練不一樣的模型）</li>
+    <li>缺點：會增加模型收斂（converge）所需時間</li>
+    <li><strong>測試時使用所有節點</strong>做預測</li>
+  </ul>
+
+  <div class="widget" id="w-drop">
+    <p class="w-title">Dropout：每個 mini-batch 換一個網路</p>
+    <p class="w-desc">兩個隱藏層各有 Dropout Rate 比例的節點被隨機關閉（打叉），關掉的節點連線也一起消失，這一輪只更新亮著的權重。按「下一個 mini-batch」重新抽一次；切到「測試」時所有節點都打開。</p>
+    <div class="controls">
+      <label>Dropout Rate <input type="range" id="drop-p" min="0" max="0.9" step="0.1" value="0.5"> <span class="val" data-for="drop-p"></span></label>
+      <div class="seg"><button class="btn" type="button" data-dm="train" aria-pressed="true">訓練</button><button class="btn" type="button" data-dm="test" aria-pressed="false">測試</button></div>
+      <button class="btn primary" id="drop-next" type="button">下一個 mini-batch ▶</button>
+    </div>
+    <div id="drop-svg"></div>
+    <div class="readout" id="drop-out"></div>
+  </div>
+
+  <h3>2.8 正則化方法三：Early Stopping</h3>
+  <ul>
+    <li>設定一個門檻：如果接下來 <strong>P 個 epoch</strong> 都沒有更好的結果就停止訓練</li>
+    <li>每個 epoch 都儲存模型權重（以便取回最佳的那一個）</li>
+    <li>互動例子見 <a href="#w-es">4.4</a></li>
+  </ul>
+
+  <h3>2.9 正則化方法四：Batch Normalization（BN）</h3>
+  <ul>
+    <li>做法：對<strong>每組 mini-batch</strong> 分別計算 mean 與標準差（STD）並標準化</li>
+    <li>CNN 中：每一層有 <strong>d 個 mean 和 d 個 STD</strong>，d 為該層 filter 數量（即 channel 數）</li>
+    <li>位置：通常放在 <strong>Conv Layer 與 Activation Function 之間</strong>，控制進入非線性函數的數值分布，避免落入 sigmoid／tanh 的飽和區
+      <ul><li>這是原始論文與主流做法，但不是唯一答案；部分研究放在 activation 之後也有不錯效果</li></ul>
+    </li>
+    <li><strong>可學習參數 γ 和 β</strong>：
+      <ul>
+        <li>標準化後再做仿射變換 \(y=\gamma\hat{x}+\beta\)，γ 負責縮放、β 負責平移</li>
+        <li>兩者都透過反向傳播更新（多算 \(\partial L/\partial\gamma\)、\(\partial L/\partial\beta\)），BN 因此從前處理步驟變成<strong>模型的一部分</strong></li>
+        <li>理論上網路可以學到讓輸出還原成標準化前的分布</li>
+      </ul>
+    </li>
+    <li><strong>BN 的重點是「穩定」，不是「標準差一定要是 1」</strong>：
+      <ul>
+        <li>沒有 BN：進入 activation 的分布由前面所有 conv 層的權重間接交錯決定，訓練中會一直劇烈漂移（內部共變量偏移，Internal Covariate Shift）</li>
+        <li>有 BN：先標準化，再由這一層自己的 γ、β 直接決定分布；γ、β 經梯度下降緩慢更新，不會劇烈震盪</li>
+      </ul>
+    </li>
+    <li><strong>訓練與推論的差異</strong>：
+      <ul>
+        <li>訓練時：mean 與 STD 由當下 mini-batch 即時計算</li>
+        <li>推論時：batch size 常為 1 或不固定，若仍用當下 batch 統計量，同一筆輸入會得到不同結果，不合理</li>
+        <li>因此推論時改用 <strong>running_mean、running_STD</strong>：訓練中用移動平均（Moving Average）累積的估計值，推論時不再更新</li>
+        <li>Moving average：不重算全部歷史，而是用新資料逐步微調既有估計值；常見 momentum 0.9、0.99</li>
+      </ul>
+    </li>
+  </ul>
+
+  <h3>2.10 正則化小建議</h3>
+  <ul>
+    <li>不要一開始就用正則化，先建立 <strong>Baseline Model</strong></li>
+    <li>正則化有時會讓模型變差（例如參數設定錯誤）</li>
+    <li>用 Dropout 時建議配合更多 epoch，讓模型有足夠時間收斂</li>
+    <li>很簡單的模型不太需要正則化</li>
+    <li>L2 Penalty 太高 → 權重被壓得過小，模型學不到足夠的 pattern → <strong>擬合不足（Underfitting）</strong>（可以在 <a href="#w-fit">2.5 的元件</a>把 λ 拉到最大看看）</li>
+  </ul>
+
+  <h3>2.11 資料擴增（Data Augmentation）</h3>
+  <ul>
+    <li>Overfitting 的原因之一是訓練資料不夠，資料擴增可以解決；<strong>影像資料特別適合</strong></li>
+    <li>Keras 與 PyTorch 的基本方法：翻轉（水平／垂直）、亮度與對比、旋轉、縮放、裁切、扭曲</li>
+    <li><strong>一般只對訓練資料做擴增</strong></li>
+    <li>通常發生在 Data Loader 搬運資料時，等於每次讓模型看不同版本的圖片</li>
+    <li>進階方法分為五類：
+      <ul>
+        <li><strong>遮擋類（Occlusion-based）</strong>：CutOut、Random Erasing、Hide-and-Seek、GridMask</li>
+        <li><strong>混合類（Mixing-based）</strong>：MixUp、CutMix（Torchvision 提供）</li>
+        <li><strong>組合類（Composition-based）</strong>：Copy-Paste（Albumentations）、Mosaic（Ultralytics）</li>
+        <li><strong>自適應（Adaptive）</strong>：依訓練中的 loss／梯度回饋動態調整擴增的種類與強度，讓樣本維持適當挑戰性（arXiv 2207.06658）</li>
+        <li><strong>針對性資料生成（Targeted Data Generation, TDG）</strong>：不是平均增加資料，而是針對模型容易誤判的子群（subgroup）生成標註正確的合成樣本；講義例子是「同時含正負面描述但整體偏正面」的評論（arXiv 2305.17804）</li>
+      </ul>
+    </li>
+    <li><span class="tag chk">待確認</span>Adaptive 頁附近出現「梯度上升」字樣，推測是指「朝讓 loss 變大的方向調整擴增強度」</li>
+    <li><span class="tag chk">待確認</span>講義文字在 TDG 頁中途截斷，後續若還有投影片未能收錄</li>
+  </ul>
+
+  <div class="widget" id="w-aug">
+    <p class="w-title">資料擴增實驗室</p>
+    <p class="w-desc">左邊是原圖（標籤「狗」），右邊是擴增後模型實際看到的版本。選一種方法、調參數，按「再抽一次」就像 Data Loader 下一次取到這張圖時的樣子。MixUp、CutMix 會一起顯示混合後的標籤。</p>
+    <div class="controls">
+      <label>方法 <select id="aug-m">
+        <optgroup label="基本">
+          <option value="flipH">水平翻轉</option>
+          <option value="flipV">垂直翻轉</option>
+          <option value="rotate">旋轉</option>
+          <option value="color">亮度與對比</option>
+          <option value="zoom">縮放＋裁切</option>
+          <option value="shear">扭曲（斜切）</option>
+        </optgroup>
+        <optgroup label="遮擋類">
+          <option value="cutout">CutOut</option>
+          <option value="erase">Random Erasing</option>
+          <option value="hide">Hide-and-Seek</option>
+          <option value="grid">GridMask</option>
+        </optgroup>
+        <optgroup label="混合類">
+          <option value="mixup">MixUp</option>
+          <option value="cutmix">CutMix</option>
+        </optgroup>
+        <optgroup label="組合類">
+          <option value="paste">Copy-Paste</option>
+          <option value="mosaic">Mosaic</option>
+        </optgroup>
+      </select></label>
+      <button class="btn primary" id="aug-again" type="button">再抽一次 🎲</button>
+    </div>
+    <div class="controls" id="aug-params"></div>
+    <div class="row" style="justify-content:center">
+      <div class="col" style="flex:1 1 160px;max-width:300px;text-align:center"><canvas id="aug-src"></canvas><div class="muted" style="font-size:.85rem">原圖</div></div>
+      <div class="col" style="flex:1 1 160px;max-width:300px;text-align:center"><canvas id="aug-dst"></canvas><div class="muted" style="font-size:.85rem">擴增後</div></div>
+    </div>
+    <div class="readout" id="aug-out"></div>
+  </div>
+
+  <h2 id="glossary">3. 關鍵名詞表</h2>
+  <div class="table-wrap">
+    <table class="glossary">
+      <tr><th>名詞（中／英）</th><th>定義</th><th>一句話直覺解釋</th></tr>
+      <tr><td>驗證集（Validation Set）</td><td>訓練期間用來評估、挑模型的資料</td><td>模擬考</td></tr>
+      <tr><td>測試集（Test Set）</td><td>最終評估、模型從未看過的資料</td><td>正式大考</td></tr>
+      <tr><td>混淆矩陣（Confusion Matrix）</td><td>以「真實類別 × 預測類別」統計預測結果的表格</td><td>看出「誰被誤認成誰」</td></tr>
+      <tr><td>敏感度／召回率（Sensitivity／Recall／TPR）</td><td>實際為正中被抓到的比例</td><td>病人有沒有漏抓</td></tr>
+      <tr><td>特異度（Specificity／TNR）</td><td>實際為負中被正確判負的比例</td><td>健康的人有沒有被放過</td></tr>
+      <tr><td>偽陽性率（False Positive Rate, FPR）</td><td>實際為負中被誤判為正的比例 ＝ 1 − Specificity</td><td>健康的人被誤報的比例</td></tr>
+      <tr><td>F1 分數（F1 Score）</td><td>Precision 與 Recall 的調和平均</td><td>兩者都要顧到的綜合分數</td></tr>
+      <tr><td>Support</td><td>分類報告中各類別出現的次數</td><td>這一類有幾個樣本</td></tr>
+      <tr><td>過度擬合（Overfitting）</td><td>訓練表現好、未見資料表現差</td><td>只會背考古題</td></tr>
+      <tr><td>擬合不足（Underfitting）</td><td>連訓練資料都學不好</td><td>連考古題都不會</td></tr>
+      <tr><td>泛化（Generalization）</td><td>模型在沒見過的資料上的表現</td><td>真的懂了還是只是背起來</td></tr>
+      <tr><td>正則化（Regularization）</td><td>限制模型複雜度以減少 overfitting 的方法總稱</td><td>幫模型加限制，不讓它亂背</td></tr>
+      <tr><td>L1 正則化（Lasso）</td><td>Loss 加上權重絕對值總和</td><td>沒用的特徵直接歸零</td></tr>
+      <tr><td>L2 正則化（Ridge）</td><td>Loss 加上權重平方總和</td><td>所有權重一起縮小，大的縮更多</td></tr>
+      <tr><td>Dropout</td><td>訓練時隨機關閉部分節點</td><td>每次隨機請幾個組員休假，其他人都要會</td></tr>
+      <tr><td>Early Stopping</td><td>Val 連續 P 個 epoch 沒進步就停止</td><td>見好就收</td></tr>
+      <tr><td>Batch Normalization（BN）</td><td>對 mini-batch 標準化後再用 γ、β 縮放平移</td><td>把每層的輸入分布穩住</td></tr>
+      <tr><td>內部共變量偏移（Internal Covariate Shift）</td><td>訓練中各層輸入分布隨前面權重改變而漂移</td><td>上游一直改，下游一直重學</td></tr>
+      <tr><td>移動平均（Moving Average）</td><td>用新資料逐步微調既有估計值</td><td>老印象為主、新印象微調</td></tr>
+      <tr><td>資料擴增（Data Augmentation）</td><td>對訓練資料做變換以產生更多樣本</td><td>同一題換個問法再練一次</td></tr>
+      <tr><td>Baseline Model</td><td>不加正則化等技巧的基準模型</td><td>先知道「不加料」有多少分</td></tr>
+    </table>
+  </div>
+
+  <h2 id="formula">4. 公式與計算</h2>
+
+  <h3>4.1 二元分類指標</h3>
+  $$\text{Accuracy}=\frac{TP+TN}{\text{Total}},\quad \text{Error Rate}=1-\text{Accuracy},\quad \text{Recall (TPR)}=\frac{TP}{TP+FN}$$
+  $$\text{FPR}=\frac{FP}{FP+TN},\quad \text{Specificity (TNR)}=\frac{TN}{FP+TN},\quad \text{Precision}=\frac{TP}{TP+FP},\quad F_1=\frac{2\cdot\text{Precision}\cdot\text{Recall}}{\text{Precision}+\text{Recall}}$$
+  <p>TP：有病且判有病；FN：有病卻判沒病；FP：沒病卻判有病；TN：沒病且判沒病。<span class="tag add">補充</span>F1 公式（講義只寫「調和平均數」）。</p>
+  <p><strong>講義 COVID 例子</strong>（由講義數字反推：TP = 90、FN = 10、FP = 5、TN = 40、共 145 人）：</p>
+
+  <div class="widget" id="w-bin">
+    <p class="w-title">二元分類指標計算器</p>
+    <p class="w-desc">預設是講義的 COVID 例子。改任一格，所有指標一起更新；也可以套用自我測驗第 4 題的數字驗算。</p>
+    <div class="controls">
+      <span class="muted" style="font-size:.9rem">套用：</span>
+      <button class="btn" type="button" data-bin="90,10,5,40">講義 COVID</button>
+      <button class="btn" type="button" data-bin="80,20,40,860">自我測驗第 4 題</button>
+    </div>
+    <div class="row">
+      <div class="col" style="flex:0 1 auto;max-width:100%">
+        <div class="table-wrap" style="margin:0">
+          <table style="width:auto">
+            <tr><th></th><th>預測：有</th><th>預測：沒有</th><th class="num">小計</th></tr>
+            <tr><th>實際：有</th><td><label>TP <input type="number" id="b-tp" value="90" min="0" style="width:64px"></label></td><td><label>FN <input type="number" id="b-fn" value="10" min="0" style="width:64px"></label></td><td class="num" id="b-rp"></td></tr>
+            <tr><th>實際：沒有</th><td><label>FP <input type="number" id="b-fp" value="5" min="0" style="width:64px"></label></td><td><label>TN <input type="number" id="b-tn" value="40" min="0" style="width:64px"></label></td><td class="num" id="b-rn"></td></tr>
+            <tr><th>小計</th><td class="num" id="b-cp"></td><td class="num" id="b-cn"></td><td class="num" id="b-all"></td></tr>
+          </table>
+        </div>
+      </div>
+      <div class="col" style="flex:1 1 280px"><div class="readout" id="b-out" style="margin-top:0"></div></div>
+    </div>
+  </div>
+
+  <h3>4.2 L1 與 L2 正則化</h3>
+  $$L_{L1}=L_{\text{original}}+\lambda\sum_{j}\lvert\theta_j\rvert,\qquad L_{L2}=L_{\text{original}}+\lambda\sum_{j}\theta_j^{2}$$
+  <p>\(\theta_j\)：模型參數；\(\lambda\)：控制 Penalty 強度，越大越重。</p>
+  <p>例：權重 \((3,-0.1,0)\)、\(\lambda=0.01\)：L1 penalty \(=0.01\times(3+0.1+0)=0.031\)；L2 penalty \(=0.01\times(9+0.01+0)=0.0901\)。L2 裡大權重 3 貢獻了 0.09、小權重 0.1 幾乎沒影響 → L2 主要壓大權重；L1 對每個權重的「每單位懲罰」一樣，小權重也會被推到 0 <span class="tag add">補充</span>。</p>
+
+  <div class="widget" id="w-pen">
+    <p class="w-title">L1 vs L2：Penalty 與權重怎麼縮</p>
+    <p class="w-desc">上半：輸入權重和 λ，算出兩種 Penalty（預設是筆記的例子）。下半 <span class="tag add">補充</span>：假設不加正則化時最佳權重是 \(a\)，加上 Penalty 後最佳權重會變成多少？拉大 λ 比較兩者：<strong>L1 把小權重直接歸零</strong>，<strong>L2 讓所有權重等比例縮小</strong>、永遠不會剛好變 0。</p>
+    <div class="controls">
+      <label>權重 <input type="text" id="pen-w" value="3, -0.1, 0" style="width:150px;padding:3px 6px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);font:inherit;font-size:.92rem"></label>
+      <label>λ <input type="number" id="pen-l" value="0.01" step="0.01" min="0"></label>
+    </div>
+    <div class="readout" id="pen-out"></div>
+    <hr style="margin:16px 0 8px">
+    <div class="controls">
+      <label>λ（縮小實驗）<input type="range" id="shr-l" min="0" max="3" step="0.05" value="0.5"> <span class="val" data-for="shr-l"></span></label>
+    </div>
+    <div id="shr-bars"></div>
+    <div class="readout" id="shr-out"></div>
+  </div>
+
+  <h3>4.3 Batch Normalization</h3>
+  <p><span class="tag add">補充</span>標準化公式；仿射變換與 moving average 為講義內容：</p>
+  $$\mu_B=\frac{1}{m}\sum_{i=1}^{m}x_i,\quad \sigma_B^2=\frac{1}{m}\sum_{i=1}^{m}(x_i-\mu_B)^2,\quad \hat{x}_i=\frac{x_i-\mu_B}{\sqrt{\sigma_B^2+\epsilon}},\quad y_i=\gamma\hat{x}_i+\beta$$
+  $$\text{running\_mean}\leftarrow \text{momentum}\times\text{running\_mean}+(1-\text{momentum})\times\text{batch\_mean}$$
+  <p>\(m\)：mini-batch 大小；\(\epsilon\)：避免除以 0 的極小值；\(\gamma,\beta\)：可學習參數。STD 的更新方式相同。</p>
+  <p><span class="tag add">補充</span>參數量：CNN 中每個 channel 有一組 γ、β，所以接在 32 個 filter 的 conv 後的 BN 有 \(2\times32=64\) 個可學習參數；running_mean／running_var 不是可學習參數。</p>
+
+  <div class="widget" id="w-bn">
+    <p class="w-title">BN 逐步計算 ＋ running mean</p>
+    <p class="w-desc">預設是筆記的例子：batch \((2,4,6,8)\)、γ = 2、β = 1。標準化後平均 0、標準差 1；再經 γ、β 變成平均 β、標準差 γ。下半部模擬訓練過程中 running_mean 的累積（初始 0、momentum 0.9，前兩個 batch mean 是 5 和 4）。</p>
+    <div class="controls">
+      <label>batch <input type="text" id="bn-x" value="2, 4, 6, 8" style="width:150px;padding:3px 6px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);font:inherit;font-size:.92rem"></label>
+      <label>γ <input type="range" id="bn-g" min="0" max="4" step="0.1" value="2"> <span class="val" data-for="bn-g"></span></label>
+      <label>β <input type="range" id="bn-b" min="-3" max="3" step="0.1" value="1"> <span class="val" data-for="bn-b"></span></label>
+    </div>
+    <div class="canvas-wrap"><canvas id="bn-canvas"></canvas></div>
+    <div class="readout" id="bn-out"></div>
+    <hr style="margin:16px 0 8px">
+    <div class="controls">
+      <label>momentum <select id="rm-m"><option value="0.9">0.9</option><option value="0.99">0.99</option><option value="0.5">0.5</option></select></label>
+      <button class="btn primary" id="rm-next" type="button">下一個 batch ▶</button>
+      <button class="btn" id="rm-run" type="button">連跑 50 個</button>
+      <button class="btn" id="rm-reset" type="button">重來</button>
+    </div>
+    <div class="canvas-wrap"><canvas id="rm-canvas"></canvas></div>
+    <div class="readout" id="rm-out"></div>
+  </div>
+
+  <h3>4.4 Early Stopping <span class="tag add">補充：例子</span></h3>
+  <p>若 patience P = 3，Val Loss 依序為 0.50、0.40、0.35、0.36、0.37、0.38 → 第 3 個 epoch 之後連續 3 個 epoch 沒有進步，在第 6 個 epoch 停止，取回第 3 個 epoch 的權重。</p>
+
+  <div class="widget" id="w-es">
+    <p class="w-title">Early Stopping 模擬</p>
+    <p class="w-desc">預設是上面的例子。可以直接改 Val Loss 序列（逗號分隔）或調 P；「模擬 40 epoch」會產生一條典型的 overfitting 曲線：Train Loss 一路下降，Val Loss 先降後升。</p>
+    <div class="controls">
+      <label>Val Loss <input type="text" id="es-v" value="0.50, 0.40, 0.35, 0.36, 0.37, 0.38" style="width:min(320px,60vw);padding:3px 6px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);font:inherit;font-size:.92rem"></label>
+      <label>patience P <input type="range" id="es-p" min="1" max="10" step="1" value="3"> <span class="val" data-for="es-p"></span></label>
+    </div>
+    <div class="controls">
+      <span class="muted" style="font-size:.9rem">套用：</span>
+      <button class="btn" type="button" data-es="note">筆記例子（P = 3）</button>
+      <button class="btn" type="button" data-es="quiz">自我測驗第 5 題（P = 2）</button>
+      <button class="btn" type="button" data-es="sim">模擬 40 epoch</button>
+    </div>
+    <div class="canvas-wrap"><canvas id="es-canvas"></canvas></div>
+    <div class="readout" id="es-out"></div>
+  </div>
+
+  <h3>4.5 MixUp 與 CutMix <span class="tag add">補充：公式</span></h3>
+  $$\tilde{x}=\lambda x_A+(1-\lambda)x_B,\qquad \tilde{y}=\lambda y_A+(1-\lambda)y_B$$
+  <ul>
+    <li>MixUp：例如 \(\lambda=0.7\)，狗圖與貓圖以 7:3 疊在一起，標籤變成「狗 0.7、貓 0.3」</li>
+    <li>CutMix：標籤依面積比例混合。例如在 32×32 的 A 圖上貼一塊 16×16 的 B 圖，面積比例 \(256/1024=0.25\) → 標籤為「A 0.75、B 0.25」</li>
+    <li>可以在 <a href="#w-aug">2.11 的資料擴增元件</a>選 MixUp、CutMix 驗證</li>
+  </ul>
+
+  <h2 id="compare">5. 方法比較</h2>
+  <h3>5.1 四種正則化方法</h3>
+  <div class="table-wrap">
+    <table>
+      <tr><th>方法</th><th>核心想法</th><th>優點</th><th>缺點／注意</th><th>適用情境</th></tr>
+      <tr><td>L1</td><td>Loss 加權重絕對值懲罰</td><td>把不重要特徵歸零，有特徵選取效果</td><td>λ 太大會 underfitting</td><td>特徵很多、希望只留關鍵特徵</td></tr>
+      <tr><td>L2</td><td>Loss 加權重平方懲罰</td><td>整體權重變小、較平滑</td><td>Penalty 太高會 underfitting</td><td>通用，避免少數節點主導</td></tr>
+      <tr><td>Dropout</td><td>訓練時隨機關節點，測試時全開</td><td>學到更可靠的特徵</td><td>收斂較慢，需要更多 epoch</td><td>FC 層參數多、容易 overfit 的網路</td></tr>
+      <tr><td>Early Stopping</td><td>Val 連續 P 個 epoch 沒進步就停</td><td>簡單、省訓練時間</td><td>P 太小可能過早停止 <span class="tag add">補充</span></td><td>幾乎所有訓練</td></tr>
+      <tr><td>Batch Normalization</td><td>對 mini-batch 標準化 ＋ γ、β</td><td>穩定各層輸入分布、訓練更穩</td><td>訓練／推論行為不同，要切換模式</td><td>深層 CNN</td></tr>
+    </table>
+  </div>
+  <h3>5.2 資料擴增方法</h3>
+  <div class="table-wrap">
+    <table>
+      <tr><th>方法</th><th>類別</th><th>做法</th><th>特點</th></tr>
+      <tr><td>翻轉、旋轉、縮放、裁切、亮度對比、扭曲</td><td>基本</td><td>幾何或顏色變換</td><td>Keras／PyTorch 內建</td></tr>
+      <tr><td>CutOut</td><td>遮擋</td><td>遮住一塊固定大小的正方形，填 0（黑色）</td><td>強迫模型用多個特徵判斷</td></tr>
+      <tr><td>Random Erasing</td><td>遮擋</td><td>矩形的長寬比與面積皆隨機，填隨機數值（0～255），限制在圖內</td><td>比 CutOut 更多變化</td></tr>
+      <tr><td>Hide-and-Seek</td><td>遮擋</td><td>切成 S×S 網格，每格依機率獨立遮掉（設為 0）</td><td>主要區域被遮時會學次要區域；但可能一次遮太多或太少</td></tr>
+      <tr><td>GridMask</td><td>遮擋</td><td>規律、等間距的交錯網格遮擋</td><td>平衡「過度保留」與「過度刪除」</td></tr>
+      <tr><td>MixUp</td><td>混合</td><td>兩張圖線性混合，標籤也混合</td><td>整張圖疊在一起</td></tr>
+      <tr><td>CutMix</td><td>混合</td><td>A 圖挖一塊換成 B 圖，標籤依面積比例混合</td><td>局部替換，不是整張混</td></tr>
+      <tr><td>Copy-Paste</td><td>組合</td><td>把物件連同 mask 貼到另一張圖</td><td>可同步更新 mask、bbox、keypoints</td></tr>
+      <tr><td>Mosaic</td><td>組合</td><td>多張（常見 4 張）拼成一張</td><td>一張圖看到不同背景、尺度、位置</td></tr>
+      <tr><td>Adaptive DA</td><td>自適應</td><td>依 loss／梯度回饋動態調整種類與強度</td><td>樣本維持適當難度</td></tr>
+      <tr><td>Targeted Data Generation</td><td>針對性生成</td><td>找出容易誤判的子群，針對它生成合成樣本</td><td>把資料花在模型的弱點上</td></tr>
+    </table>
+  </div>
+
+  <h2 id="figures">6. 圖表說明</h2>
+  <ul>
+    <li><strong>Train／Val／Test 流程圖</strong>：每個 epoch 都是一個「Train → Val」的小方塊（Train 用梯度下降與反向傳播更新權重，Val 算 loss 與 accuracy），重複到 epoch n；全部結束後才在另外一份「沒看過的」Test 上算一次。</li>
+    <li><strong>MNIST 混淆矩陣</strong>：10×10 的表格，對角線綠色是答對的張數，其他格紅色是答錯；數字最大的紅色格就是最常見的錯誤，講義指出是「4 → 9」與「7 → 2」。格子內的具體數字未能擷取 <span class="tag chk">待確認</span>（<a href="#w-cm">2.2 的元件</a>用示意數字重現）</li>
+    <li><strong>COVID 二元分類表</strong>：2×2 混淆矩陣，數字如 <a href="#w-bin">4.1</a>。</li>
+    <li><strong>Classification Report</strong>：每個類別一列，欄位為 Precision、Recall、F1、Support <span class="tag add">補充</span>底下通常還有 macro avg 與 weighted avg。</li>
+    <li><strong>消防車例子</strong>：模型把紅色的東西都當成消防車，說明它學到的是「顏色」這種捷徑特徵，而不是消防車的形狀結構，這就是泛化差。</li>
+    <li><strong>Dropout 示意圖</strong>：左邊是完整的全連接網路，右邊是部分節點打叉關閉後、連線變少的網路（<a href="#w-drop">2.7 的元件</a>）。</li>
+    <li><strong>Batch Normalization 圖</strong>（csmoon-ml.com）：示意每個 mini-batch 的資料在進入下一層前先被拉回穩定的分布 <span class="tag chk">待確認</span>圖片內容未能擷取。</li>
+    <li><strong>遮擋類擴增對照圖</strong>：同一張狗的照片分別套用 CutOut（一塊黑色正方形）、Random Erasing（一塊隨機大小的雜訊矩形）、Hide-and-Seek（隨機幾格網格變黑）、GridMask（規律的網格遮擋）。</li>
+    <li><strong>MixUp／CutMix／Mosaic 圖</strong>：MixUp 是兩張圖半透明疊合；CutMix 是一張圖裡貼了另一張圖的方塊；Mosaic 是四張圖拼成田字形（都可以在 <a href="#w-aug">資料擴增元件</a>看到）。</li>
+  </ul>
+
+  <h2 id="traps">7. 常見觀念陷阱</h2>
+  <ul>
+    <li><strong>Validation ≠ Test</strong>：Validation 在訓練中用來評估與挑模型；Test 只在最後用一次。兩者常被混用，但考試要分清楚。</li>
+    <li><strong>Recall ＝ Sensitivity ＝ TPR</strong>，<strong>Specificity ＝ TNR</strong>，而且 <strong>FPR ＝ 1 − Specificity</strong>。</li>
+    <li><strong>分母不要搞錯</strong>：Recall、FPR、Specificity 的分母是「實際」有幾個正／負；Precision 的分母是「預測」有幾個正。</li>
+    <li><strong>醫療篩檢重視 Recall</strong>：寧可犧牲 Precision，也不要漏掉病人。</li>
+    <li><strong>F1 是調和平均，不是算術平均</strong>：任一個很低，F1 就會很低 <span class="tag add">補充</span>。</li>
+    <li><strong>L1 讓權重歸零（特徵選取），L2 讓所有權重變小</strong>，不要記反。</li>
+    <li><strong>Dropout 只在訓練時作用</strong>，測試時用所有節點；它改變的是模型，不是 loss。</li>
+    <li><strong>BN 訓練與推論不同</strong>：訓練用當下 batch 的統計量，推論用 running_mean／running_STD。在 PyTorch 中就是 <code>model.train()</code>／<code>model.eval()</code> 的區別 <span class="tag add">補充</span>。</li>
+    <li><strong>BN 的目的是「穩定」</strong>，不是強制平均 0、標準差 1；γ、β 是可學習參數。</li>
+    <li><strong>BN 的 mean／STD 個數 = channel 數</strong>，不是每個像素一組。</li>
+    <li><strong>資料擴增只用在訓練資料</strong>，而且是在 Data Loader 取資料時即時產生。</li>
+    <li><strong>不要一開始就加正則化</strong>，先建立 Baseline；L2 太重會 underfitting。</li>
+    <li><strong>CutOut vs Random Erasing</strong>：CutOut 是固定大小正方形、填 0；Random Erasing 是隨機長寬比與面積、填隨機值。</li>
+    <li><strong>MixUp vs CutMix</strong>：MixUp 整張疊合；CutMix 局部替換、標籤依面積比例。</li>
+  </ul>
+
+  <div class="callout">
+    <p><strong>🔗 和課堂練習的對照</strong></p>
+    <p>MNIST CNN 練習已經用了 Dropout(0.5)，也依 Validation 保留最佳模型（類似 Early Stopping 的存檔部分）。本章的混淆矩陣可以用來查出數字 9 被誤判成什麼；講義的例子正好有「4 容易被判成 9」。下一步可以試試 BN 與小幅度旋轉／平移的資料擴增。</p>
+  </div>
+
+  <h2 id="quiz">8. 自我測驗</h2>
+  <div class="quiz" data-answer="B">
+    <p class="q">1.（選擇）下列哪一種正則化方法最可能把不重要特徵的權重直接降為 0？</p>
+    <div class="opts">
+      <button data-opt="A">(A) L2</button><button data-opt="B">(B) L1</button>
+      <button data-opt="C">(C) Dropout</button><button data-opt="D">(D) Batch Normalization</button>
+    </div>
+    <div class="explain" hidden><strong>(B)</strong>。L1 會優先把不重要特徵的權重降為 0，有特徵選取效果；L2 是把所有權重一起變小（可以在 <a href="#w-pen">4.2 的元件</a>看到兩者的差別）。</div>
+  </div>
+  <div class="quiz" data-answer="C">
+    <p class="q">2.（選擇）關於 Batch Normalization，下列何者正確？</p>
+    <div class="opts">
+      <button data-opt="A">(A) 推論時仍使用當下 batch 的 mean 與 STD</button><button data-opt="B">(B) γ 與 β 是人工設定的超參數</button>
+      <button data-opt="C">(C) 在 CNN 中，每層 mean 的個數等於該層 filter 數量</button><button data-opt="D">(D) BN 必須讓輸出標準差等於 1</button>
+    </div>
+    <div class="explain" hidden><strong>(C)</strong>。(A) 推論時用 running_mean／running_STD；(B) γ、β 是可學習參數；(D) BN 的目的是穩定分布，γ、β 學出來後標準差不一定是 1。</div>
+  </div>
+  <div class="quiz">
+    <p class="q">3.（簡答）為什麼「只看 Accuracy」不夠？請舉一個混淆矩陣能回答、但 Accuracy 回答不了的問題。</p>
+    <details class="answer"><summary>看解答</summary><div>Accuracy 只給整體答對比例，看不出「哪一類比較差」、「錯成什麼」。例如模型是不是傾向把 8 判成 3、或把 4 判成 9，只有混淆矩陣的非對角線格子看得出來。</div></details>
+  </div>
+  <div class="quiz">
+    <p class="q">4.（計算）某篩檢模型結果：TP = 80、FN = 20、FP = 40、TN = 860。請計算 Accuracy、Recall、Precision、Specificity 與 F1。</p>
+    <details class="answer"><summary>看解答</summary><div>Accuracy = (80 + 860) ／ 1000 = 0.94；Recall = 80 ／ 100 = 0.8；Precision = 80 ／ 120 ≈ 0.667；Specificity = 860 ／ 900 ≈ 0.956；F1 = 2 × 0.667 × 0.8 ／ (0.667 + 0.8) ≈ 0.727。觀察：Accuracy 看起來很高，但因為負例佔大多數，Precision 其實不高。可以在 <a href="#w-bin">4.1 的計算器</a>按「自我測驗第 4 題」驗算。</div></details>
+  </div>
+  <div class="quiz">
+    <p class="q">5.（計算）BN 的 momentum = 0.9，running_mean 目前為 2.0，新的 batch mean 為 4.0，更新後 running_mean 是多少？另外，若 Early Stopping 的 P = 2，Val Loss 依序為 0.9、0.6、0.5、0.55、0.52，會在第幾個 epoch 停止？</p>
+    <details class="answer"><summary>看解答</summary><div>running_mean = 0.9 × 2.0 ＋ 0.1 × 4.0 = <strong>2.2</strong>。Early Stopping：最佳是第 3 個 epoch 的 0.5，第 4、5 個 epoch 都沒有更好，連續 2 個 epoch 沒進步 → 在<strong>第 5 個 epoch</strong> 停止，取回第 3 個 epoch 的權重（可以在 <a href="#w-es">4.4 的元件</a>驗算）。</div></details>
+  </div>
+  <div class="quiz" data-answer="D">
+    <p class="q">6.（選擇）在 32×32 的 A 圖上用 CutMix 貼一塊 8×8 的 B 圖，標籤應為？</p>
+    <div class="opts">
+      <button data-opt="A">(A) A 1、B 0（標籤不變）</button><button data-opt="B">(B) A 0.5、B 0.5</button>
+      <button data-opt="C">(C) A 0.75、B 0.25</button><button data-opt="D">(D) A 0.9375、B 0.0625</button>
+    </div>
+    <div class="explain" hidden><strong>(D)</strong>。CutMix 的標籤依面積比例：\(64/1024=0.0625\)，所以 A 佔 \(1-0.0625=0.9375\)。(C) 是 16×16 的情況。</div>
+  </div>
+
+  <footer>講義來源：<a href="https://drive.google.com/file/d/1vLQP7VFvQlf-xQfqxRqYiVRhVwITOT7U/view" target="_blank" rel="noopener">c3_model_improvement.pdf</a> · 文字筆記：<a href="https://app.notion.com/p/3ec75b0b5a1381d887e5d610be6016fd" target="_blank" rel="noopener">Notion C3</a></footer>
+</main>
+</div>
+</body>
+</html>
