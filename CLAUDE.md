@@ -25,6 +25,9 @@
 | C1 視覺機器學習模型 | c1_computer_vision_models \| iLearning 3.pdf | ✅ | ✅ |
 | C2 卷積神經網路（CNN） | c2_cnn.pdf | ✅ | ✅ |
 | C3 模型品質與改進 | c3_model_improvement \| iLearning 3.pdf | ✅ | ✅ |
+| C4 進階影像視覺模型（Part 1） | c4_advanced_cnn_part1.pdf | ✅ | ✅ |
+
+C4 講義標註 (Skip) 的 LeNet、AlexNet、EfficientNet 不在考試範圍，頁面保留但標「不考」。
 
 新增或完成章節時，請更新這張表，也要更新 `assets/common.js` 裡的 `CHAPTERS`。
 
@@ -97,6 +100,13 @@ chapters/c<n>.js      該章的互動元件，每個元件一個 IIFE，對應 H
 | C3 | BN（`#w-bn`） | (2,4,6,8)、γ=2、β=1 → x̂ ≈ (−1.342, −0.447, 0.447, 1.342)、y ≈ (−1.683, 0.106, 1.894, 3.683)；running_mean 0.5 → 0.85 |
 | C3 | Early Stopping（`#w-es`） | P=3、0.50/0.40/0.35/0.36/0.37/0.38 → 第 6 epoch 停、取回第 3；測驗題 P=2 → 第 5 epoch 停 |
 | C3 | 資料擴增（`#w-aug`） | MixUp λ=0.7 → 狗 0.7、貓 0.3；CutMix 32×32 貼 16×16 → 0.25 |
+| C4 | VGG 參數量（`#w-vgg`） | VGG16 → 138,357,544（FC 約 89%）；VGG19 → 143,667,240 |
+| C4 | Inception module（`#w-incep`）、瓶頸層（`#w-bneck`） | 3a 輸出 28×28×256；28×28×192、5×5→32、瓶頸 16 → 120,422,400 vs 12,443,648 |
+| C4 | ResNet（`#w-res`） | w₂=0 時 ResNet MSE 0；N=20、d=0.5 → 9.54×10⁻⁷；d=1.5 → 3,325 |
+| C4 | GAP（`#w-gap`） | 7×7×512 → Flatten＋FC4096 102,764,544 vs GAP＋FC1000 513,000 |
+| C4 | Fire module（`#w-fire`） | fire2（96,16,64,64）→ 11,920 vs 110,720；測驗題（128,…）→ 12,432 vs 147,584 |
+| C4 | Depthwise Separable（`#w-dsc`） | 12×12×3、5×5、128 → 614,400 vs 29,376；測驗題 16×16×32→64 same → 4,718,592 vs 598,016 |
+| C4 | MobileNet α／ρ（`#w-mob`）、Compound Scaling（`#w-scale`）、比較圖（`#w-models`） | α=0.5 → 約 0.25 倍；224→160 → 0.51 倍；φ=1 → 1.92 |
 
 C3 門檻元件的分數是依常態分位數排列產生的，讓門檻 0.5 剛好得到講義的 TP90/FN10/FP5/TN40；改分布參數後要重新確認。
 

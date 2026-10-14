@@ -1,0 +1,586 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>C4 進階影像視覺模型</title>
+  <meta name="description" content="電腦視覺 C4（Part 1）：VGG、Inception、ResNet、Global Average Pooling、SqueezeNet、MobileNet、EfficientNet">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+  <link rel="stylesheet" href="../assets/style.css">
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"></script>
+  <script defer src="../assets/common.js"></script>
+  <script defer src="c4.js"></script>
+</head>
+<body data-chapter="c4">
+<div class="layout">
+<nav class="toc" aria-label="本頁目錄"></nav>
+<main>
+  <p class="eyebrow">C4 · 講義：c4_advanced_cnn_part1</p>
+  <h1>🏛️ 進階影像視覺模型（Part 1）</h1>
+
+  <h2 id="summary">1. 本章重點摘要</h2>
+  <p>本章介紹經典的 CNN 架構演進：從最早的 LeNet、AlexNet，到「越深越好」的 VGG，再到用多種 filter 並行、並用 1×1 卷積省運算的 Inception，以及用殘差連接（Skip Connection）解決深層網路訓練困難的殘差網路（Residual Network, ResNet）。後半轉向輕量化：SqueezeNet 用 Fire module 壓低<strong>參數量</strong>，MobileNet 用深度可分離卷積（Depthwise Separable Convolution）壓低<strong>運算量</strong>，EfficientNet 則用複合縮放（Compound Scaling）同時放大深度、寬度與解析度。這章把 C2 的 CNN 基礎與 C3 的改進技巧（BN、正則化）串成實際的經典模型，也是之後遷移學習、物件偵測等章節常用的骨幹網路（backbone）來源。</p>
+  <div class="callout warn">
+    <p>講義標註「(Skip)」的 <strong>LeNet、AlexNet、EfficientNet 三節不在考試範圍</strong>，內容保留僅供參考，標題都標上「不考」。檔名為 part1，後續應還有 Part 2。</p>
+  </div>
+
+  <h2 id="outline">2. 章節大綱</h2>
+
+  <h3>2.1 LeNet（不考）</h3>
+  <ul>
+    <li>1995 年提出，用於美國郵遞區號的手寫數字辨識（MNIST）</li>
+    <li>架構：兩層 Conv ＋ Max Pool（2×2、stride 2）
+      <ul>
+        <li>Conv1：6 個 5×5 filters（stride 1、padding 0）</li>
+        <li>Conv2：16 個 5×5 filters（stride 1、padding 0）</li>
+        <li>第二次 Max Pool 後，5×5×16 展平成 400 個節點 → FC 120 → FC 84 → 輸出 10 類</li>
+      </ul>
+    </li>
+    <li>在 MNIST 達到 99.3% Accuracy</li>
+    <li>逐層尺寸與參數量見 <a href="#lenet">4.8</a></li>
+  </ul>
+
+  <h3>2.2 AlexNet（不考）</h3>
+  <ul>
+    <li>2012 年提出（比 LeNet 晚 17 年），ILSVRC 2012 冠軍 <span class="tag chk">待確認</span>講義寫成「ILSVRX」，應為 ILSVRC</li>
+    <li>共 8 層：前 5 層 Conv、後 3 層 FC</li>
+    <li>超過 6,000 萬（60M）參數，用兩張 GPU 訓練超過一週</li>
+  </ul>
+
+  <h3>2.3 VGGNet</h3>
+  <ul>
+    <li>2014 年提出，ImageNet（1000 類）top-5 Accuracy 92.7%</li>
+    <li><strong>VGG16：13 層 Conv ＋ 3 層 FC</strong>；<strong>VGG19：16 層 Conv ＋ 3 層 FC</strong></li>
+    <li>是「典型 CNN」的範本：多層 Conv 後接 Pooling，filter 數量逐漸增加，最後接 FC</li>
+    <li>準確率高但訓練很慢，參數量龐大（VGG16 約 1.38 億）</li>
+    <li>優點：「深度」網路設計、規範的結構；缺點：計算需求大、參數冗餘</li>
+  </ul>
+
+  <div class="widget" id="w-vgg">
+    <p class="w-title">VGG 逐段參數量：參數都跑去哪了？</p>
+    <p class="w-desc"><span class="tag add">補充</span>講義「龐大的參數量」那頁的圖未能擷取，這裡直接逐層算（輸入 224×224×3、3×3 卷積 same padding、含 bias）。VGG16 合計應為 <strong>138,357,544</strong>。打開「FC 換成 GAP」看看 ResNet、SqueezeNet 的做法能省掉多少。</p>
+    <div class="controls">
+      <div class="seg"><button class="btn" type="button" data-vgg="16" aria-pressed="true">VGG16</button><button class="btn" type="button" data-vgg="19" aria-pressed="false">VGG19</button></div>
+      <label><input type="checkbox" id="vgg-gap"> FC 換成 GAP（→ 1000 類）</label>
+    </div>
+    <div class="table-wrap" id="vgg-table"></div>
+    <div class="bars" id="vgg-bars"></div>
+    <div class="readout" id="vgg-out"></div>
+  </div>
+
+  <h3>2.4 Inception Network</h3>
+  <ul>
+    <li>動機：設計 CNN 要決定很多超參數（filter size、stride、padding、層數、FC 層數…），其中 <strong>filter size 最難選</strong>：小 kernel 擅長捕捉細節，大 kernel 擅長捕捉較大範圍的特徵</li>
+    <li>想法：<strong>不必選</strong>，在同一層並行使用多種 filter size，再把結果串接，讓網路自己學</li>
+    <li>Inception V1（又稱 GoogLeNet）由 Google 於 2014 年提出，ILSVRC 2014 分類冠軍</li>
+    <li>Inception module：
+      <ul>
+        <li>並行使用 1×1、3×3、5×5 卷積與 max pooling</li>
+        <li>所有分支用 <strong>same padding、stride = 1</strong>，輸出寬高相同，才能在<strong>通道方向串接（concatenate）</strong></li>
+        <li><strong>max pooling 不改變通道數</strong>，所以 GoogLeNet 在 pooling 後接 1×1 卷積，把 192 個通道壓成 32 個</li>
+        <li>不同 kernel 大小對應不同感受野（Receptive Field），可同時擷取多尺度特徵</li>
+      </ul>
+    </li>
+    <li>運算量問題 → 用 <strong>1×1 卷積當瓶頸層（Bottleneck Layer）</strong>：先把 192 通道壓到 16，再做 5×5 輸出 32 通道，乘法次數從約 120M 降到約 12.4M（約 1/10）；只要壓縮比例合理，對準確率影響不大（計算見 <a href="#w-bneck">4.2</a>）</li>
+    <li>整體設計：Stem → 多個 Inception Block → 輸出；部分版本有<strong>輔助分類器（Auxiliary Classifier）</strong>
+      <ul>
+        <li>Total Loss = Main Loss ＋ \(w_1\) × Auxiliary Loss1 ＋ \(w_2\) × Auxiliary Loss2</li>
+        <li>輔助分類器<strong>只在訓練時使用</strong>，推論時移除</li>
+      </ul>
+    </li>
+    <li>名稱由來：作者引用電影「全面啟動（Inception）」的「We need to go deeper」迷因；deeper 有雙關：模組中再嵌模組的巢狀結構，以及層數加深</li>
+    <li>優點：多尺度特徵擷取、用 1×1 卷積高效利用運算資源、深層仍可訓練（輔助分類器）；缺點：結構複雜、難移植到資源有限的設備、參數與架構選擇複雜</li>
+  </ul>
+
+  <div class="widget" id="w-incep">
+    <p class="w-title">Inception module：四條路並行再串接</p>
+    <p class="w-desc"><span class="tag add">補充</span>用 GoogLeNet 第一個 Inception 模組（3a）的設定：輸入 28×28×192，四個分支輸出 64、128、32、32 個通道。切換「1×1 降維」看運算量的差別；取消「same padding」看看為什麼各分支寬高一定要相同。</p>
+    <div class="controls">
+      <label><input type="checkbox" id="inc-red" checked> 使用 1×1 降維（瓶頸層）</label>
+      <label><input type="checkbox" id="inc-same" checked> 所有分支 same padding、stride 1</label>
+    </div>
+    <div id="inc-svg"></div>
+    <div class="readout" id="inc-out"></div>
+  </div>
+
+  <h3>2.5 ResNet</h3>
+  <ul>
+    <li>一般 CNN 是線性順序的序列；模型很深時效能反而下降，而且<strong>不是過擬合</strong>（例如 50 層比 20 層還差）</li>
+    <li>原因之一：<strong>梯度爆炸／消失（Exploding／Vanishing Gradients）</strong>：N 層網路更新時要把 N 個導數相乘，導數大就指數成長、小就指數消失</li>
+    <li>解法：<strong>把前面的輸入直接加到後面的輸出</strong>（殘差連接、skip connection）</li>
+    <li>講義圖示：普通網路「期望」層數越多 loss 越低，「現實」層數太多 loss 反而上升</li>
+    <li>ResNet34：多個連續 3×3 卷積，特徵圖深度依序 64、128、256、512，<strong>每 2 個卷積繞過一次</strong>；卷積輸出尺寸不變（padding 1、stride 1）</li>
+    <li>層數版本：18、34、50、101、152、1202</li>
+    <li>因為使用 <strong>Global Average Pooling</strong>，只需少量甚至不需要 FC 層，模型可以更深</li>
+    <li><strong>優化觀點（為什麼 ResNet 有效）</strong>：
+      <ul>
+        <li>理論上更深的網路至少應與淺網路一樣好（多出的層只要學會「什麼都不做」，即恆等映射 \(H(x)=x\)）</li>
+        <li>傳統 CNN：\(H(x)=\text{Layer}_n(\cdots\text{Layer}_1(x)\cdots)\)，要讓多層非線性網路逼近恆等函數，對 SGD 等優化器很困難</li>
+        <li>ResNet 改寫成 <strong>\(H(x)=F(x)+x\)</strong>，堆疊的層只需學殘差 \(F(x)=H(x)-x\)；要達到恆等只要 \(F(x)\to0\)，容易很多</li>
+        <li>\(F(x)\) 是多層串起來（卷積 → BN → ReLU → 卷積 → BN），任一層輸出為 0，\(F(x)\) 就是 0</li>
+        <li>實際上最佳映射通常不會剛好是恆等函數，但若接近恆等，學一個小的修正量 \(F(x)\) 比從頭學整個 \(H(x)\) 容易得多</li>
+        <li>講義比喻：傳統網路要學生每次從空白紙重畫；ResNet 先給原圖，只要修改需要改的地方</li>
+      </ul>
+    </li>
+    <li>優點：能有效訓練深層網路、ImageNet 表現優於前代、可從 18 層延伸到 152 層並廣泛作為 backbone、降低優化難度加快收斂</li>
+    <li>缺點：運算量與記憶體需求大，不利部署在行動裝置；許多 block 學到的殘差很小，參數使用效率不佳</li>
+  </ul>
+
+  <div class="widget" id="w-res">
+    <p class="w-title">為什麼殘差比較好學：讓兩層網路學會「什麼都不做」</p>
+    <p class="w-desc"><span class="tag add">補充</span>用一維的小例子模擬一個 block：普通網路 \(H(x)=w_2\,\text{ReLU}(w_1x)\)，ResNet \(H(x)=x+w_2\,\text{ReLU}(w_1x)\)。目標是恆等映射 \(H(x)=x\)（虛線）。調 \(w_1, w_2\) 試著讓兩條曲線貼上虛線：ResNet 只要把 \(w_2\) 拉到 0 就完成；普通網路怎麼調都只能對一半。</p>
+    <div class="controls">
+      <label>\(w_1\) <input type="range" id="res-w1" min="-2" max="2" step="0.1" value="1"> <span class="val" data-for="res-w1"></span></label>
+      <label>\(w_2\) <input type="range" id="res-w2" min="-2" max="2" step="0.1" value="1"> <span class="val" data-for="res-w2"></span></label>
+      <button class="btn" id="res-zero" type="button">w₂ = 0</button>
+    </div>
+    <div class="canvas-wrap"><canvas id="res-canvas"></canvas></div>
+    <div class="readout" id="res-out"></div>
+    <hr style="margin:16px 0 8px">
+    <p class="muted" style="font-size:.92rem;margin:0">梯度要穿過 N 層：普通網路每層乘上導數 \(d\)；ResNet 每個 block 的導數是 \(\partial H/\partial x=1+F'\)，多了一條「+1」的捷徑。</p>
+    <div class="controls">
+      <label>層數 N <input type="range" id="grad-n" min="2" max="50" step="1" value="20"> <span class="val" data-for="grad-n"></span></label>
+      <label>普通網路每層導數 \(d\) <input type="range" id="grad-d" min="0.1" max="1.9" step="0.05" value="0.5"> <span class="val" data-for="grad-d"></span></label>
+      <label>ResNet 殘差分支導數 \(F'\) <input type="range" id="grad-f" min="-0.3" max="0.3" step="0.01" value="0.05"> <span class="val" data-for="grad-f"></span></label>
+    </div>
+    <div class="canvas-wrap"><canvas id="grad-canvas"></canvas></div>
+    <div class="readout" id="grad-out"></div>
+  </div>
+
+  <h3>2.6 Global Average Pooling（GAP）</h3>
+  <ul>
+    <li>每張特徵圖取平均：7×7×512 → 1×1×512</li>
+    <li>優點：
+      <ul>
+        <li><strong>大幅減少參數</strong>：GAP 本身沒有可學習參數，取代 flatten 後的大型 FC 層</li>
+        <li><strong>增強泛化、降低過擬合</strong>：參數少、複雜度低，等於一種 Regularization</li>
+        <li><strong>對輸入尺寸更靈活</strong>：FC 要求固定長度輸入；GAP 不論特徵圖是 7×7 還是 10×10 都輸出同樣長度（但解析度差太多準確率仍可能下降）</li>
+      </ul>
+    </li>
+    <li>缺點：
+      <ul>
+        <li><strong>丟失空間資訊</strong>：只知道特徵整體強度，不知道在哪裡；對分類影響不大，但不適合直接用於物件偵測、語意分割</li>
+        <li><strong>小物體訊號可能被稀釋</strong>：與大片背景一起平均而被沖淡，有時改用 Global Max Pooling</li>
+      </ul>
+    </li>
+  </ul>
+
+  <div class="widget" id="w-gap">
+    <p class="w-title">GAP vs Flatten：一張特徵圖變成一個數字</p>
+    <p class="w-desc">下面是某一個通道的特徵圖（數值 0～9）。點格子可以切換「有反應／沒反應」，觀察 GAP 和 Global Max Pooling 的差別；預設是一個只佔一小塊的物體（小物體會被稀釋）。下半部比較 flatten＋FC 與 GAP 的參數量，改特徵圖大小看看哪一個的長度會跟著變。</p>
+    <div class="controls">
+      <label>特徵圖大小 <select id="gap-n"><option value="7" selected>7×7</option><option value="10">10×10</option><option value="14">14×14</option></select></label>
+      <span class="muted" style="font-size:.9rem">套用：</span>
+      <button class="btn" type="button" data-gap="small">小物體</button>
+      <button class="btn" type="button" data-gap="big">大物體</button>
+      <button class="btn" type="button" data-gap="shift">同一物體移到別處</button>
+    </div>
+    <div class="row">
+      <div class="col" id="gap-grid"></div>
+      <div class="col" style="flex:1 1 220px"><div class="readout" id="gap-out" style="margin-top:0"></div></div>
+    </div>
+    <div class="readout" id="gap-param"></div>
+  </div>
+
+  <h3>2.7 訓練效率 vs 計算成本</h3>
+  <ul>
+    <li>計算成本：完成一次運算（例如一個 batch 的前向與反向傳播）需要多少資源</li>
+    <li>訓練效率：需要多少訓練步數（或資料量）才能達到目標性能</li>
+    <li><strong>總訓練成本 ≈ 計算成本 × 所需步數</strong></li>
+    <li>四象限：CP 值、直上魂、哪個最便宜、盤子（見 <a href="#quadrant">5.3</a>）</li>
+  </ul>
+
+  <h3>2.8 SqueezeNet</h3>
+  <ul>
+    <li>2016 年提出；目標：維持 AlexNet 等級準確率，大幅縮小模型</li>
+    <li>小模型的好處：分散式訓練時伺服器間傳輸量少、透過網路更新模型需要的頻寬小（例如自駕車遠端更新）、更容易部署在嵌入式系統</li>
+    <li>參數量約為 AlexNet 的 <strong>1/50</strong>，搭配模型壓縮後檔案可小於 0.5MB</li>
+    <li>三個設計策略：
+      <ol>
+        <li>把部分 3×3 filter 換成 1×1，每個 filter 參數變 1/9</li>
+        <li>減少輸入到 3×3 filter 的通道數（該層參數 = 輸入通道數 × filter 數 × 3 × 3）</li>
+        <li><strong>延後下採樣</strong>，讓卷積層在較大的特徵圖上運算，維持準確率</li>
+      </ol>
+      策略一、二減少參數，策略三在參數有限下保持準確率；前兩個策略透過 Fire module 實現
+    </li>
+    <li><strong>Fire Module</strong>：
+      <ul>
+        <li>squeeze layer（只有 1×1 filter）→ expand layer（1×1 與 3×3 filter 混合）</li>
+        <li>三個超參數：\(s_{1\times1}\)（squeeze 的 1×1 數量）、\(e_{1\times1}\)、\(e_{3\times3}\)（expand 的 1×1、3×3 數量）</li>
+        <li>squeeze 的 filter 數遠小於 expand（約 1/8），先壓縮再展開 → 對應策略二</li>
+        <li>講義示意圖：\(s_{1\times1}=3\)、\(e_{1\times1}=4\)、\(e_{3\times3}=4\)</li>
+      </ul>
+    </li>
+    <li>整體架構：conv1 → 8 個 Fire module（fire2～fire9）→ conv10
+      <ul>
+        <li>三次 max pooling 在 conv1、fire4、fire8 之後 → 對應策略三</li>
+        <li>移除龐大的 FC 層：conv10 用 1×1 卷積直接輸出 1,000 個通道（= 類別數），再經 GAP 送入 softmax</li>
+        <li>變體：加上 simple bypass 或 complex bypass（類似 ResNet 捷徑）</li>
+      </ul>
+    </li>
+    <li>優點：模型極小、準確率與 AlexNet 相當；結合壓縮可縮到 AlexNet 的 1/510；適合儲存空間或頻寬有限的情境</li>
+    <li>缺點：準確率只有 AlexNet 水準，明顯低於 VGG、ResNet；<strong>參數少不等於運算少</strong>，延後下採樣使運算量甚至高於 AlexNet</li>
+  </ul>
+
+  <div class="widget" id="w-fire">
+    <p class="w-title">Fire module 參數量計算器</p>
+    <p class="w-desc">預設是 SqueezeNet 的 fire2（輸入 96 通道、\(s_{1\times1}=16\)、\(e_{1\times1}=64\)、\(e_{3\times3}=64\)），合計應為 <strong>11,920</strong>。右邊會和「直接用一層 3×3 卷積得到同樣輸出通道數」比較。含 bias。</p>
+    <div class="controls">
+      <label>輸入通道 <input type="number" id="fire-in" value="96" min="1"></label>
+      <label>\(s_{1\times1}\) <input type="number" id="fire-s" value="16" min="1"></label>
+      <label>\(e_{1\times1}\) <input type="number" id="fire-e1" value="64" min="0"></label>
+      <label>\(e_{3\times3}\) <input type="number" id="fire-e3" value="64" min="0"></label>
+    </div>
+    <div class="controls">
+      <span class="muted" style="font-size:.9rem">套用：</span>
+      <button class="btn" type="button" data-fire="96,16,64,64">fire2</button>
+      <button class="btn" type="button" data-fire="3,3,4,4">講義示意圖（3、4、4）</button>
+      <button class="btn" type="button" data-fire="128,16,64,64">自我測驗第 5 題</button>
+    </div>
+    <div id="fire-svg"></div>
+    <div class="readout" id="fire-out"></div>
+  </div>
+
+  <h3>2.9 MobileNet</h3>
+  <ul>
+    <li>2017 年提出；動機：VGG、ResNet 參數與運算量大，手機／嵌入式裝置放不下、推論（inference，即 forward propagation）太慢</li>
+    <li>行動裝置運算能力低（便宜、省電），需要訓練小模型或壓縮模型</li>
+    <li>兩個關鍵：<strong>Depthwise Separable Convolution</strong> 與<strong>兩個超參數</strong></li>
+    <li>Depthwise Separable Convolution = <strong>Depthwise</strong>（每個 channel 各自用一個 k×k×1 的 kernel）＋ <strong>Pointwise</strong>（1×1 卷積做通道的線性組合）
+      <ul><li>講義例子運算量約為一般卷積的 1/20（計算見 <a href="#w-dsc">4.3</a>）</li></ul>
+    </li>
+    <li>兩個超參數（見 <a href="#w-mob">4.4</a>）：
+      <ul>
+        <li><strong>Width Multiplier α</strong> ∈ (0, 1]：每層輸入輸出通道數都乘 α（常見 1.0、0.75、0.5、0.25）；運算量與參數量約變為 α² 倍</li>
+        <li><strong>Resolution Multiplier ρ</strong>：縮小輸入解析度（預設 224，常見 224、192、160、128）；運算量約變為 ρ² 倍，<strong>參數量不變</strong></li>
+      </ul>
+    </li>
+    <li>優點：約 420 萬參數（VGG16 的 1/32）、運算量約 VGG16 的 1/27、ImageNet 準確率接近 VGG16、可用 α 與 ρ 靈活調整</li>
+    <li>缺點：準確率低於 ResNet，α 或解析度太小時下降明顯；<strong>運算量減少不一定等比例變快</strong>（depthwise conv 在 GPU 上硬體利用率差）；沒有捷徑連接難以加深（MobileNetV2 改進）</li>
+  </ul>
+
+  <h3>2.10 EfficientNet（不考）</h3>
+  <ul>
+    <li>2019 年提出</li>
+    <li>動機：CNN 常在固定資源下設計再放大（例如 ResNet-18 → ResNet-200），過去只調單一維度（深度、寬度或解析度），需大量手動調整且不易達最佳</li>
+    <li>發現：放大任一維度都能提升準確率，但模型越大增益越小；<strong>平衡放大所有維度效果最好</strong></li>
+    <li><strong>Compound Scaling</strong>：用固定係數 α、β、γ 同時放大深度、寬度、解析度，由 φ 控制放大程度（見 <a href="#w-scale">4.7</a>）</li>
+    <li>網格搜尋兩步驟：
+      <ol>
+        <li>固定 φ = 1，對 Baseline 做小範圍網格搜尋，得到 B0 的 α = 1.2、β = 1.1、γ = 1.15</li>
+        <li>固定 α、β、γ，調整 φ，把 B0 放大成 B1～B7</li>
+      </ol>
+      只需在小模型上搜尋一次，避開大模型上搜尋的高成本
+    </li>
+    <li>成果：B7 在 ImageNet top-1 84.3%，比當時最佳模型小 8.4 倍、推論快 6.1 倍；compound scaling 也可用在其他架構（MobileNet +1.4%、ResNet +0.7%）</li>
+    <li>EfficientNet-B0 由<strong>神經架構搜尋（Neural Architecture Search, NAS）</strong>自動搜尋，同時考慮準確率與 FLOPS；主要區塊為 <strong>MBConv</strong>（≈ depthwise ＋ pointwise ＋ skip connection，源自 MobileNetV2）</li>
+    <li>優點：準確率與運算效率比高、B0～B7 適應多種場景、遷移學習表現佳</li>
+    <li>缺點：Baseline 依賴 NAS、搜尋成本高；B6、B7 記憶體需求大、訓練慢；FLOPS 低不等於實際速度快</li>
+  </ul>
+
+  <h2 id="glossary">3. 關鍵名詞表</h2>
+  <div class="table-wrap">
+    <table class="glossary">
+      <tr><th>名詞（中／英）</th><th>定義</th><th>一句話直覺解釋</th></tr>
+      <tr><td>Top-5 Accuracy</td><td>正確答案落在模型前 5 個猜測內就算對 <span class="tag add">補充</span></td><td>猜 5 次有中就算</td></tr>
+      <tr><td>感受野（Receptive Field）</td><td>輸出一個值所對應的輸入區域大小</td><td>這個神經元「看得到」多大範圍</td></tr>
+      <tr><td>Inception Module</td><td>同一層並行 1×1、3×3、5×5 卷積與 pooling 再串接</td><td>不確定用哪種鏡頭，就全部拍再合併</td></tr>
+      <tr><td>1×1 卷積（Pointwise Convolution）</td><td>只在通道方向做線性組合的卷積</td><td>調整通道數的「旋鈕」</td></tr>
+      <tr><td>瓶頸層（Bottleneck Layer）</td><td>先用 1×1 壓低通道數再做大 kernel 卷積</td><td>先瘦身再做重工作</td></tr>
+      <tr><td>輔助分類器（Auxiliary Classifier）</td><td>接在網路中間、只在訓練時加入 loss 的分類器</td><td>中途加考，讓前面的層也收得到訊號</td></tr>
+      <tr><td>殘差連接（Residual／Skip Connection）</td><td>把輸入 x 直接加到幾層後的輸出</td><td>給一條捷徑，梯度也能走</td></tr>
+      <tr><td>殘差（Residual）\(F(x)\)</td><td>\(F(x)=H(x)-x\)</td><td>只學「要改的部分」</td></tr>
+      <tr><td>恆等映射（Identity Mapping）</td><td>\(H(x)=x\)，輸出等於輸入</td><td>什麼都不做</td></tr>
+      <tr><td>梯度爆炸／消失（Exploding／Vanishing Gradient）</td><td>多層導數相乘後變得極大或極小</td><td>傳話遊戲傳太多手，訊息放大或消失</td></tr>
+      <tr><td>全域平均池化（Global Average Pooling, GAP）</td><td>每張特徵圖取一個平均值</td><td>每個特徵只留「整體強度」</td></tr>
+      <tr><td>骨幹網路（Backbone）</td><td>作為其他任務特徵擷取器的主幹網路</td><td>各種任務共用的「眼睛」</td></tr>
+      <tr><td>Fire Module</td><td>squeeze（1×1）→ expand（1×1 ＋ 3×3）</td><td>先壓扁再展開</td></tr>
+      <tr><td>下採樣（Downsampling）</td><td>縮小特徵圖空間尺寸（如 pooling、stride 2）</td><td>把圖縮小</td></tr>
+      <tr><td>Depthwise Convolution</td><td>每個輸入通道各自用一個 k×k×1 kernel</td><td>每個通道自己掃自己的</td></tr>
+      <tr><td>深度可分離卷積（Depthwise Separable Convolution）</td><td>Depthwise ＋ Pointwise 兩步取代一般卷積</td><td>「看空間」和「混通道」分開做</td></tr>
+      <tr><td>Width Multiplier α</td><td>每層通道數乘上 α</td><td>把網路「變瘦」</td></tr>
+      <tr><td>Resolution Multiplier ρ</td><td>輸入解析度乘上 ρ</td><td>把圖片「變小」</td></tr>
+      <tr><td>FLOPS</td><td>浮點運算次數，衡量運算量</td><td>要算多少次乘加</td></tr>
+      <tr><td>複合縮放（Compound Scaling）</td><td>以固定比例同時放大深度、寬度、解析度</td><td>放大時高、胖、解析度一起長</td></tr>
+      <tr><td>神經架構搜尋（Neural Architecture Search, NAS）</td><td>用演算法自動搜尋網路架構</td><td>讓電腦幫你設計模型</td></tr>
+      <tr><td>MBConv</td><td>Mobile Inverted Bottleneck Conv：depthwise ＋ pointwise ＋ skip</td><td>MobileNetV2 的基本積木</td></tr>
+    </table>
+  </div>
+
+  <h2 id="formula">4. 公式與計算</h2>
+
+  <h3>4.1 卷積運算量</h3>
+  $$\text{FLOPS}_{\text{conv}}\propto H\times W\times C_{in}\times C_{out}\times k^2$$
+  <p>\(H, W\)：輸出特徵圖高寬；\(C_{in}, C_{out}\)：輸入／輸出通道數；\(k\)：kernel 大小。寬度（通道數）或解析度加倍 → FLOPS × 4；深度（層數）加倍 → FLOPS × 2。</p>
+  <p>參數量則和 \(H, W\) 無關：\((k^2C_{in}+1)\times C_{out}\)。這就是「解析度只影響運算、不影響參數」的原因（見 <a href="#w-mob">4.4</a>）<span class="tag add">補充</span>。</p>
+
+  <h3>4.2 Inception 瓶頸層</h3>
+  <p><span class="tag add">補充</span>講義文字未寫出特徵圖大小；以下以常見的 28×28×192 輸入計算，結果與講義的 120M、2.4M、10M 吻合。</p>
+  <ul>
+    <li>直接 5×5 卷積輸出 32 通道：\(28\times28\times32\times(5\times5\times192)=120{,}422{,}400\approx120\text{M}\)</li>
+    <li>先 1×1 壓到 16 通道：\(28\times28\times16\times192=2{,}408{,}448\approx2.4\text{M}\)</li>
+    <li>再 5×5 輸出 32 通道：\(28\times28\times32\times(5\times5\times16)=10{,}035{,}200\approx10\text{M}\)</li>
+    <li>合計約 12.4M，約為原本的 1/10</li>
+  </ul>
+
+  <div class="widget" id="w-bneck">
+    <p class="w-title">瓶頸層計算器</p>
+    <p class="w-desc">預設是講義的例子：28×28×192 → 5×5 卷積 → 32 通道，瓶頸 16 通道。拉動瓶頸寬度，看運算量怎麼變（瓶頸太窄雖然更省，但資訊可能被壓掉，講義說「只要壓縮比例合理，對準確率影響不大」）。</p>
+    <div class="controls">
+      <label>輸入 H=W <input type="number" id="bn-hw" value="28" min="1"></label>
+      <label>輸入通道 <input type="number" id="bn-c" value="192" min="1"></label>
+      <label>kernel <select id="bn-k"><option value="3">3×3</option><option value="5" selected>5×5</option><option value="7">7×7</option></select></label>
+      <label>輸出通道 <input type="number" id="bn-o" value="32" min="1"></label>
+    </div>
+    <div class="controls">
+      <label>瓶頸通道 <input type="range" id="bn-b" min="1" max="192" step="1" value="16"> <span class="val" data-for="bn-b"></span></label>
+    </div>
+    <div id="bneck-svg"></div>
+    <div class="readout" id="bneck-out"></div>
+  </div>
+
+  <h3>4.3 Depthwise Separable Convolution</h3>
+  <p><strong>講義例子</strong>：12×12×3 輸入、5×5 kernel、輸出 8×8×128</p>
+  <ul>
+    <li>一般卷積：每個位置 \(5\times5\times3=75\) 次乘法，共 \(75\times64\times128=614{,}400\)</li>
+    <li>Depthwise：\(5\times5\times64\times3=4{,}800\)</li>
+    <li>Pointwise：\(3\times64\times128=24{,}576\)</li>
+    <li>合計 29,376，約為一般卷積的 1/20.9</li>
+  </ul>
+  <p><span class="tag add">補充</span>一般式：</p>
+  $$\frac{\text{Depthwise Separable}}{\text{一般卷積}}=\frac{HWC_{in}k^2+HWC_{in}C_{out}}{HWC_{in}C_{out}k^2}=\frac{1}{C_{out}}+\frac{1}{k^2}$$
+  <p>驗證：\(1/128+1/25\approx0.0478\approx1/20.9\)；3×3 kernel 時約省 8～9 倍。</p>
+
+  <div class="widget" id="w-dsc">
+    <p class="w-title">一般卷積 vs Depthwise Separable：逐步數乘法</p>
+    <p class="w-desc">預設是講義的例子（應得到 614,400 vs 29,376）。上方圖示三種 kernel 的形狀：一般卷積是一整塊 k×k×C<sub>in</sub>；depthwise 拆成 C<sub>in</sub> 片 k×k×1；pointwise 是 1×1×C<sub>in</sub> 的細長條。</p>
+    <div class="controls">
+      <label>輸入 H=W <input type="number" id="dsc-hw" value="12" min="1"></label>
+      <label>C<sub>in</sub> <input type="number" id="dsc-ci" value="3" min="1"></label>
+      <label>kernel <select id="dsc-k"><option value="3">3×3</option><option value="5" selected>5×5</option><option value="7">7×7</option></select></label>
+      <label>C<sub>out</sub> <input type="number" id="dsc-co" value="128" min="1"></label>
+      <label>padding <select id="dsc-p"><option value="valid" selected>valid（不補）</option><option value="same">same</option></select></label>
+    </div>
+    <div class="controls">
+      <span class="muted" style="font-size:.9rem">套用：</span>
+      <button class="btn" type="button" data-dsc="12,3,5,128,valid">講義例子</button>
+      <button class="btn" type="button" data-dsc="16,32,3,64,same">自我測驗第 4 題</button>
+    </div>
+    <div id="dsc-svg"></div>
+    <div class="readout" id="dsc-out"></div>
+  </div>
+
+  <h3>4.4 MobileNet 兩個超參數</h3>
+  $$\text{運算量}\propto\alpha^2\rho^2,\qquad \text{參數量}\propto\alpha^2\ \ (\text{與 }\rho\text{ 無關})$$
+  <ul>
+    <li>例：64 → 128 通道的層，α = 0.5 → 32 → 64；運算量與參數量約變 \(0.5^2=0.25\) 倍</li>
+    <li>例：解析度 224 → 160，\(\rho\approx0.714\)，運算量約變 \(0.714^2\approx0.51\) 倍，參數量不變</li>
+  </ul>
+
+  <div class="widget" id="w-mob">
+    <p class="w-title">α 與 ρ 怎麼影響運算量和參數量</p>
+    <p class="w-desc">上半是講義的例子：某一層 64 → 128 通道（這裡假設是 3×3 depthwise separable 層、輸入解析度 224 時特徵圖 112×112）。下半 <span class="tag add">補充</span>用 MobileNet 論文中 1.0 MobileNet-224 的 569M 乘加、4.2M 參數，以 α²ρ²、α² 估算整個模型。</p>
+    <div class="controls">
+      <label>α <select id="mob-a"><option value="1" selected>1.0</option><option value="0.75">0.75</option><option value="0.5">0.5</option><option value="0.25">0.25</option></select></label>
+      <label>解析度 <select id="mob-r"><option value="224" selected>224</option><option value="192">192</option><option value="160">160</option><option value="128">128</option></select></label>
+    </div>
+    <div class="controls">
+      <span class="muted" style="font-size:.9rem">套用：</span>
+      <button class="btn" type="button" data-mob="0.5,224">講義 α = 0.5</button>
+      <button class="btn" type="button" data-mob="1,160">講義 224 → 160</button>
+      <button class="btn" type="button" data-mob="0.5,160">0.50 MobileNet-160</button>
+      <button class="btn" type="button" data-mob="1,224">回到 1.0／224</button>
+    </div>
+    <div class="readout" id="mob-out"></div>
+    <div class="bars" id="mob-bars" style="margin-top:10px"></div>
+  </div>
+
+  <h3>4.5 ResNet 殘差學習</h3>
+  $$H(x)=F(x)+x\quad\Rightarrow\quad F(x)=H(x)-x$$
+  <ul>
+    <li><span class="tag add">補充</span>反向傳播時 \(\dfrac{\partial H}{\partial x}=\dfrac{\partial F}{\partial x}+1\)，那個「+1」讓梯度至少有一條不會衰減的路</li>
+    <li><span class="tag add">補充</span>梯度消失／爆炸的數值感：20 層每層導數 0.5 → \(0.5^{20}\approx9.5\times10^{-7}\)；每層 1.5 → \(1.5^{20}\approx3{,}325\)（在 <a href="#w-res">2.5 的元件</a>下半部可以驗證）</li>
+  </ul>
+
+  <h3>4.6 GAP 省下的參數 <span class="tag add">補充</span></h3>
+  <ul>
+    <li>7×7×512 展平 = 25,088 維，若接 4,096 節點的 FC（VGG 的做法）：\((25{,}088+1)\times4{,}096=102{,}764{,}544\) 個參數</li>
+    <li>改用 GAP → 512 維，GAP 本身 0 參數；接 1,000 類輸出只要 \((512+1)\times1{,}000=513{,}000\)</li>
+    <li>可以在 <a href="#w-gap">2.6 的元件</a>改特徵圖大小比較</li>
+  </ul>
+
+  <h3>4.7 EfficientNet Compound Scaling（不考）</h3>
+  $$\text{depth}=\alpha^{\phi},\quad \text{width}=\beta^{\phi},\quad \text{resolution}=\gamma^{\phi},\qquad \alpha\cdot\beta^2\cdot\gamma^2\approx2,\ \ \alpha,\beta,\gamma\ge1$$
+  <ul>
+    <li>φ 每增加 1，總運算量約加倍；寬度與解析度平方是因為 FLOPS 與它們成平方關係（見 4.1）</li>
+    <li>驗證 B0 係數：\(1.2\times1.1^2\times1.15^2=1.2\times1.21\times1.3225\approx1.92\approx2\)</li>
+  </ul>
+
+  <div class="widget" id="w-scale">
+    <p class="w-title">Compound Scaling：深、寬、解析度一起長（不考）</p>
+    <p class="w-desc">預設是講義的 φ = 1（α = 1.2、β = 1.1、γ = 1.15）。拉 φ 看三個維度各放大幾倍、運算量漲多少；也可以改成「只放大一個維度」，比較在同樣的運算量下三者的差別。</p>
+    <div class="controls">
+      <label>φ <input type="range" id="sc-phi" min="0" max="7" step="1" value="1"> <span class="val" data-for="sc-phi"></span></label>
+      <label>放大方式 <select id="sc-mode"><option value="all" selected>Compound（三者一起）</option><option value="d">只加深</option><option value="w">只加寬</option><option value="r">只加解析度</option></select></label>
+    </div>
+    <div id="sc-svg"></div>
+    <div class="readout" id="sc-out"></div>
+  </div>
+
+  <h3 id="lenet">4.8 LeNet 尺寸與參數量（不考）<span class="tag add">補充</span></h3>
+  <p>以標準 32×32×1 輸入、完全連接的簡化版計算（原始論文 Conv2 為部分連接，數字會略不同）：</p>
+  <div class="table-wrap">
+    <table>
+      <tr><th>層</th><th>輸出</th><th class="num">參數量</th></tr>
+      <tr><td>Conv1（6 個 5×5）</td><td class="mono">28×28×6</td><td class="num">(5×5×1+1)×6 = 156</td></tr>
+      <tr><td>Pool1</td><td class="mono">14×14×6</td><td class="num">0</td></tr>
+      <tr><td>Conv2（16 個 5×5）</td><td class="mono">10×10×16</td><td class="num">(5×5×6+1)×16 = 2,416</td></tr>
+      <tr><td>Pool2 → Flatten</td><td class="mono">5×5×16 = 400</td><td class="num">0</td></tr>
+      <tr><td>FC1</td><td class="mono">120</td><td class="num">(400+1)×120 = 48,120</td></tr>
+      <tr><td>FC2</td><td class="mono">84</td><td class="num">(120+1)×84 = 10,164</td></tr>
+      <tr><td>Output</td><td class="mono">10</td><td class="num">(84+1)×10 = 850</td></tr>
+      <tr><td><strong>合計</strong></td><td></td><td class="num"><strong>61,706</strong></td></tr>
+    </table>
+  </div>
+
+  <h3>4.9 Fire Module 參數量 <span class="tag add">補充</span></h3>
+  <p>以 SqueezeNet fire2 的設定為例：輸入 96 通道、\(s_{1\times1}=16\)、\(e_{1\times1}=64\)、\(e_{3\times3}=64\)</p>
+  <ul>
+    <li>squeeze：\((1\times1\times96+1)\times16=1{,}552\)</li>
+    <li>expand 1×1：\((1\times1\times16+1)\times64=1{,}088\)</li>
+    <li>expand 3×3：\((3\times3\times16+1)\times64=9{,}280\)</li>
+    <li>合計 11,920，輸出 64 + 64 = 128 通道；若直接用 3×3 卷積 96 → 128：\((3\times3\times96+1)\times128=110{,}720\)，約多 9 倍</li>
+    <li>可以在 <a href="#w-fire">2.8 的計算器</a>驗算</li>
+  </ul>
+
+  <h2 id="compare">5. 模型比較</h2>
+  <h3>5.1 經典架構總表</h3>
+  <div class="table-wrap">
+    <table>
+      <tr><th>模型</th><th>年份</th><th>核心想法</th><th>優點</th><th>缺點</th><th>適用情境</th></tr>
+      <tr class="muted"><td>LeNet（不考）</td><td>1995</td><td>2 Conv ＋ Pool ＋ 3 FC</td><td>開創 CNN，MNIST 99.3%</td><td>只適合小圖、簡單任務 <span class="tag add">補充</span></td><td>手寫數字</td></tr>
+      <tr class="muted"><td>AlexNet（不考）</td><td>2012</td><td>5 Conv ＋ 3 FC，用 GPU 訓練</td><td>ILSVRC 2012 冠軍</td><td>60M+ 參數、訓練久</td><td>歷史里程碑</td></tr>
+      <tr><td>VGG16／19</td><td>2014</td><td>多層 3×3 Conv 堆疊，規整結構</td><td>深度設計、結構規範、準確率高</td><td>138M 參數、計算大、參數冗餘</td><td>特徵擷取、教學範例 <span class="tag add">補充</span></td></tr>
+      <tr><td>Inception（GoogLeNet）</td><td>2014</td><td>多種 kernel 並行 ＋ 1×1 瓶頸</td><td>多尺度特徵、運算高效、輔助分類器幫助訓練</td><td>結構複雜、難移植</td><td>需要多尺度特徵的分類</td></tr>
+      <tr><td>ResNet</td><td>2015 <span class="tag add">補充</span></td><td>殘差連接 \(H(x)=F(x)+x\)，＋ GAP</td><td>可訓練極深網路、常用 backbone</td><td>運算與記憶體大、部分 block 冗餘</td><td>幾乎所有視覺任務的 backbone</td></tr>
+      <tr><td>SqueezeNet</td><td>2016</td><td>Fire module、1×1 取代 3×3、延後下採樣</td><td>參數是 AlexNet 的 1/50</td><td>準確率只有 AlexNet 級；運算量不少</td><td>儲存／頻寬有限</td></tr>
+      <tr><td>MobileNet</td><td>2017</td><td>Depthwise Separable Conv ＋ α、ρ</td><td>4.2M 參數、運算低、可調整</td><td>準確率低於 ResNet、GPU 上未必等比例變快</td><td>手機、嵌入式裝置</td></tr>
+      <tr class="muted"><td>EfficientNet（不考）</td><td>2019</td><td>NAS 找 B0 ＋ compound scaling</td><td>準確率／效率比高、B0～B7 可選</td><td>NAS 成本高、大版本記憶體大</td><td>遷移學習、依資源選大小</td></tr>
+    </table>
+  </div>
+
+  <h3>5.2 講義中的 MobileNet 比較表</h3>
+  <div class="widget" id="w-models">
+    <p class="w-title">準確率 vs 參數量</p>
+    <p class="w-desc">講義 Table 8～10 的數字畫成散佈圖（橫軸是參數量的對數）。越靠左上越「划算」。切換到 Stanford Dogs 可以看到：α 變小，點往左移（參數變少）；解析度變小，點只往下移（參數不變）。</p>
+    <div class="controls">
+      <div class="seg"><button class="btn" type="button" data-mset="imagenet" aria-pressed="true">ImageNet（Table 8、9）</button><button class="btn" type="button" data-mset="dogs" aria-pressed="false">Stanford Dogs（Table 10）</button></div>
+    </div>
+    <div class="canvas-wrap"><canvas id="models-canvas"></canvas></div>
+    <div class="table-wrap" id="models-table"></div>
+  </div>
+
+  <h3 id="quadrant">5.3 訓練效率 × 計算成本四象限</h3>
+  <div class="table-wrap">
+    <table>
+      <tr><th></th><th>低計算成本</th><th>高計算成本</th></tr>
+      <tr><th>高訓練效率</th><td><strong>CP 值</strong>：如 EfficientNetV2，兼顧每步成本與收斂速度</td><td><strong>直上魂</strong>：如大型 Transformer、深層 ResNet，收斂步數少但每步極耗資源</td></tr>
+      <tr><th>低訓練效率</th><td><strong>哪個最便宜</strong>：複雜任務用太簡單的模型，便宜但能力不足，無法達到目標性能</td><td><strong>盤子</strong>：設計拙劣的深層網路（如沒有捷徑的 plain network），既耗資源又學不好</td></tr>
+    </table>
+  </div>
+  <p><span class="tag add">補充</span>例：模型 A 每步 2 單位、要 1,000 步 → 總成本 2,000；模型 B 每步 1 單位、要 3,000 步 → 3,000。B 每步比較便宜，總成本反而比較高。</p>
+
+  <h3>5.4 輕量化手法比較</h3>
+  <div class="table-wrap">
+    <table>
+      <tr><th>手法</th><th>出處</th><th>主要省下</th><th>做法</th></tr>
+      <tr><td>1×1 瓶頸</td><td>Inception</td><td>運算量</td><td>先壓通道再做大 kernel</td></tr>
+      <tr><td>GAP 取代 FC</td><td>ResNet、SqueezeNet</td><td>參數量</td><td>特徵圖取平均取代大型 FC</td></tr>
+      <tr><td>Fire module</td><td>SqueezeNet</td><td>參數量</td><td>squeeze 壓通道、expand 混用 1×1／3×3</td></tr>
+      <tr><td>Depthwise Separable</td><td>MobileNet</td><td>運算量與參數量</td><td>空間與通道分開卷積</td></tr>
+      <tr><td>α、ρ</td><td>MobileNet</td><td>α：兩者都省；ρ：只省運算</td><td>縮通道／縮解析度</td></tr>
+      <tr class="muted"><td>Compound scaling（不考）</td><td>EfficientNet</td><td>同等運算下更準</td><td>平衡放大深、寬、解析度</td></tr>
+    </table>
+  </div>
+
+  <h2 id="figures">6. 圖表說明</h2>
+  <ul>
+    <li><strong>LeNet 架構圖</strong>：由左至右是輸入 → C1 卷積 → S2 下採樣 → C3 卷積 → S4 下採樣 → 三層全連接，特徵圖越來越小、越來越多張 <span class="tag add">補充</span>圖片內容未能擷取，依架構文字描述。</li>
+    <li><strong>VGG16／VGG19 結構圖</strong>：一段段「幾層 3×3 Conv ＋ 一層 Pool」重複堆疊，通道數逐段加倍，最後 3 層 FC；VGG19 只是後面三段各多一層 Conv（<a href="#w-vgg">2.3 的元件</a>可以切換比較）。</li>
+    <li><strong>VGG 參數量圖</strong>（「龐大的參數量」）：<span class="tag chk">待確認</span>圖片內容未能擷取。依逐層計算，約 89% 的參數集中在 FC 層，第一層 FC 就佔了約 74%。</li>
+    <li><strong>Inception module 圖</strong>：同一個輸入分成四條路（1×1、1×1→3×3、1×1→5×5、3×3 max pool→1×1），最後在通道方向串接（<a href="#w-incep">2.4 的元件</a>）。</li>
+    <li><strong>Bottleneck 圖</strong>：192 通道 → 1×1 壓成 16 通道（瓶頸）→ 5×5 展開成 32 通道，形狀像一個沙漏（<a href="#w-bneck">4.2 的元件</a>）。</li>
+    <li><strong>GoogLeNet 全圖</strong>：Stem → 一連串 Inception Block，中間分叉出兩個輔助分類器。</li>
+    <li><strong>ResNet「期望 vs 現實」圖</strong>：橫軸是隱藏層數、縱軸是 Loss；期望曲線一路下降，現實曲線先降後升。</li>
+    <li><strong>Residual block 圖</strong>：兩層 CONV＋RELU 旁邊有一條弧線把輸入 x 直接接到輸出相加。</li>
+    <li><strong>GAP 圖</strong>：7×7×512 的立方體，每一層壓成一個點，變成 1×1×512（<a href="#w-gap">2.6 的元件</a>）。</li>
+    <li><strong>Fire module 圖</strong>：上方 3 個 1×1（squeeze），下方 4 個 1×1 與 4 個 3×3（expand），ReLU 接在兩層之間（<a href="#w-fire">2.8 的元件</a>按「講義示意圖」）。</li>
+    <li><strong>SqueezeNet 三種架構圖</strong>：左為原版、中為加上簡單捷徑、右為加上含 1×1 卷積的複雜捷徑。</li>
+    <li><strong>一般卷積 vs Depthwise Separable 圖</strong>：一般卷積的 kernel 是「5×5×3 一塊」；Depthwise 是拆成 3 片 5×5×1 各自掃，再用 1×1×3 的「細長條」混通道（<a href="#w-dsc">4.3 的元件</a>）。</li>
+    <li><strong>EfficientNet Scaling 圖</strong> <span class="tag add">補充</span>原論文圖：(a) baseline、(b) 只加寬、(c) 只加深、(d) 只加解析度、(e) compound scaling 三者一起放大（<a href="#w-scale">4.7 的元件</a>）。</li>
+  </ul>
+
+  <h2 id="traps">7. 常見觀念陷阱</h2>
+  <ul>
+    <li><strong>ResNet 解決的是「優化困難」，不是過擬合</strong>：深層網路變差時訓練誤差也變差，所以不是 overfitting。</li>
+    <li><strong>\(H(x)\) 是目標映射、\(F(x)\) 是殘差</strong>，堆疊的層學的是 \(F(x)\)。</li>
+    <li><strong>Inception 各分支必須 same padding、stride 1</strong>，寬高才一致、才能串接；串接是「通道疊在一起」而不是數值相加。</li>
+    <li><strong>ResNet 的捷徑是「相加」</strong>，所以 \(F(x)\) 和 \(x\) 的形狀必須相同；Inception 的串接是「通道數相加」<span class="tag add">補充</span>。</li>
+    <li><strong>Max pooling 不改變通道數</strong>，所以 Inception 在 pooling 後要接 1×1 壓通道。</li>
+    <li><strong>輔助分類器只在訓練時用</strong>，推論時移除。</li>
+    <li><strong>參數少 ≠ 運算少 ≠ 實際速度快</strong>：SqueezeNet 參數少但運算量甚至高於 AlexNet；MobileNet／EfficientNet FLOPS 低，但 depthwise conv 在 GPU 上未必快。</li>
+    <li><strong>α 影響參數與運算（約 α²）；ρ 只影響運算（約 ρ²），參數不變</strong>。</li>
+    <li>（不考）<strong>EfficientNet 係數的符號</strong>：這裡的 α、β、γ 是深度、寬度、解析度的縮放係數，和 MobileNet 的 α（寬度）不同，也和 C3 BN 的 γ、β 不同。</li>
+    <li><strong>為什麼寬度、解析度要平方</strong>：FLOPS 與 H×W 及 C<sub>in</sub>×C<sub>out</sub> 成正比，兩個維度同時放大；深度只是層數式的線性增加。</li>
+    <li><strong>GAP 不適合直接用在偵測、分割</strong>，因為丟了位置資訊；小物體可改用 Global Max Pooling。</li>
+    <li><strong>VGG16 的 16</strong> = 13 Conv ＋ 3 FC（有參數的層），Pooling 不算。</li>
+    <li><strong>講義筆誤</strong>：AlexNet 頁的「ILSVRX」應為 ILSVRC；LeNet 頁「再接另一格」應為「另一個」。</li>
+  </ul>
+
+  <h2 id="quiz">8. 自我測驗</h2>
+  <div class="quiz" data-answer="B">
+    <p class="q">1.（選擇）ResNet 提出殘差連接，主要是為了解決什麼問題？</p>
+    <div class="opts">
+      <button data-opt="A">(A) 訓練資料太少導致 overfitting</button><button data-opt="B">(B) 網路變深後訓練誤差反而上升的優化困難</button>
+      <button data-opt="C">(C) 模型參數太多放不進手機</button><button data-opt="D">(D) 需要多尺度特徵</button>
+    </div>
+    <div class="explain" hidden><strong>(B)</strong>。講義強調深層網路表現變差「不是過擬合」，而是要讓多層非線性網路學出恆等映射很困難；殘差連接讓層只需學 \(F(x)\to0\)。(C) 是 MobileNet／SqueezeNet 的動機，(D) 是 Inception。</div>
+  </div>
+  <div class="quiz" data-answer="B">
+    <p class="q">2.（選擇）MobileNet 把輸入解析度從 224 降到 112（ρ = 0.5），下列何者正確？</p>
+    <div class="opts">
+      <button data-opt="A">(A) 參數量變 1/4</button><button data-opt="B">(B) 運算量約變 1/4、參數量不變</button>
+      <button data-opt="C">(C) 運算量與參數量都變 1/2</button><button data-opt="D">(D) 都不變</button>
+    </div>
+    <div class="explain" hidden><strong>(B)</strong>。ρ 只縮小特徵圖尺寸，運算量約變 \(\rho^2=0.25\) 倍；kernel 大小與通道數沒變，參數量不變。</div>
+  </div>
+  <div class="quiz">
+    <p class="q">3.（簡答）Inception 的 1×1 卷積有哪兩個用途？為什麼所有分支都要用 same padding？</p>
+    <details class="answer"><summary>看解答</summary><div>用途：① 作為瓶頸層壓低通道數、減少後續 3×3／5×5 的運算量；② 接在 max pooling 後調整通道數（pooling 不改通道數）。same padding 與 stride 1 讓各分支輸出寬高一致，才能在通道方向串接（在 <a href="#w-incep">2.4 的元件</a>取消 same padding 就會看到無法串接）。</div></details>
+  </div>
+  <div class="quiz">
+    <p class="q">4.（計算）輸入 16×16×32，輸出 16×16×64（3×3 kernel、same padding）。請分別計算一般卷積與 depthwise separable convolution 的乘法次數，以及兩者比值。</p>
+    <details class="answer"><summary>看解答</summary><div>一般卷積：\(16\times16\times64\times(3\times3\times32)=4{,}718{,}592\)。Depthwise：\(16\times16\times32\times9=73{,}728\)；Pointwise：\(16\times16\times32\times64=524{,}288\)；合計 598,016。比值約 0.1267（約 1/7.9），與公式 \(1/64+1/9\approx0.1267\) 一致（可以在 <a href="#w-dsc">4.3 的元件</a>按「自我測驗第 4 題」驗算）。</div></details>
+  </div>
+  <div class="quiz">
+    <p class="q">5.（計算）一個 Fire module 的輸入為 128 通道，\(s_{1\times1}=16\)、\(e_{1\times1}=64\)、\(e_{3\times3}=64\)。請計算它的參數量（含 bias），並與直接用 3×3 卷積把 128 通道轉成 128 通道比較。</p>
+    <details class="answer"><summary>看解答</summary><div>squeeze：\((1\times1\times128+1)\times16=2{,}064\)；expand 1×1：\((16+1)\times64=1{,}088\)；expand 3×3：\((3\times3\times16+1)\times64=9{,}280\)；合計 12,432，輸出 64 + 64 = 128 通道。直接 3×3 卷積：\((3\times3\times128+1)\times128=147{,}584\)，約是 Fire module 的 11.9 倍。關鍵在 squeeze 先把 3×3 的輸入通道從 128 壓到 16（策略二），且一半輸出改用 1×1（策略一）。</div></details>
+  </div>
+  <div class="quiz" data-answer="C">
+    <p class="q">6.（選擇）把 7×7×512 的特徵圖接到 1,000 類輸出。用 GAP 取代「Flatten ＋ FC」時，下列何者正確？</p>
+    <div class="opts">
+      <button data-opt="A">(A) GAP 層本身有 512 個可學習參數</button><button data-opt="B">(B) 輸入改成 10×10×512 時，GAP 輸出長度也會變</button>
+      <button data-opt="C">(C) 參數量從 25,089,000 降到 513,000</button><button data-opt="D">(D) GAP 保留了特徵出現的位置，適合直接做物件偵測</button>
+    </div>
+    <div class="explain" hidden><strong>(C)</strong>。Flatten 後 25,088 維接 1,000 類：\((25{,}088+1)\times1{,}000=25{,}089{,}000\)；GAP 後 512 維：\((512+1)\times1{,}000=513{,}000\)。(A) GAP 沒有參數；(B) GAP 輸出長度只看通道數；(D) GAP 丟掉了位置資訊。</div>
+  </div>
+
+  <footer>講義來源：<a href="https://drive.google.com/file/d/14t8M3OEaB_9AKFAyd_2slfhnyY5IqQdN/view" target="_blank" rel="noopener">c4_advanced_cnn_part1.pdf</a> · 文字筆記：<a href="https://app.notion.com/p/3f375b0b5a138127bbafdfcbf9bb3570" target="_blank" rel="noopener">Notion C4</a></footer>
+</main>
+</div>
+</body>
+</html>
