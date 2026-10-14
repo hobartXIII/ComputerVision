@@ -52,6 +52,7 @@ chapters/c<n>.js      該章的互動元件，每個元件一個 IIFE，對應 H
 - 靜態文字的公式用 `\( \)`（行內）與 `$$ $$`（區塊），在 `load` 時由 auto-render 處理；互動元件的動態公式用 `CV.tex(el, str)`。
 - 畫布元件用 `CV.onRedraw(draw)` 註冊，視窗縮放與切換主題時會自動重畫；顏色一律從 CSS 變數讀取（`CV.cssVar('--c-a')`）。
 - 測驗：選擇題寫 `<div class="quiz" data-answer="B">`，選項 `<button data-opt="A">`，解析放 `.explain[hidden]`；簡答題用 `<details class="answer">`。
+- 逐步展開：`<div class="steps"><p class="steps-title">題目</p><ol><li>…</li></ol></div>`，每步的解釋放 `<span class="why">`；`common.js` 會自動加上「下一步／全部展開／收起」按鈕，一開始只顯示題目。
 
 ## 每章頁面的結構
 
@@ -100,6 +101,7 @@ chapters/c<n>.js      該章的互動元件，每個元件一個 IIFE，對應 H
 | C3 | BN（`#w-bn`） | (2,4,6,8)、γ=2、β=1 → x̂ ≈ (−1.342, −0.447, 0.447, 1.342)、y ≈ (−1.683, 0.106, 1.894, 3.683)；running_mean 0.5 → 0.85 |
 | C3 | Early Stopping（`#w-es`） | P=3、0.50/0.40/0.35/0.36/0.37/0.38 → 第 6 epoch 停、取回第 3；測驗題 P=2 → 第 5 epoch 停 |
 | C3 | 資料擴增（`#w-aug`） | MixUp λ=0.7 → 狗 0.7、貓 0.3；CutMix 32×32 貼 16×16 → 0.25 |
+| C4 | 卷積三數字（`#w-conv3`） | 12×12×3、5×5、128 → 8×8×128、參數 9,728、乘法 614,400 |
 | C4 | VGG 參數量（`#w-vgg`） | VGG16 → 138,357,544（FC 約 89%）；VGG19 → 143,667,240 |
 | C4 | Inception module（`#w-incep`）、瓶頸層（`#w-bneck`） | 3a 輸出 28×28×256；28×28×192、5×5→32、瓶頸 16 → 120,422,400 vs 12,443,648 |
 | C4 | ResNet（`#w-res`） | w₂=0 時 ResNet MSE 0；N=20、d=0.5 → 9.54×10⁻⁷；d=1.5 → 3,325 |

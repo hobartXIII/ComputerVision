@@ -265,6 +265,21 @@
   $$d_{\text{Euclidean}}(\mathbf{x},\mathbf{y})=\sqrt{\sum_{i=1}^{n}(x_i-y_i)^2},\qquad d_{\text{Manhattan}}(\mathbf{x},\mathbf{y})=\sum_{i=1}^{n}\lvert x_i-y_i\rvert$$
   <p>\(n\)：維度數；\(x_i, y_i\)：兩點在第 \(i\) 維的值。</p>
 
+  <div class="steps">
+    <p class="steps-title">逐步展開：講義例子 A(0,0)、B(10,1)、C(7,7)，B 和 C 誰離 A 比較遠？</p>
+    <ol>
+      <li><strong>先算每一維的差</strong>：A→B：x 差 \(10-0=10\)、y 差 \(1-0=1\)；A→C：x 差 7、y 差 7。</li>
+      <li><strong>歐幾里得（直線距離）A→B</strong>：每一維的差先平方再加總，最後開根號：\(\sqrt{10^2+1^2}=\sqrt{100+1}=\sqrt{101}\approx10.05\)
+        <span class="why">就是國中的畢氏定理：兩股是 10 和 1，求斜邊。</span></li>
+      <li><strong>歐幾里得 A→C</strong>：\(\sqrt{7^2+7^2}=\sqrt{49+49}=\sqrt{98}\approx9.90\)</li>
+      <li><strong>歐幾里得的結論</strong>：10.05 vs 9.90，B 和 C 幾乎一樣遠。
+        <span class="why">平方會把大的差距放得更大：B 的 \(10^2=100\) 一項就佔了 101 中的 100，y 方向的差異幾乎被忽略。</span></li>
+      <li><strong>曼哈頓（走棋盤格）A→B</strong>：每一維的差取絕對值後直接加：\(|10|+|1|=11\)</li>
+      <li><strong>曼哈頓 A→C</strong>：\(|7|+|7|=14\)</li>
+      <li><strong>曼哈頓的結論</strong>：11 vs 14，C 明顯比較遠。曼哈頓不平方，每一維的差異都算得一樣重，所以「兩維都有中等差異」的 C 被判得比較遠。</li>
+    </ol>
+  </div>
+
   <div class="widget" id="w-dist">
     <p class="w-title">歐幾里得 vs 曼哈頓：誰比較遠？</p>
     <p class="w-desc">講義例子：A(0,0)、B(10,1)、C(7,7)。拖動 B 或 C（或直接改座標），看兩種距離的結論是否一致。</p>
@@ -284,6 +299,21 @@
   <p>講義以圖呈現，以下為標準寫法 <span class="tag add">補充</span></p>
   $$\sigma(z)=\frac{1}{1+e^{-z}},\qquad \text{softmax}(z_i)=\frac{e^{z_i}}{\sum_{j=1}^{K}e^{z_j}}$$
   <p>\(z\)：輸出層節點的原始分數（logit）；\(K\)：類別數。</p>
+
+  <div class="steps">
+    <p class="steps-title">逐步展開：Sigmoid 與 Softmax 怎麼把分數變成機率</p>
+    <ol>
+      <li><strong>先認識 \(e^{z}\)</strong>：\(e\approx2.718\)。\(e^{z}\) 永遠是正數，\(z\) 越大它越大：\(e^0=1\)、\(e^1\approx2.718\)、\(e^2\approx7.389\)、\(e^{-2}\approx0.135\)。
+        <span class="why">機率不能是負的，所以先用 \(e^z\) 把任何分數（可正可負）變成正數。</span></li>
+      <li><strong>Sigmoid，\(z=0\)</strong>：\(\sigma(0)=\dfrac{1}{1+e^{0}}=\dfrac{1}{1+1}=0.5\)，一半一半。</li>
+      <li><strong>Sigmoid，\(z=2\)</strong>：\(\sigma(2)=\dfrac{1}{1+e^{-2}}=\dfrac{1}{1+0.135}\approx0.881\)。\(z\) 越大越接近 1，越小越接近 0。</li>
+      <li><strong>Softmax，\(z=(2,1,0)\)，第一步取 \(e^z\)</strong>：\((e^2,e^1,e^0)=(7.389,\ 2.718,\ 1)\)</li>
+      <li><strong>第二步加總</strong>：\(7.389+2.718+1=11.107\)</li>
+      <li><strong>第三步各自除以總和</strong>：\(7.389\div11.107\approx0.665\)、\(2.718\div11.107\approx0.245\)、\(1\div11.107\approx0.090\)。
+        <span class="why">除以總和之後三個數加起來剛好是 1，就變成機率分布了。</span></li>
+      <li><strong>觀察</strong>：分數差 1（2 和 1），機率差了快 3 倍（0.665 vs 0.245），因為 \(e^1\approx2.7\)。Softmax 會放大分數之間的差距。</li>
+    </ol>
+  </div>
 
   <h3>4.3 損失函數</h3>
   <p>講義以圖呈現，以下為標準寫法 <span class="tag add">補充</span></p>
@@ -313,9 +343,38 @@
 
   <p>迴歸損失的例子：真實值 (3, 5)、預測 (2, 7) → MAE = (1+2)/2 = 1.5；MSE = (1+4)/2 = 2.5。</p>
 
+  <div class="steps">
+    <p class="steps-title">逐步展開：交叉熵、MSE、MAE</p>
+    <ol>
+      <li><strong>交叉熵的 one-hot</strong>：正確答案是第 1 類 → \(y=(1,0,0)\)。代入 \(-\sum y_i\log\hat{y}_i\)，乘到 0 的項都消失，只剩 \(-1\times\log\hat{y}_1\)。
+        <span class="why">所以交叉熵其實只看一件事：模型給「正確答案」多少機率。</span></li>
+      <li><strong>代入 Softmax 的結果</strong>：\(\hat{y}=(0.665,0.245,0.090)\)，\(L=-\log0.665\approx0.408\)（log 是自然對數 ln）。</li>
+      <li><strong>如果正確答案是第 3 類</strong>：\(L=-\log0.090\approx2.41\)。模型給正確答案的機率越低，損失越大。
+        <span class="why">\(-\log\) 的特性：機率 1 → 損失 0；機率趨近 0 → 損失趨近無限大。</span></li>
+      <li><strong>迴歸：先算誤差</strong>：真實 (3, 5)、預測 (2, 7)，誤差 \(3-2=1\)、\(5-7=-2\)。</li>
+      <li><strong>MAE（平均絕對誤差）</strong>：取絕對值再平均：\((|1|+|-2|)\div2=3\div2=1.5\)</li>
+      <li><strong>MSE（均方誤差）</strong>：平方再平均：\((1^2+(-2)^2)\div2=(1+4)\div2=2.5\)
+        <span class="why">平方讓大的誤差（−2）被罰得更重：它在 MAE 佔 2/3，在 MSE 佔 4/5。</span></li>
+    </ol>
+  </div>
+
   <h3>4.4 梯度下降</h3>
   $$w \leftarrow w-\eta\,\frac{\partial L}{\partial w}$$
   <p>\(w\)：權重；\(\eta\)：學習率；\(\partial L/\partial w\)：損失對權重的梯度。例：\(w=2\)、梯度 \(=4\)、\(\eta=0.1\) → \(w=2-0.1\times4=1.6\)；若 \(\eta=1\) → \(w=-2\)（步伐太大，可能跳過最佳解）。</p>
+
+  <div class="steps">
+    <p class="steps-title">逐步展開：用 \(L(w)=w^2\) 走梯度下降（最低點在 \(w=0\)）<span class="tag add">補充</span></p>
+    <ol>
+      <li><strong>梯度是什麼</strong>：\(\partial L/\partial w\) 就是損失曲線在 \(w\) 這點的斜率。\(L=w^2\) 的斜率是 \(2w\)；在 \(w=2\)，斜率 \(=4\)（正的 → 往右是上坡）。
+        <span class="why">這剛好就是上面例子的「梯度 = 4」。</span></li>
+      <li><strong>為什麼是減號</strong>：斜率為正代表往右會變高，所以要往左走 → \(w\) 減去梯度。斜率為負時減負數等於往右走，一樣是下坡方向。</li>
+      <li><strong>第 1 步（η = 0.1）</strong>：\(w=2-0.1\times4=2-0.4=1.6\)</li>
+      <li><strong>第 2 步</strong>：新的斜率 \(2\times1.6=3.2\)；\(w=1.6-0.1\times3.2=1.28\)。越靠近谷底斜率越小，步伐自動變小。</li>
+      <li><strong>η = 1 會怎樣</strong>：\(w=2-1\times4=-2\)；下一步斜率 \(-4\)，\(w=-2-1\times(-4)=2\)。在 2 和 −2 之間來回跳，永遠到不了 0。
+        <span class="why">學習率太大 → 一步跨過谷底跳到對面。再大一點（例如 η = 1.5）每次會跳得更遠，就是「發散」。</span></li>
+      <li><strong>η = 0.01 會怎樣</strong>：第 1 步只到 \(2-0.04=1.96\)，方向對但很慢，要走非常多步。學習率要「剛剛好」。</li>
+    </ol>
+  </div>
 
   <div class="widget" id="w-gd">
     <p class="w-title">梯度下降與優化器比較</p>
@@ -347,6 +406,17 @@
   $$\text{Precision}=\frac{TP}{TP+FP},\qquad \text{Recall}=\frac{TP}{TP+FN},\qquad \text{Accuracy}=\frac{TP+TN}{TP+TN+FP+FN}$$
   <p>TP：正確判為正（True Positive）；FP：誤判為正（False Positive）；FN：漏判（False Negative）；TN：正確判為負（True Negative）。</p>
 
+  <div class="steps">
+    <p class="steps-title">逐步展開：TP = 40、FP = 10、FN = 20、TN = 30</p>
+    <ol>
+      <li><strong>先讀名字</strong>：第二個字母是「模型說的」（P 判正、N 判負），第一個字母是「說得對不對」（T 對、F 錯）。FN = 判負但判錯 = 其實是正的，被漏掉了。</li>
+      <li><strong>Precision（判為正的裡面，幾個真的是正）</strong>：分母是所有「判為正」\(=TP+FP=40+10=50\)；\(40\div50=0.8\)</li>
+      <li><strong>Recall（真的是正的裡面，抓到幾個）</strong>：分母是所有「實際為正」\(=TP+FN=40+20=60\)；\(40\div60\approx0.667\)</li>
+      <li><strong>Accuracy（全部裡面答對幾個）</strong>：答對 \(=TP+TN=70\)；全部 \(=100\)；\(70\div100=0.7\)</li>
+      <li><strong>記法</strong>：三個分子都有 TP（或 TP＋TN），差在分母：Precision 看「預測那一欄」、Recall 看「實際那一列」。</li>
+    </ol>
+  </div>
+
   <div class="widget" id="w-met">
     <p class="w-title">混淆矩陣計算器</p>
     <p class="w-desc">預設值是筆記的例子：TP=40、FP=10、FN=20、TN=30 → Precision 0.8、Recall ≈ 0.667、Accuracy 0.7。</p>
@@ -366,6 +436,15 @@
 
   <h3>4.6 影像資料量</h3>
   <p>28×28 灰階圖 → 784 個數值；224×224 RGB 圖 → 224×224×3 = 150,528 個數值 <span class="tag add">補充</span>。這就是為什麼高維的影像資料對 KNN、SVM 來說很吃力（可以用 <a href="#w-rgb">2.2 的元件</a>自己換算）。</p>
+
+  <div class="steps">
+    <p class="steps-title">逐步展開：一張 224×224 的彩色圖有幾個數值</p>
+    <ol>
+      <li><strong>像素數</strong>：\(224\times224=50{,}176\) 個像素。</li>
+      <li><strong>每個像素幾個數值</strong>：RGB 三個頻道，每個 0～255 → 3 個數值（灰階只有 1 個）。</li>
+      <li><strong>總數</strong>：\(50{,}176\times3=150{,}528\)。對 KNN 來說，每算一次距離都要比較 150,528 個維度。</li>
+    </ol>
+  </div>
 
   <h2 id="compare">5. 模型／方法比較</h2>
   <h3>5.1 傳統機器學習方法 vs 神經網路</h3>

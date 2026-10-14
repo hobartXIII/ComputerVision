@@ -181,6 +181,33 @@
     }
   }
 
+  /* ---------- 逐步展開 ---------- */
+  // <div class="steps"><p class="steps-title">…</p><ol><li>…</li></ol></div>
+  // 一開始只顯示題目，按「下一步」一次多顯示一步
+  function initSteps() {
+    for (const box of $$('.steps')) {
+      const items = $$('ol > li', box);
+      if (!items.length) continue;
+      let shown = 0;
+      const next = el('button', { class: 'btn primary', type: 'button' });
+      const all = el('button', { class: 'btn', type: 'button', text: '全部展開' });
+      const reset = el('button', { class: 'btn', type: 'button', text: '收起' });
+      const count = el('span', { class: 'muted', style: 'font-size:.88rem' });
+      const sync = () => {
+        items.forEach((li, i) => { li.hidden = i >= shown; });
+        next.textContent = shown === 0 ? '開始第 1 步 ▶' : '下一步 ▶';
+        next.disabled = all.disabled = shown >= items.length;
+        reset.hidden = shown === 0;
+        count.textContent = shown >= items.length ? `共 ${items.length} 步，全部展開` : `${shown}／${items.length} 步`;
+      };
+      next.addEventListener('click', () => { shown = Math.min(items.length, shown + 1); sync(); });
+      all.addEventListener('click', () => { shown = items.length; sync(); });
+      reset.addEventListener('click', () => { shown = 0; sync(); });
+      box.append(el('div', { class: 'steps-ctrl' }, [next, all, reset, count]));
+      sync();
+    }
+  }
+
   /* ---------- 矩陣 ---------- */
   // M: 2D 陣列；opts.cls(i,j,v) 回傳 class 字串；opts.onClick(i,j)；opts.text(i,j,v)
   function matrix(M, opts = {}) {
@@ -289,6 +316,7 @@
     buildTopbar();
     buildHome();
     initQuizzes();
+    initSteps();
     buildToc();
   });
   // KaTeX 以 defer 載入，等全部載完再渲染

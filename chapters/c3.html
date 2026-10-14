@@ -293,6 +293,21 @@
   <p>TP：有病且判有病；FN：有病卻判沒病；FP：沒病卻判有病；TN：沒病且判沒病。<span class="tag add">補充</span>F1 公式（講義只寫「調和平均數」）。</p>
   <p><strong>講義 COVID 例子</strong>（由講義數字反推：TP = 90、FN = 10、FP = 5、TN = 40、共 145 人）：</p>
 
+  <div class="steps">
+    <p class="steps-title">逐步展開：講義 COVID 例子（TP 90、FN 10、FP 5、TN 40）</p>
+    <ol>
+      <li><strong>先算四個小計</strong>：實際有病 \(TP+FN=100\)；實際沒病 \(FP+TN=45\)；預測有病 \(TP+FP=95\)；全部 145。
+        <span class="why">每個指標都是「某一格 ÷ 某個小計」，先把小計算好就不會搞錯分母。</span></li>
+      <li><strong>Accuracy</strong>：答對的是 TP 和 TN：\((90+40)\div145=130\div145\approx0.897\)；Error Rate \(=1-0.897=0.103\)</li>
+      <li><strong>Recall（＝ Sensitivity ＝ TPR）</strong>：100 個病人抓到幾個？\(90\div100=0.9\)</li>
+      <li><strong>FPR</strong>：45 個沒病的人裡，幾個被誤判有病？\(5\div45\approx0.111\)</li>
+      <li><strong>Specificity（TNR）</strong>：45 個沒病的人裡，幾個被正確判為沒病？\(40\div45\approx0.889\)；也等於 \(1-\text{FPR}\)。</li>
+      <li><strong>Precision</strong>：模型說有病的 95 人裡，幾個真的有？\(90\div95\approx0.947\)</li>
+      <li><strong>F1</strong>：\(\dfrac{2\times0.947\times0.9}{0.947+0.9}=\dfrac{1.705}{1.847}\approx0.923\)</li>
+      <li><strong>為什麼 F1 用調和平均</strong> <span class="tag add">補充</span>：假設 Precision 1、Recall 0.1（只抓到一成病人）。算術平均 \((1+0.1)\div2=0.55\) 看起來還行；F1 \(=\frac{2\times1\times0.1}{1.1}\approx0.18\)，直接反映出「有一項很爛」。</li>
+    </ol>
+  </div>
+
   <div class="widget" id="w-bin">
     <p class="w-title">二元分類指標計算器</p>
     <p class="w-desc">預設是講義的 COVID 例子。改任一格，所有指標一起更新；也可以套用自我測驗第 4 題的數字驗算。</p>
@@ -321,6 +336,18 @@
   <p>\(\theta_j\)：模型參數；\(\lambda\)：控制 Penalty 強度，越大越重。</p>
   <p>例：權重 \((3,-0.1,0)\)、\(\lambda=0.01\)：L1 penalty \(=0.01\times(3+0.1+0)=0.031\)；L2 penalty \(=0.01\times(9+0.01+0)=0.0901\)。L2 裡大權重 3 貢獻了 0.09、小權重 0.1 幾乎沒影響 → L2 主要壓大權重；L1 對每個權重的「每單位懲罰」一樣，小權重也會被推到 0 <span class="tag add">補充</span>。</p>
 
+  <div class="steps">
+    <p class="steps-title">逐步展開：為什麼 L1 會把權重推到 0、L2 不會？<span class="tag add">補充</span></p>
+    <ol>
+      <li><strong>先算 penalty</strong>：權重 \((3,-0.1,0)\)。L1：\(|3|+|-0.1|+|0|=3.1\)，\(\times0.01=0.031\)；L2：\(3^2+(-0.1)^2+0^2=9.01\)，\(\times0.01=0.0901\)。</li>
+      <li><strong>梯度下降會怎麼推權重</strong>：penalty 對權重的斜率，就是每一步額外把權重往 0 推的力道。</li>
+      <li><strong>L1 的斜率</strong>：\(\lambda|w|\) 的斜率是 \(\lambda\times(\pm1)\)，不管 \(w\) 大小都是 \(0.01\)。\(w=3\) 和 \(w=0.1\) 都被推一樣大力 → 小權重很快就被推到 0。</li>
+      <li><strong>L2 的斜率</strong>：\(\lambda w^2\) 的斜率是 \(2\lambda w\)。\(w=3\)：\(2\times0.01\times3=0.06\)；\(w=0.1\)：\(2\times0.01\times0.1=0.002\)。
+        <span class="why">權重越小推力越小，越接近 0 越推不動，所以 L2 只會讓權重「變小」，很少剛好變 0；大權重則被推得最用力。</span></li>
+      <li><strong>結論</strong>：L1 → 很多權重剛好是 0（特徵選取）；L2 → 所有權重一起縮小、大的縮最多。</li>
+    </ol>
+  </div>
+
   <div class="widget" id="w-pen">
     <p class="w-title">L1 vs L2：Penalty 與權重怎麼縮</p>
     <p class="w-desc">上半：輸入權重和 λ，算出兩種 Penalty（預設是筆記的例子）。下半 <span class="tag add">補充</span>：假設不加正則化時最佳權重是 \(a\)，加上 Penalty 後最佳權重會變成多少？拉大 λ 比較兩者：<strong>L1 把小權重直接歸零</strong>，<strong>L2 讓所有權重等比例縮小</strong>、永遠不會剛好變 0。</p>
@@ -342,6 +369,21 @@
   $$\mu_B=\frac{1}{m}\sum_{i=1}^{m}x_i,\quad \sigma_B^2=\frac{1}{m}\sum_{i=1}^{m}(x_i-\mu_B)^2,\quad \hat{x}_i=\frac{x_i-\mu_B}{\sqrt{\sigma_B^2+\epsilon}},\quad y_i=\gamma\hat{x}_i+\beta$$
   $$\text{running\_mean}\leftarrow \text{momentum}\times\text{running\_mean}+(1-\text{momentum})\times\text{batch\_mean}$$
   <p>\(m\)：mini-batch 大小；\(\epsilon\)：避免除以 0 的極小值；\(\gamma,\beta\)：可學習參數。STD 的更新方式相同。</p>
+
+  <div class="steps">
+    <p class="steps-title">逐步展開：batch \((2,4,6,8)\)、γ = 2、β = 1（ε 很小，先忽略）</p>
+    <ol>
+      <li><strong>平均 \(\mu_B\)</strong>：\((2+4+6+8)\div4=20\div4=5\)</li>
+      <li><strong>每個數減平均</strong>：\(2-5=-3\)、\(4-5=-1\)、\(6-5=1\)、\(8-5=3\)</li>
+      <li><strong>變異數 \(\sigma_B^2\)</strong>：平方再平均：\((9+1+1+9)\div4=20\div4=5\)；標準差 \(\sigma_B=\sqrt5\approx2.236\)</li>
+      <li><strong>標準化 \(\hat{x}\)</strong>：第 2 步的結果除以 2.236：\(-3\div2.236\approx-1.342\)、\(-1\div2.236\approx-0.447\)、\(0.447\)、\(1.342\)。
+        <span class="why">現在平均是 0、標準差是 1。</span></li>
+      <li><strong>縮放平移 \(y=\gamma\hat{x}+\beta\)</strong>：\(2\times(-1.342)+1=-1.683\)、\(2\times(-0.447)+1=0.106\)、\(2\times0.447+1=1.894\)、\(2\times1.342+1=3.683\)。
+        <span class="why">γ 把標準差變成 2、β 把平均移到 1。γ、β 是學出來的，網路可以自己決定要什麼分布。</span></li>
+      <li><strong>running_mean（momentum 0.9，初始 0）</strong>：第 1 個 batch mean 5：\(0.9\times0+0.1\times5=0.5\)；第 2 個 batch mean 4：\(0.9\times0.5+0.1\times4=0.45+0.4=0.85\)。
+        <span class="why">舊的估計佔 90%、新 batch 佔 10%，慢慢靠近真正的平均。推論時就用這個值。</span></li>
+    </ol>
+  </div>
   <p><span class="tag add">補充</span>參數量：CNN 中每個 channel 有一組 γ、β，所以接在 32 個 filter 的 conv 後的 BN 有 \(2\times32=64\) 個可學習參數；running_mean／running_var 不是可學習參數。</p>
 
   <div class="widget" id="w-bn">
@@ -368,6 +410,20 @@
   <h3>4.4 Early Stopping <span class="tag add">補充：例子</span></h3>
   <p>若 patience P = 3，Val Loss 依序為 0.50、0.40、0.35、0.36、0.37、0.38 → 第 3 個 epoch 之後連續 3 個 epoch 沒有進步，在第 6 個 epoch 停止，取回第 3 個 epoch 的權重。</p>
 
+  <div class="steps">
+    <p class="steps-title">逐步展開：P = 3，Val Loss 0.50、0.40、0.35、0.36、0.37、0.38</p>
+    <ol>
+      <li><strong>規則</strong>：記住目前最好的 loss，和「已經連續幾個 epoch 沒進步」的計數器；計數器到 P 就停。</li>
+      <li><strong>Epoch 1</strong>：0.50，第一個，最佳 = 0.50，計數 0，存檔。</li>
+      <li><strong>Epoch 2</strong>：0.40 &lt; 0.50，進步 → 最佳 = 0.40，計數歸 0，存檔。</li>
+      <li><strong>Epoch 3</strong>：0.35 &lt; 0.40，進步 → 最佳 = 0.35，計數 0，存檔。</li>
+      <li><strong>Epoch 4</strong>：0.36 沒有比 0.35 好 → 計數 1。</li>
+      <li><strong>Epoch 5</strong>：0.37 → 計數 2。</li>
+      <li><strong>Epoch 6</strong>：0.38 → 計數 3 = P，停止。取回最佳的第 3 個 epoch 權重（0.35）。
+        <span class="why">停下來的時候已經多訓練了 P 個 epoch，所以一定要取回「之前存的最佳權重」，不是用最後一個。</span></li>
+    </ol>
+  </div>
+
   <div class="widget" id="w-es">
     <p class="w-title">Early Stopping 模擬</p>
     <p class="w-desc">預設是上面的例子。可以直接改 Val Loss 序列（逗號分隔）或調 P；「模擬 40 epoch」會產生一條典型的 overfitting 曲線：Train Loss 一路下降，Val Loss 先降後升。</p>
@@ -390,6 +446,18 @@
   <ul>
     <li>MixUp：例如 \(\lambda=0.7\)，狗圖與貓圖以 7:3 疊在一起，標籤變成「狗 0.7、貓 0.3」</li>
     <li>CutMix：標籤依面積比例混合。例如在 32×32 的 A 圖上貼一塊 16×16 的 B 圖，面積比例 \(256/1024=0.25\) → 標籤為「A 0.75、B 0.25」</li>
+  </ul>
+  <div class="steps">
+    <p class="steps-title">逐步展開：MixUp（λ = 0.7）與 CutMix</p>
+    <ol>
+      <li><strong>MixUp 對每個像素做加權平均</strong>：某個位置狗圖是 200、貓圖是 100：\(0.7\times200+0.3\times100=140+30=170\)。整張圖每個像素都這樣混。</li>
+      <li><strong>MixUp 的標籤也一起混</strong>：狗 \(=(1,0)\)、貓 \(=(0,1)\)：\(0.7\times(1,0)+0.3\times(0,1)=(0.7,\ 0.3)\)。</li>
+      <li><strong>CutMix 先算面積</strong>：A 圖 \(32\times32=1{,}024\) 個像素；貼上的 B 方塊 \(16\times16=256\) 個像素。</li>
+      <li><strong>CutMix 的標籤比例</strong>：B 佔 \(256\div1{,}024=0.25\)，A 剩 \(1-0.25=0.75\) → 標籤 (A 0.75, B 0.25)。
+        <span class="why">邊長是一半，但面積是 1/4，因為面積是邊長的平方。自我測驗第 6 題的 8×8 就是 \(64\div1{,}024=0.0625\)。</span></li>
+    </ol>
+  </div>
+  <ul>
     <li>可以在 <a href="#w-aug">2.11 的資料擴增元件</a>選 MixUp、CutMix 驗證</li>
   </ul>
 

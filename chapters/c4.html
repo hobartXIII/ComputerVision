@@ -313,10 +313,102 @@
 
   <h2 id="formula">4. 公式與計算</h2>
 
+  <h3>4.0 先複習：一層卷積的三個數字 <span class="tag add">補充</span></h3>
+  <p>這章幾乎所有計算都是在算同一件事：<strong>一層卷積的「輸出尺寸」、「參數量」、「乘法次數」</strong>。把這三個算熟，後面的瓶頸層、Depthwise、Fire module、GAP 都只是換數字套進去。</p>
+  <div class="table-wrap">
+    <table>
+      <tr><th>符號</th><th>意思</th><th>講義例子</th></tr>
+      <tr><td>\(N\)</td><td>輸入的高與寬（假設是正方形）</td><td>12</td></tr>
+      <tr><td>\(C_{in}\)</td><td>輸入通道數（RGB 就是 3）</td><td>3</td></tr>
+      <tr><td>\(k\)</td><td>kernel（filter）大小，\(k\times k\)</td><td>5</td></tr>
+      <tr><td>\(p,\ s\)</td><td>padding、stride（C2 教過）</td><td>0、1</td></tr>
+      <tr><td>\(C_{out}\)</td><td>filter 個數 ＝ 輸出通道數</td><td>128</td></tr>
+      <tr><td>\(H,\ W\)</td><td>輸出的高與寬</td><td>8</td></tr>
+    </table>
+  </div>
+  $$\text{① 輸出尺寸}\quad H=W=\left\lfloor\frac{N-k+2p}{s}\right\rfloor+1$$
+  $$\text{② 參數量}\quad(\underbrace{k\times k\times C_{in}}_{\text{一個 filter 的權重}}+\underbrace{1}_{\text{bias}})\times C_{out}$$
+  $$\text{③ 乘法次數}\quad\underbrace{H\times W\times C_{out}}_{\text{輸出有幾個數字}}\times\underbrace{k\times k\times C_{in}}_{\text{每個數字要乘幾次}}$$
+  <ul>
+    <li><strong>一個 filter 的深度一定等於 \(C_{in}\)</strong>：輸入有 3 個通道，5×5 的 filter 其實是 5×5×3 的一塊，一次把三個通道一起乘完再加總，得到<strong>一個</strong>數字。</li>
+    <li><strong>參數量和 \(N\) 無關</strong>：同一個 filter 掃過整張圖都用同一組權重（權重共享），圖變大，filter 不會變大。</li>
+    <li><strong>乘法次數和 \(N\) 有關</strong>：圖越大，filter 要停的位置越多，每個位置都要算一次。</li>
+    <li>所以「參數少」和「運算少」是兩回事，這是 SqueezeNet 和 MobileNet 差別的關鍵。</li>
+  </ul>
+
+  <div class="steps">
+    <p class="steps-title">逐步展開：講義例子 12×12×3 輸入、128 個 5×5 filter、padding 0、stride 1</p>
+    <ol>
+      <li><strong>輸出尺寸</strong>：\(\frac{12-5+0}{1}+1=8\)，所以輸出是 \(8\times8\times128\)。
+        <span class="why">5×5 的框在 12 格寬的圖上，從第 1 格滑到第 8 格就碰到邊了（8 + 5 − 1 = 12），所以每列只有 8 個位置。通道數 128 來自 filter 的個數。</span></li>
+      <li><strong>一個 filter 有幾個權重</strong>：\(5\times5\times3=75\)，再加 1 個 bias，共 76。
+        <span class="why">filter 的深度要和輸入一樣是 3。</span></li>
+      <li><strong>參數量</strong>：\(76\times128=9{,}728\)。
+        <span class="why">128 個 filter，每個 76 個參數。注意這裡完全沒用到 12（輸入大小）。</span></li>
+      <li><strong>每個輸出數字要乘幾次</strong>：filter 蓋住的 \(5\times5\times3=75\) 個數字各乘一次權重，共 75 次乘法。
+        <span class="why">（之後再加起來、加 bias；講義只數乘法，所以加法不算。）</span></li>
+      <li><strong>輸出總共有幾個數字</strong>：\(8\times8\times128=8{,}192\)。</li>
+      <li><strong>總乘法次數</strong>：\(8{,}192\times75=614{,}400\)，這就是講義「一般卷積 614,400 次乘法」的由來。
+        <span class="why">講義的寫法是 \(75\times64\times128\)：先算一個 filter 掃完整張圖 \(75\times64=4{,}800\) 次，再乘 128 個 filter。順序不同、答案一樣。</span></li>
+    </ol>
+  </div>
+
+  <div class="widget" id="w-conv3">
+    <p class="w-title">卷積三數字計算器（逐步代入）</p>
+    <p class="w-desc">輸入任何一層卷積的設定，下方會把三個公式逐步代入數字。預設是講義的 MobileNet 例子（應得到輸出 8×8×128、參數 9,728、乘法 614,400）。按「套用」可以看本章其他例子用的是同一套算法。</p>
+    <div class="controls">
+      <label>N <input type="number" id="c3-n" value="12" min="1"></label>
+      <label>C<sub>in</sub> <input type="number" id="c3-ci" value="3" min="1"></label>
+      <label>k <input type="number" id="c3-k" value="5" min="1"></label>
+      <label>p <input type="number" id="c3-p" value="0" min="0"></label>
+      <label>s <input type="number" id="c3-s" value="1" min="1"></label>
+      <label>C<sub>out</sub> <input type="number" id="c3-co" value="128" min="1"></label>
+    </div>
+    <div class="controls">
+      <span class="muted" style="font-size:.9rem">套用：</span>
+      <button class="btn" type="button" data-c3="12,3,5,0,1,128">講義 MobileNet 例</button>
+      <button class="btn" type="button" data-c3="28,192,5,2,1,32">Inception 5×5</button>
+      <button class="btn" type="button" data-c3="28,192,1,0,1,16">Inception 1×1 瓶頸</button>
+      <button class="btn" type="button" data-c3="224,3,3,1,1,64">VGG 第一層</button>
+      <button class="btn" type="button" data-c3="32,1,5,0,1,6">LeNet Conv1</button>
+    </div>
+    <div class="readout" id="c3-out"></div>
+  </div>
+
+  <h3>4.0.1 1×1 卷積到底在算什麼 <span class="tag add">補充</span></h3>
+  <p>1×1 卷積的 filter 只有 1×1 大小，看起來好像「什麼都沒做」，但它的深度是 \(C_{in}\)：它在<strong>每一個像素位置</strong>，把該位置的所有通道做加權相加。所以它不看鄰居（不改變寬高），只負責<strong>混合、增減通道數</strong>。</p>
+  <div class="steps">
+    <p class="steps-title">逐步展開：某個像素有 3 個通道 \((2,\ 1,\ 3)\)，用 2 個 1×1 filter</p>
+    <ol>
+      <li><strong>第 1 個 filter</strong> 權重 \((0.5,\ -1,\ 1)\)：\(2\times0.5+1\times(-1)+3\times1=1-1+3=3\)
+        <span class="why">三個通道各乘一個權重再加總，得到一個數字（先省略 bias）。</span></li>
+      <li><strong>第 2 個 filter</strong> 權重 \((1,\ 1,\ 1)\)：\(2+1+3=6\)</li>
+      <li><strong>結果</strong>：這個像素從 3 個通道 \((2,1,3)\) 變成 2 個通道 \((3,6)\)。每個像素都這樣做，所以 \(H\times W\times3\to H\times W\times2\)，寬高不變。
+        <span class="why">filter 個數決定輸出通道數。Inception 用 16 個 1×1 filter 把 192 通道壓成 16 通道，就是這個原理。</span></li>
+      <li><strong>代價</strong>：每個輸出數字只要乘 \(C_{in}\) 次（這裡是 3 次），比 3×3、5×5 便宜很多。
+        <span class="why">這就是它適合當「瓶頸層」與 MobileNet「Pointwise」的原因。</span></li>
+    </ol>
+  </div>
+
   <h3>4.1 卷積運算量</h3>
   $$\text{FLOPS}_{\text{conv}}\propto H\times W\times C_{in}\times C_{out}\times k^2$$
   <p>\(H, W\)：輸出特徵圖高寬；\(C_{in}, C_{out}\)：輸入／輸出通道數；\(k\)：kernel 大小。寬度（通道數）或解析度加倍 → FLOPS × 4；深度（層數）加倍 → FLOPS × 2。</p>
   <p>參數量則和 \(H, W\) 無關：\((k^2C_{in}+1)\times C_{out}\)。這就是「解析度只影響運算、不影響參數」的原因（見 <a href="#w-mob">4.4</a>）<span class="tag add">補充</span>。</p>
+  <p>公式裡的 \(\propto\) 讀作「正比於」：不在乎確切的數字，只在乎「某個東西變成 2 倍，運算量變幾倍」。</p>
+
+  <div class="steps">
+    <p class="steps-title">逐步展開：一層 28×28、64 → 64 通道的 3×3 卷積，分別把寬度、解析度、深度加倍 <span class="tag add">補充</span></p>
+    <ol>
+      <li><strong>原本</strong>：\(28\times28\times64\times64\times3^2=784\times4{,}096\times9=28{,}901{,}376\)
+        <span class="why">直接套 4.0 的 ③：輸出位置 784 個 × 輸出通道 64 × 每個數字乘 \(3\times3\times64\) 次。</span></li>
+      <li><strong>寬度加倍</strong>（64 → 128）：\(C_{in}\) 和 \(C_{out}\) <strong>都</strong>變 2 倍 → \(2\times2=4\) 倍 → \(115{,}605{,}504\)
+        <span class="why">這一層的輸出通道變多，下一層的輸入通道也跟著變多，所以兩個都會乘 2。</span></li>
+      <li><strong>解析度加倍</strong>（28 → 56）：\(H\) 和 \(W\) <strong>都</strong>變 2 倍 → \(2\times2=4\) 倍 → \(56\times56\times64\times64\times9=115{,}605{,}504\)
+        <span class="why">邊長 2 倍，面積（位置數）是 4 倍。</span></li>
+      <li><strong>深度加倍</strong>（多疊一層一樣的）：只是多做一次 → \(2\) 倍 → \(57{,}802{,}752\)</li>
+      <li><strong>結論</strong>：寬度、解析度的影響是「平方」，深度是「一次方」。這就是 EfficientNet 限制式寫成 \(\alpha\cdot\beta^2\cdot\gamma^2\) 的原因（4.7）。</li>
+    </ol>
+  </div>
 
   <h3>4.2 Inception 瓶頸層</h3>
   <p><span class="tag add">補充</span>講義文字未寫出特徵圖大小；以下以常見的 28×28×192 輸入計算，結果與講義的 120M、2.4M、10M 吻合。</p>
@@ -326,6 +418,21 @@
     <li>再 5×5 輸出 32 通道：\(28\times28\times32\times(5\times5\times16)=10{,}035{,}200\approx10\text{M}\)</li>
     <li>合計約 12.4M，約為原本的 1/10</li>
   </ul>
+
+  <div class="steps">
+    <p class="steps-title">逐步展開：28×28×192 → 32 通道，直接用 5×5 vs 先用 1×1 壓到 16</p>
+    <ol>
+      <li><strong>先確定輸出大小</strong>：Inception 用 same padding、stride 1，寬高不變，輸出 \(28\times28\times32\)；位置數 \(28\times28=784\)。</li>
+      <li><strong>直接 5×5：每個輸出數字乘幾次？</strong> filter 是 \(5\times5\times192=4{,}800\)，所以 4,800 次。
+        <span class="why">filter 深度要等於輸入通道 192，這就是貴的原因。</span></li>
+      <li><strong>直接 5×5：總共</strong>：輸出數字 \(784\times32=25{,}088\) 個，\(25{,}088\times4{,}800=120{,}422{,}400\approx120\text{M}\)</li>
+      <li><strong>瓶頸第一步（1×1，192 → 16）</strong>：每個數字乘 \(1\times1\times192=192\) 次；輸出數字 \(784\times16=12{,}544\) 個；\(12{,}544\times192=2{,}408{,}448\approx2.4\text{M}\)</li>
+      <li><strong>瓶頸第二步（5×5，16 → 32）</strong>：現在輸入只剩 16 通道，每個數字乘 \(5\times5\times16=400\) 次；輸出數字仍是 25,088 個；\(25{,}088\times400=10{,}035{,}200\approx10\text{M}\)
+        <span class="why">和第 3 步比，只有「每個數字乘幾次」從 4,800 變 400，降了 12 倍，因為 192 → 16。</span></li>
+      <li><strong>比較</strong>：\(2{,}408{,}448+10{,}035{,}200=12{,}443{,}648\)；\(120{,}422{,}400\div12{,}443{,}648\approx9.7\)，約省 10 倍。
+        <span class="why">多加一層 1×1 本身要 2.4M，但換來 5×5 那層省下 110M，非常划算。</span></li>
+    </ol>
+  </div>
 
   <div class="widget" id="w-bneck">
     <p class="w-title">瓶頸層計算器</p>
@@ -355,6 +462,26 @@
   $$\frac{\text{Depthwise Separable}}{\text{一般卷積}}=\frac{HWC_{in}k^2+HWC_{in}C_{out}}{HWC_{in}C_{out}k^2}=\frac{1}{C_{out}}+\frac{1}{k^2}$$
   <p>驗證：\(1/128+1/25\approx0.0478\approx1/20.9\)；3×3 kernel 時約省 8～9 倍。</p>
 
+  <div class="steps">
+    <p class="steps-title">逐步展開：講義例子（12×12×3、5×5、輸出 8×8×128）</p>
+    <ol>
+      <li><strong>輸出位置數</strong>：\(12-5+1=8\)，\(8\times8=64\) 個位置。</li>
+      <li><strong>一般卷積</strong>：每個輸出數字乘 \(5\times5\times3=75\) 次；輸出數字 \(64\times128=8{,}192\) 個；\(8{,}192\times75=614{,}400\)
+        <span class="why">一個 filter 同時做兩件事：看 5×5 的空間範圍、把 3 個通道混在一起。</span></li>
+      <li><strong>Depthwise（只看空間）</strong>：3 個 \(5\times5\times1\) 的 kernel，每個只負責一個通道。每個輸出數字乘 \(5\times5=25\) 次；輸出 \(8\times8\times3=192\) 個數字；\(192\times25=4{,}800\)
+        <span class="why">通道各算各的，輸出仍是 3 個通道（8×8×3），還沒有混通道。</span></li>
+      <li><strong>Pointwise（只混通道）</strong>：128 個 \(1\times1\times3\) 的 kernel。每個輸出數字乘 3 次；輸出 \(8\times8\times128=8{,}192\) 個數字；\(8{,}192\times3=24{,}576\)
+        <span class="why">就是 4.0.1 的 1×1 卷積：在每個位置把 3 個通道加權相加，128 個 filter 得到 128 個通道。</span></li>
+      <li><strong>合計與比值</strong>：\(4{,}800+24{,}576=29{,}376\)；\(614{,}400\div29{,}376\approx20.9\)。輸出形狀和一般卷積一樣是 8×8×128，但運算量只要約 1/21。</li>
+      <li><strong>推一般式</strong>：把三個量都用符號寫（\(H\times W\) 是輸出位置數）
+        $$\text{一般}=HW\,C_{out}\,k^2C_{in},\quad\text{Depthwise}=HW\,C_{in}\,k^2,\quad\text{Pointwise}=HW\,C_{out}\,C_{in}$$</li>
+      <li><strong>相除、拆成兩項</strong>：
+        $$\frac{HWC_{in}k^2+HWC_{in}C_{out}}{HWC_{in}C_{out}k^2}=\frac{HWC_{in}k^2}{HWC_{in}C_{out}k^2}+\frac{HWC_{in}C_{out}}{HWC_{in}C_{out}k^2}=\frac{1}{C_{out}}+\frac{1}{k^2}$$
+        <span class="why">分子分母相同的東西直接約掉。代入 \(C_{out}=128,\ k=5\)：\(0.0078+0.04=0.0478\)。</span></li>
+      <li><strong>直覺</strong>：\(C_{out}\) 通常很大（128、256…），所以 \(1/C_{out}\) 很小，比值大約就是 \(1/k^2\)：3×3 約省 9 倍、5×5 約省 25 倍。</li>
+    </ol>
+  </div>
+
   <div class="widget" id="w-dsc">
     <p class="w-title">一般卷積 vs Depthwise Separable：逐步數乘法</p>
     <p class="w-desc">預設是講義的例子（應得到 614,400 vs 29,376）。上方圖示三種 kernel 的形狀：一般卷積是一整塊 k×k×C<sub>in</sub>；depthwise 拆成 C<sub>in</sub> 片 k×k×1；pointwise 是 1×1×C<sub>in</sub> 的細長條。</p>
@@ -381,6 +508,22 @@
     <li>例：解析度 224 → 160，\(\rho\approx0.714\)，運算量約變 \(0.714^2\approx0.51\) 倍，參數量不變</li>
   </ul>
 
+  <div class="steps">
+    <p class="steps-title">逐步展開：為什麼 α 是平方、ρ 不影響參數？（以一般 3×3 卷積 64 → 128、特徵圖 112×112 為例）<span class="tag add">補充</span></p>
+    <ol>
+      <li><strong>原本的參數量</strong>（先不算 bias）：\(3\times3\times64\times128=73{,}728\)</li>
+      <li><strong>α = 0.5</strong>：輸入 \(64\times0.5=32\)、輸出 \(128\times0.5=64\)；參數 \(3\times3\times32\times64=18{,}432\)
+        <span class="why">\(18{,}432\div73{,}728=0.25=0.5\times0.5\)。一個 0.5 來自 \(C_{in}\)、另一個 0.5 來自 \(C_{out}\)，所以是 \(\alpha^2\)。運算量也同樣乘上 \(\alpha^2\)。</span></li>
+      <li><strong>ρ 怎麼算</strong>：\(\rho=160\div224\approx0.714\)；特徵圖邊長也乘 ρ：\(112\times0.714=80\)。</li>
+      <li><strong>ρ 對運算量</strong>：位置數 \(112\times112=12{,}544\) → \(80\times80=6{,}400\)，\(6{,}400\div12{,}544\approx0.51=\rho^2\)
+        <span class="why">高、寬各乘一次 ρ，所以是 \(\rho^2\)。</span></li>
+      <li><strong>ρ 對參數量</strong>：\(k\)、\(C_{in}\)、\(C_{out}\) 都沒變 → 還是 73,728，<strong>不變</strong>。
+        <span class="why">回到 4.0：參數量公式裡根本沒有 \(H, W\)。</span></li>
+      <li><strong>放在一起</strong>：運算量 \(\propto\alpha^2\rho^2\)、參數量 \(\propto\alpha^2\)。α = 0.5、解析度 160 時，運算量約 \(0.25\times0.51\approx0.13\) 倍。
+        <span class="why">MobileNet 實際用的是 depthwise separable 層，depthwise 那一項只和 α 成一次方，所以實際比值會略高於 α²（下面元件可以看到 0.266）。</span></li>
+    </ol>
+  </div>
+
   <div class="widget" id="w-mob">
     <p class="w-title">α 與 ρ 怎麼影響運算量和參數量</p>
     <p class="w-desc">上半是講義的例子：某一層 64 → 128 通道（這裡假設是 3×3 depthwise separable 層、輸入解析度 224 時特徵圖 112×112）。下半 <span class="tag add">補充</span>用 MobileNet 論文中 1.0 MobileNet-224 的 569M 乘加、4.2M 參數，以 α²ρ²、α² 估算整個模型。</p>
@@ -406,6 +549,23 @@
     <li><span class="tag add">補充</span>梯度消失／爆炸的數值感：20 層每層導數 0.5 → \(0.5^{20}\approx9.5\times10^{-7}\)；每層 1.5 → \(1.5^{20}\approx3{,}325\)（在 <a href="#w-res">2.5 的元件</a>下半部可以驗證）</li>
   </ul>
 
+  <div class="steps">
+    <p class="steps-title">逐步展開：梯度為什麼會消失，「+1」為什麼有用 <span class="tag add">補充</span></p>
+    <ol>
+      <li><strong>連鎖律（Chain Rule）</strong>：如果 \(y=f_3(f_2(f_1(x)))\)，那 \(\dfrac{\partial y}{\partial x}=f_3'\times f_2'\times f_1'\)，也就是<strong>每一層的導數連乘</strong>。
+        <span class="why">C1 反向傳播學過：誤差從輸出往回傳，每經過一層就乘上那一層的導數。</span></li>
+      <li><strong>3 層、每層導數 0.5</strong>：\(0.5\times0.5\times0.5=0.125\)，傳到第一層只剩 1/8。</li>
+      <li><strong>20 層</strong>：\(0.5^{20}=(0.5^{10})^2=\left(\tfrac{1}{1024}\right)^2\approx(0.000977)^2\approx9.5\times10^{-7}\)
+        <span class="why">梯度小到幾乎是 0，前面的層權重幾乎不更新 → 梯度消失。</span></li>
+      <li><strong>反過來，每層 1.5</strong>：\(1.5^{20}=(1.5^{10})^2\approx57.7^2\approx3{,}325\) → 梯度爆炸，更新一次就跳太遠。</li>
+      <li><strong>殘差 block 的導數</strong>：\(H(x)=F(x)+x\)，對 \(x\) 微分：\(\dfrac{\partial H}{\partial x}=\dfrac{\partial F}{\partial x}+\dfrac{\partial x}{\partial x}=F'+1\)
+        <span class="why">\(x\) 對自己微分是 1，這就是捷徑貢獻的「+1」。</span></li>
+      <li><strong>代數字</strong>：如果殘差分支學到的修正很小，例如 \(F'=0.05\)，每個 block 的倍率是 1.05；20 個 block：\(1.05^{20}\approx2.65\)，不會消失也不會爆炸。
+        <span class="why">對照普通網路 \(0.5^{20}\approx0.000001\)，差了百萬倍。</span></li>
+      <li><strong>「學殘差」的數字例子</strong>：輸入 \(x=3\)，理想輸出 \(H(x)=3.2\)。普通網路要從零學出「輸出 3.2」；ResNet 只要學 \(F(x)=3.2-3=0.2\) 這個小修正。如果理想輸出剛好就是 3，\(F(x)=0\) 即可。</li>
+    </ol>
+  </div>
+
   <h3>4.6 GAP 省下的參數 <span class="tag add">補充</span></h3>
   <ul>
     <li>7×7×512 展平 = 25,088 維，若接 4,096 節點的 FC（VGG 的做法）：\((25{,}088+1)\times4{,}096=102{,}764{,}544\) 個參數</li>
@@ -413,12 +573,39 @@
     <li>可以在 <a href="#w-gap">2.6 的元件</a>改特徵圖大小比較</li>
   </ul>
 
+  <div class="steps">
+    <p class="steps-title">逐步展開：7×7×512 接到分類器，Flatten＋FC vs GAP</p>
+    <ol>
+      <li><strong>GAP 對一個通道做什麼</strong>：例如某個通道是 2×2 的 \(\begin{bmatrix}1&3\\5&7\end{bmatrix}\)，GAP = \((1+3+5+7)\div4=4\)。一個通道 → 一個數字。
+        <span class="why">7×7 的通道就是 49 個數字取平均。沒有任何權重要學，所以 GAP 是 0 參數。</span></li>
+      <li><strong>GAP 的輸出</strong>：512 個通道各取一個平均 → 長度 512 的向量（1×1×512）。</li>
+      <li><strong>Flatten 的輸出</strong>：把所有數字排成一列：\(7\times7\times512=49\times512=25{,}088\) 維。</li>
+      <li><strong>FC 層的參數量公式</strong>：\((\text{輸入長度}+1)\times\text{輸出節點數}\)
+        <span class="why">每個輸出節點和每個輸入都有一條權重，再加自己的 bias（C2 學過）。</span></li>
+      <li><strong>Flatten → FC 4096</strong>：\((25{,}088+1)\times4{,}096=102{,}760{,}448+4{,}096=102{,}764{,}544\)，約 1 億。</li>
+      <li><strong>GAP → FC 1000</strong>：\((512+1)\times1{,}000=512{,}000+1{,}000=513{,}000\)</li>
+      <li><strong>比較</strong>：\(102{,}764{,}544\div513{,}000\approx200\) 倍。關鍵是 FC 的輸入從 25,088 縮成 512，差了 49 倍（就是 7×7）。</li>
+    </ol>
+  </div>
+
   <h3>4.7 EfficientNet Compound Scaling（不考）</h3>
   $$\text{depth}=\alpha^{\phi},\quad \text{width}=\beta^{\phi},\quad \text{resolution}=\gamma^{\phi},\qquad \alpha\cdot\beta^2\cdot\gamma^2\approx2,\ \ \alpha,\beta,\gamma\ge1$$
   <ul>
     <li>φ 每增加 1，總運算量約加倍；寬度與解析度平方是因為 FLOPS 與它們成平方關係（見 4.1）</li>
     <li>驗證 B0 係數：\(1.2\times1.1^2\times1.15^2=1.2\times1.21\times1.3225\approx1.92\approx2\)</li>
   </ul>
+
+  <div class="steps">
+    <p class="steps-title">逐步展開：φ = 1 和 φ = 2 時各放大幾倍</p>
+    <ol>
+      <li><strong>φ = 1</strong>：深度 \(\alpha^1=1.2\)、寬度 \(\beta^1=1.1\)、解析度 \(\gamma^1=1.15\)（224 → \(224\times1.15\approx258\)）。</li>
+      <li><strong>運算量</strong>：由 4.1，運算量 \(\propto\) 深度 × 寬度² × 解析度²：\(1.2\times1.1^2\times1.15^2\)
+        <span class="why">寬度平方是因為 \(C_{in}\)、\(C_{out}\) 都變；解析度平方是因為 \(H\)、\(W\) 都變。</span></li>
+      <li><strong>一項一項乘</strong>：\(1.1^2=1.21\)、\(1.15^2=1.3225\)；\(1.2\times1.21=1.452\)；\(1.452\times1.3225\approx1.92\approx2\)</li>
+      <li><strong>φ = 2</strong>：每個係數平方：深度 \(1.2^2=1.44\)、寬度 \(1.1^2=1.21\)、解析度 \(1.15^2\approx1.32\)。</li>
+      <li><strong>φ = 2 的運算量</strong>：\((1.92)^2\approx3.7\approx2^2\)。φ 每加 1，運算量約乘 2。</li>
+    </ol>
+  </div>
 
   <div class="widget" id="w-scale">
     <p class="w-title">Compound Scaling：深、寬、解析度一起長（不考）</p>
@@ -447,6 +634,18 @@
     </table>
   </div>
 
+  <div class="steps">
+    <p class="steps-title">逐步展開：LeNet 的尺寸一路怎麼變（不考，但是很好的尺寸練習）</p>
+    <ol>
+      <li><strong>Conv1</strong>：\(32-5+1=28\)，6 個 filter → \(28\times28\times6\)；參數 \((5\times5\times1+1)\times6=26\times6=156\)</li>
+      <li><strong>Pool1</strong>（2×2、stride 2）：\(28\div2=14\) → \(14\times14\times6\)；pooling 沒有參數、不改通道數。</li>
+      <li><strong>Conv2</strong>：\(14-5+1=10\) → \(10\times10\times16\)；每個 filter 深度要等於輸入的 6：\(5\times5\times6=150\)，加 bias 151，\(151\times16=2{,}416\)</li>
+      <li><strong>Pool2</strong>：\(10\div2=5\) → \(5\times5\times16\)；Flatten：\(5\times5\times16=400\)</li>
+      <li><strong>三層 FC</strong>：\((400+1)\times120=48{,}120\)；\((120+1)\times84=10{,}164\)；\((84+1)\times10=850\)</li>
+      <li><strong>合計</strong>：\(156+2{,}416+48{,}120+10{,}164+850=61{,}706\)。和 VGG 一樣，大部分參數在 FC。</li>
+    </ol>
+  </div>
+
   <h3>4.9 Fire Module 參數量 <span class="tag add">補充</span></h3>
   <p>以 SqueezeNet fire2 的設定為例：輸入 96 通道、\(s_{1\times1}=16\)、\(e_{1\times1}=64\)、\(e_{3\times3}=64\)</p>
   <ul>
@@ -456,6 +655,20 @@
     <li>合計 11,920，輸出 64 + 64 = 128 通道；若直接用 3×3 卷積 96 → 128：\((3\times3\times96+1)\times128=110{,}720\)，約多 9 倍</li>
     <li>可以在 <a href="#w-fire">2.8 的計算器</a>驗算</li>
   </ul>
+
+  <div class="steps">
+    <p class="steps-title">逐步展開：fire2（輸入 96 通道、\(s_{1\times1}=16\)、\(e_{1\times1}=64\)、\(e_{3\times3}=64\)）</p>
+    <ol>
+      <li><strong>squeeze</strong>：16 個 1×1 filter，每個深度 = 輸入的 96 → \(1\times1\times96=96\) 個權重 + 1 bias = 97；\(97\times16=1{,}552\)
+        <span class="why">squeeze 之後只剩 16 個通道，這是後面便宜的關鍵。</span></li>
+      <li><strong>expand 1×1</strong>：輸入是 squeeze 的輸出（16 通道），不是原本的 96！每個 filter \(1\times1\times16+1=17\)；\(17\times64=1{,}088\)</li>
+      <li><strong>expand 3×3</strong>：同樣吃 16 通道，每個 filter \(3\times3\times16+1=145\)；\(145\times64=9{,}280\)
+        <span class="why">expand 的兩組 filter 是並排（同時吃 squeeze 的輸出），不是串在一起。</span></li>
+      <li><strong>合計與輸出</strong>：\(1{,}552+1{,}088+9{,}280=11{,}920\)；兩組輸出串接：\(64+64=128\) 通道。</li>
+      <li><strong>對照組</strong>：直接一層 3×3，96 → 128：每個 filter \(3\times3\times96+1=865\)，\(865\times128=110{,}720\)；\(110{,}720\div11{,}920\approx9.3\) 倍。
+        <span class="why">省在兩處：3×3 的輸入從 96 壓到 16（策略二）；一半的輸出改用 1×1（策略一）。</span></li>
+    </ol>
+  </div>
 
   <h2 id="compare">5. 模型比較</h2>
   <h3>5.1 經典架構總表</h3>

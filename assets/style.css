@@ -231,6 +231,18 @@ details.answer { margin-top: 8px; }
 details.answer summary { cursor: pointer; color: var(--accent); font-size: .92rem; }
 details.answer > div { margin-top: 8px; padding: 10px 14px; background: var(--surface-2); border-radius: 8px; }
 
+/* ===== 逐步展開 ===== */
+.steps {
+  background: var(--surface); border: 1px solid var(--border); border-left: 4px solid var(--pos);
+  border-radius: var(--radius); padding: 12px 16px; margin: 1em 0;
+}
+.steps .steps-title { font-weight: 700; margin: 0 0 6px; }
+.steps ol { margin: 0; padding-left: 1.4em; }
+.steps li { margin: .6em 0; }
+.steps li .why { display: block; color: var(--text-2); font-size: .9rem; }
+.steps-ctrl { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 10px; }
+.btn:disabled { opacity: .5; cursor: default; }
+
 /* ===== 名詞表 ===== */
 .glossary td:first-child { white-space: nowrap; font-weight: 600; }
 @media (max-width: 640px) { .glossary td:first-child { white-space: normal; } }

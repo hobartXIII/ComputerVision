@@ -58,6 +58,43 @@
     }));
   }
 
+  /* ===== 卷積三數字（逐步代入） ===== */
+  (function conv3() {
+    const ins = ['n', 'ci', 'k', 'p', 's', 'co'].map((k) => $('#c3-' + k));
+    function upd() {
+      const [n, ci, k, p, s, co] = ins.map((i, j) => posInt(i, j === 3 ? 0 : 1));
+      const num = n - k + 2 * p, o = Math.floor(num / s) + 1;
+      if (num < 0) { $('#c3-out').innerHTML = '<span class="bad">kernel 比（補過 padding 的）輸入還大，沒有輸出。</span>'; return; }
+      const per = k * k * ci, params = (per + 1) * co, vals = o * o * co, mult = vals * per;
+      const step = (title, body, why) => `<li style="margin:.4em 0"><strong>${title}</strong>：<span class="mono" style="font-size:.9rem">${body}</span>${why ? `<div class="muted" style="font-size:.88rem">${why}</div>` : ''}</li>`;
+      let html = '<ol style="margin:0;padding-left:0;list-style:none">';
+      html += step('① 輸出尺寸', `⌊(${n} − ${k} + 2×${p}) ÷ ${s}⌋ + 1 = ⌊${num} ÷ ${s}⌋ + 1 = ${o}　→ 輸出 ${o}×${o}×${co}`,
+        num % s ? `${num} ÷ ${s} 不整除，向下取整：最後一步走不滿，就不算。` : (o === n ? '輸出和輸入一樣大：這就是 same padding。' : ''));
+      html += step('② 一個 filter 的權重', `${k}×${k}×${ci} = ${int(per)}（＋1 bias = ${int(per + 1)}）`, `filter 的深度一定等於輸入通道數 ${ci}。`);
+      html += step('③ 參數量', `${int(per + 1)} × ${co} = ${int(params)}`, `${co} 個 filter。注意這一步沒有用到輸入大小 ${n}。`);
+      html += step('④ 輸出有幾個數字', `${o}×${o}×${co} = ${int(vals)}`);
+      html += step('⑤ 每個數字乘幾次', `${k}×${k}×${ci} = ${int(per)}`, 'filter 蓋住多少個數字，就要乘幾次。');
+      html += step('⑥ 乘法次數', `${int(vals)} × ${int(per)} = ${int(mult)}（約 ${big(mult)}）`);
+      html += '</ol>';
+      const key = [n, ci, k, p, s, co].join(',');
+      const CHECK = {
+        '12,3,5,0,1,128': '講義：輸出 8×8×128、一般卷積 614,400 次乘法',
+        '28,192,5,2,1,32': '講義：直接 5×5 約 120M（120,422,400）',
+        '28,192,1,0,1,16': '講義：1×1 瓶頸約 2.4M（2,408,448）',
+        '224,3,3,1,1,64': 'VGG 第一層 1,792 個參數，和 2.3 元件的表格一致',
+        '32,1,5,0,1,6': 'LeNet Conv1：28×28×6、156 個參數，和 4.8 的表格一致',
+      };
+      if (CHECK[key]) html += ok(CHECK[key]);
+      $('#c3-out').innerHTML = html;
+    }
+    ins.forEach((i) => i.addEventListener('input', upd));
+    $$('[data-c3]').forEach((b) => b.addEventListener('click', () => {
+      b.dataset.c3.split(',').forEach((v, j) => { ins[j].value = v; });
+      upd();
+    }));
+    upd();
+  })();
+
   /* ===== VGG 逐段參數量 ===== */
   (function vgg() {
     const CFG = { 16: [2, 2, 3, 3, 3], 19: [2, 2, 4, 4, 4] };

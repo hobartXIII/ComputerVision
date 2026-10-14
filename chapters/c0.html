@@ -133,6 +133,22 @@
   $$\text{總成績} = 0.2\,M + 0.2\,F + 0.3\,E + 0.2\,P + 0.1\,A$$
   <p>\(M\)：期中考、\(F\)：期末考、\(E\)：課堂練習、\(P\)：期末專題、\(A\)：出席。遲交作業分數上限 80 分。</p>
 
+  <div class="steps">
+    <p class="steps-title">逐步展開：期中 70、期末 80、課堂練習 90、期末專題 85、出席 100</p>
+    <ol>
+      <li><strong>先看權重</strong>：\(0.2+0.2+0.3+0.2+0.1=1\)，加起來剛好 100%，所以總成績也是 0～100 分。
+        <span class="why">這叫「加權平均」：每一項先乘上它佔的比例再加總。課堂練習佔 30% 最重。</span></li>
+      <li><strong>期中</strong>：\(0.2\times70=14\)</li>
+      <li><strong>期末</strong>：\(0.2\times80=16\)</li>
+      <li><strong>課堂練習</strong>：\(0.3\times90=27\)</li>
+      <li><strong>期末專題</strong>：\(0.2\times85=17\)</li>
+      <li><strong>出席</strong>：\(0.1\times100=10\)</li>
+      <li><strong>加總</strong>：\(14+16+27+17+10=84\) 分。</li>
+      <li><strong>反過來用</strong> <span class="tag add">補充</span>：如果其他四項不變，期末要考幾分總成績才有 90？其他四項合計 \(84-16=68\)，需要 \(0.2F\ge 90-68=22\)，\(F\ge110\)，不可能。
+        <span class="why">每一項最多只能貢獻「權重 × 100」分，期末最多 20 分。所以想拉高總成績，佔 30% 的課堂練習最有效。</span></li>
+    </ol>
+  </div>
+
   <div class="widget" id="w-grade">
     <p class="w-title">學期成績計算器</p>
     <p class="w-desc">預設值是 Notion 筆記的數值例子<span class="tag add">補充</span>：期中 70、期末 80、課堂練習 90、期末專題 85、出席 100 → 84 分。</p>

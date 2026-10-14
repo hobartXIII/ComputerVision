@@ -248,6 +248,21 @@
   </ul>
   <p><strong>垂直邊緣偵測例子</strong>：輸入每列都是 1 1 0 0 0（左亮右暗），濾波器每列都是 1 0 −1 → 輸出每列都是 3 3 0，在亮暗交界處出現大值 3。（在 <a href="#w-conv">卷積元件</a>選「左亮右暗」＋「垂直邊緣偵測器」驗證。）</p>
 
+  <div class="steps">
+    <p class="steps-title">逐步展開：一個輸出格子怎麼算（以講義例子第 2 列第 3 格 = 3 為例）</p>
+    <ol>
+      <li><strong>找到框住的範圍</strong>：輸出第 2 列第 3 格，對應輸入從第 2 列第 3 行開始的 3×3：
+        $$\begin{bmatrix}0&1&1\\1&0&0\\0&1&0\end{bmatrix}$$
+        <span class="why">stride 1 時，輸出 \((i,j)\) 就從輸入 \((i,j)\) 開始框。公式裡的 \(X(i+a-1,\,j+b-1)\) 就是在說這件事。</span></li>
+      <li><strong>和濾波器「對應位置相乘」</strong>（不是矩陣乘法！）：
+        $$\begin{bmatrix}0\times0&1\times1&1\times0\\1\times1&0\times0&0\times(-1)\\0\times0&1\times1&0\times0\end{bmatrix}=\begin{bmatrix}0&1&0\\1&0&0\\0&1&0\end{bmatrix}$$</li>
+      <li><strong>9 個乘積全部加起來</strong>：\(0+1+0+1+0+0+0+1+0=3\)，就是輸出矩陣第 2 列第 3 格的 3。</li>
+      <li><strong>滑到下一格重複</strong>：框往右移一格（stride 1），重做 1～3 步。5×5 輸入、3×3 濾波器，橫向只能停 3 個位置（\(5-3+1=3\)），所以輸出是 3×3。</li>
+      <li><strong>垂直邊緣的例子</strong>：輸入每列 1 1 0 0 0、濾波器每列 1 0 −1。框在最左邊：每列 \(1\times1+1\times0+0\times(-1)=1\)，三列加起來 3；框在中間：每列 \(1\times1+0\times0+0\times(-1)=1\)，也是 3；框在最右邊：全是 0 → 0。所以輸出每列是 3 3 0。
+        <span class="why">濾波器「左邊 +1、右邊 −1」：左亮右暗時左邊大右邊小，差值大 → 輸出大；整片一樣亮時左右抵消 → 0。這就是邊緣偵測。</span></li>
+    </ol>
+  </div>
+
   <h3>4.2 特徵圖尺寸</h3>
   <p>講義公式（無 padding、stride = 1）：</p>
   $$m=n-f+1$$
@@ -258,6 +273,19 @@
   <p>一般式（含 padding 與 stride）<span class="tag add">補充</span>：</p>
   $$m=\left\lfloor\frac{n+2p-f}{s}\right\rfloor+1$$
   <p>\(p\)：padding 圈數；\(s\)：stride。池化也適用這個公式。</p>
+
+  <div class="steps">
+    <p class="steps-title">逐步展開：自我測驗第 4 題（64×64×3 → 16 個 3×3，s1、p1 → 2×2 Max Pool，stride 2）</p>
+    <ol>
+      <li><strong>公式每一項的意思</strong>：\(n+2p\) 是補完 padding 後的邊長（左右各補 p 圈）；減 \(f\) 是框的最後一個位置之前還剩多少；除以 \(s\) 是一次跳幾格；加 1 是把起始位置算進去。</li>
+      <li><strong>卷積層</strong>：\(\left\lfloor\frac{64+2\times1-3}{1}\right\rfloor+1=63+1=64\) → \(64\times64\times16\)
+        <span class="why">3×3 濾波器配 padding 1，尺寸不變（same padding）。深度 16 來自濾波器個數，不是輸入的 3。</span></li>
+      <li><strong>池化層</strong>：\(\left\lfloor\frac{64+0-2}{2}\right\rfloor+1=31+1=32\) → \(32\times32\times16\)
+        <span class="why">池化對每個頻道分開做，不改變頻道數。2×2、stride 2 就是邊長減半。</span></li>
+      <li><strong>stride 2 的講義例子</strong>：5×5 輸入、3×3 濾波器、s = 2：\(\lfloor(5-3)/2\rfloor+1=2\) → 2×2（[[2,−1],[2,1]]）。</li>
+      <li><strong>除不盡時</strong>：例如 \(n=6,f=3,s=2\)：\(\lfloor3/2\rfloor+1=1+1=2\)。⌊ ⌋ 是無條件捨去：最後一步跨出去就不算。</li>
+    </ol>
+  </div>
 
   <div class="widget" id="w-size">
     <p class="w-title">輸出尺寸與參數量計算器</p>
@@ -290,9 +318,35 @@
   $$y=W_1x,\quad z=W_2y=W_2(W_1x)=(W_2W_1)x=W_{new}\,x$$
   <p>加上激活函數 \(f\) 後：\(z=W_2\,f(W_1x)\)，\(W_2\) 與 \(f\) 無法合併。</p>
 
+  <div class="steps">
+    <p class="steps-title">逐步展開：用數字看「為什麼需要非線性」<span class="tag add">補充</span></p>
+    <ol>
+      <li><strong>ReLU 是逐格運算</strong>：每一格各自做 \(\max(0,x)\)：負的變 0，正的不變。所以 \(-1\to0\)、\(3\to3\)。</li>
+      <li><strong>沒有激活函數</strong>：取 \(W_1=2\)、\(W_2=3\)（用純量最好看）。\(y=2x\)、\(z=3y=6x\)，兩層合起來就是一層 \(W_{new}=6\)。疊 100 層也只是乘上一個數。</li>
+      <li><strong>加上 ReLU，\(x=1\)</strong>：\(z=3\times\text{ReLU}(2)=6\)，和 \(6x\) 一樣。</li>
+      <li><strong>加上 ReLU，\(x=-1\)</strong>：\(z=3\times\text{ReLU}(-2)=3\times0=0\)，但 \(6x=-6\)。沒有任何一個 \(W_{new}\) 能讓 \(W_{new}\times1=6\) 又 \(W_{new}\times(-1)=0\)，所以合併不了。
+        <span class="why">網路因此能畫出「轉彎」的函數，層數加深才真的有用。</span></li>
+    </ol>
+  </div>
+
   <h3>4.4 參數量</h3>
   $$\text{Conv 層}=\big((f_h\times f_w\times d)+1\big)\times N_f,\qquad \text{FC 層}=(L+1)\times N_{nodes}$$
   <p>\(f_h, f_w\)：濾波器高、寬；\(d\)：輸入深度（頻道數）；\(+1\)：每個濾波器一個 bias（純量）；\(N_f\)：濾波器數；\(L\)：輸入向量長度；\(N_{nodes}\)：該層節點數。</p>
+
+  <div class="steps">
+    <p class="steps-title">逐步展開：講義的 MNIST CNN，合計 1,199,882 怎麼來</p>
+    <ol>
+      <li><strong>Conv 層公式的意思</strong>：一個濾波器有 \(f_h\times f_w\times d\) 個權重（深度一定等於輸入頻道數）＋ 1 個 bias；有 \(N_f\) 個濾波器就乘 \(N_f\)。
+        <span class="why">講義「Conv layer 上的參數量」頁的例子：3×3、輸入 RGB（d = 3）、16 個濾波器 → \((3\times3\times3+1)\times16=28\times16=448\)。講義寫成 \((3\times3\times3)+1=10\)、160 是算錯的 <span class="tag chk">待確認</span>（160 是 d = 1 的結果）。</span></li>
+      <li><strong>Conv_1</strong>：輸入 28×28×1，32 個 3×3：\((3\times3\times1+1)\times32=10\times32=320\)；輸出 \(28-3+1=26\) → 26×26×32。</li>
+      <li><strong>Conv_2</strong>：輸入深度變成 32（上一層有 32 個濾波器）：\((3\times3\times32+1)\times64=289\times64=18{,}496\)；輸出 \(26-3+1=24\) → 24×24×64。
+        <span class="why">講義有一頁寫成 18,494，正確是 18,496 <span class="tag chk">待確認</span>。</span></li>
+      <li><strong>ReLU、Max Pool、Flatten</strong>：沒有參數。Max Pool 2×2：\(24\div2=12\) → 12×12×64；Flatten：\(12\times12\times64=9{,}216\)。</li>
+      <li><strong>FC 層公式的意思</strong>：每個節點和每個輸入都有一條權重（\(L\) 條）＋ 1 個 bias。FC（128）：\((9{,}216+1)\times128=1{,}179{,}776\)</li>
+      <li><strong>輸出層</strong>（10 類）：\((128+1)\times10=1{,}290\)</li>
+      <li><strong>合計</strong>：\(320+18{,}496+1{,}179{,}776+1{,}290=1{,}199{,}882\)。FC 那一層就佔了約 98%。</li>
+    </ol>
+  </div>
 
   <div class="widget" id="w-cnn">
     <p class="w-title">簡易 CNN 逐層計算（MNIST）</p>
