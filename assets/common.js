@@ -9,6 +9,8 @@
     { id: 'c2', no: 'C2', title: '卷積神經網路（CNN）', desc: '卷積、padding、stride、ReLU、pooling、參數量計算', done: true },
     { id: 'c3', no: 'C3', title: '模型品質與改進', desc: '混淆矩陣、Precision／Recall／F1、Overfitting、L1／L2、Dropout、Early Stopping、BN、資料擴增', done: true },
     { id: 'c4', no: 'C4', title: '進階影像視覺模型（Part 1）', desc: 'VGG、Inception、ResNet、GAP、SqueezeNet、MobileNet、EfficientNet', done: true },
+    { id: 'c4-2', no: 'C4-2', title: '進階影像視覺模型（Part 2）', desc: 'DenseNet、Dense Block、增長率、Bottleneck、過渡層、DenseNet-BC', done: true },
+    { id: 'c5', no: 'C5', title: '遷移學習與微調', desc: '特徵提取、微調、Full／Partial（Last-k）、PEFT（LoRA）、Regularized（L2-SP）', done: true },
   ];
   const EXAMS = [
     { name: '期中考', date: '2026-10-29' },

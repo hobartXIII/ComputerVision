@@ -26,6 +26,10 @@
 | C2 卷積神經網路（CNN） | c2_cnn.pdf | ✅ | ✅ |
 | C3 模型品質與改進 | c3_model_improvement \| iLearning 3.pdf | ✅ | ✅ |
 | C4 進階影像視覺模型（Part 1） | c4_advanced_cnn_part1.pdf | ✅ | ✅ |
+| C4 進階影像視覺模型（Part 2）：DenseNet | c4_advanced_cnn_part2.pdf | ✅ | ✅（`c4-2.html`） |
+| C5 遷移學習與微調 | c5_transfer_learning_and_fine_tuning.pdf | ✅ | ✅ |
+
+同一章分成多份講義時，後面的部分用 `c<n>-<part>.html`（例如 C4 Part 2 是 `c4-2.html`，頁首顯示「C4-2」）。
 
 C4 講義標註 (Skip) 的 LeNet、AlexNet、EfficientNet 不在考試範圍，頁面保留但標「不考」。
 
@@ -109,6 +113,12 @@ chapters/c<n>.js      該章的互動元件，每個元件一個 IIFE，對應 H
 | C4 | Fire module（`#w-fire`） | fire2（96,16,64,64）→ 11,920 vs 110,720；測驗題（128,…）→ 12,432 vs 147,584 |
 | C4 | Depthwise Separable（`#w-dsc`） | 12×12×3、5×5、128 → 614,400 vs 29,376；測驗題 16×16×32→64 same → 4,718,592 vs 598,016 |
 | C4 | MobileNet α／ρ（`#w-mob`）、Compound Scaling（`#w-scale`）、比較圖（`#w-models`） | α=0.5 → 約 0.25 倍；224→160 → 0.51 倍；φ=1 → 1.92 |
+| C4-2 | Dense Block（`#w-dense`） | k₀=64、k=32、6 層 → 輸入 64…224、輸出 256、連接 21 條 |
+| C4-2 | Bottleneck（`#w-bottle`） | C=992、k=32 → 285,696 vs 163,840（0.573）；C=64 → 18,432 vs 45,056；C=512 → 147,456 vs 102,400 |
+| C4-2 | 整個網路（`#w-net`） | DenseNet-121（k=32、θ=0.5、B）→ 7,978,856；169 → 14,149,480；201 → 20,013,928；264 → 33,337,704；無 B → 10,869,096 |
+| C5 | 微調策略（`#w-strat`，ResNet-50＋10 類、Adam）、k 怎麼選（`#w-k`） | 特徵提取 20,490（0.09%、94.4 MB）；Last-k k=1 → 14,985,226（63.7%）；k=2 → 22,083,594；Full 23,528,522（376.5 MB） |
+| C5 | LoRA（`#w-lora`）、數字例子（`#w-merge`） | 768×768、r=8 → 12,288（2.08%）；1024、r=16 → 32,768；ViT-B 10 任務 860M vs 91.9M；B=(0.5,1)、A=(2,−1)、x=(3,1) → h=(5.5,6) |
+| C5 | L2-SP（`#w-l2sp`） | α=1、w⁰=(2,1)、w*=(3,3) → L2-SP (2.5,2)、weight decay (1.5,1.5) |
 
 C3 門檻元件的分數是依常態分位數排列產生的，讓門檻 0.5 剛好得到講義的 TP90/FN10/FP5/TN40；改分布參數後要重新確認。
 
