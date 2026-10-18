@@ -37,6 +37,177 @@
     return { a: cssVar('--c-a'), b: cssVar('--c-b'), c: cssVar('--c-c'), text: cssVar('--text'), text2: cssVar('--text-2'), border: cssVar('--border'), accent: cssVar('--accent'), pos: cssVar('--pos'), neg: cssVar('--neg'), surface: cssVar('--surface') };
   }
 
+  /* ===== RGB 影像的 3D 陣列 ===== */
+  (function rgbArray() {
+    // 4×4 小圖：天空、太陽、草地、一朵紅花、一塊泥土
+    const SKY = [135, 206, 235], SUN = [255, 215, 0], GRASS = [34, 139, 34], FLOWER = [220, 20, 60], SOIL = [139, 69, 19];
+    const img = [
+      [SKY, SKY, SUN, SKY],
+      [SKY, SKY, SKY, SKY],
+      [GRASS, FLOWER, GRASS, GRASS],
+      [GRASS, GRASS, GRASS, SOIL],
+    ].map((row) => row.map((p) => p.slice()));
+    const N = img.length;
+    const CH = [
+      { name: 'R', rgb: '229,72,77' },
+      { name: 'G', rgb: '48,164,108' },
+      { name: 'B', rgb: '62,99,221' },
+    ];
+    let sel = [2, 1];       // 預設選紅花
+    let view = 'stack';     // stack 疊起來、flat 攤開、gray 灰階
+    // 灰階值：和下面「一個像素」元件相同的加權公式
+    const grayOf = (p) => Math.round(0.299 * p[0] + 0.587 * p[1] + 0.114 * p[2]);
+
+    const NS = 'http://www.w3.org/2000/svg';
+    function s(tag, attrs = {}, text) {
+      const e = document.createElementNS(NS, tag);
+      for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v);
+      if (text != null) e.textContent = text;
+      return e;
+    }
+
+    function drawImage() {
+      const svg = $('#arr-img'), c = 30, o = 6;
+      svg.replaceChildren();
+      $('#arr-img-cap').textContent = view === 'gray' ? '灰階圖（4×4 像素）' : '看到的圖（4×4 像素）';
+      svg.setAttribute('viewBox', `0 0 ${N * c + 2 * o} ${N * c + 2 * o}`);
+      for (let i = 0; i < N; i++) {
+        for (let j = 0; j < N; j++) {
+          const g = grayOf(img[i][j]);
+          const fill = view === 'gray' ? `rgb(${g},${g},${g})` : `rgb(${img[i][j]})`;
+          const r = s('rect', { x: o + j * c, y: o + i * c, width: c, height: c, fill, style: 'cursor:pointer' });
+          r.addEventListener('click', () => select(i, j));
+          svg.append(r);
+        }
+      }
+      svg.append(s('rect', { x: o, y: o, width: N * c, height: N * c, fill: 'none', style: 'stroke:var(--border)' }));
+      svg.append(s('rect', { x: o + sel[1] * c, y: o + sel[0] * c, width: c, height: c, fill: 'none', 'stroke-width': 3, style: 'stroke:var(--accent)' }));
+    }
+
+    // 一層頻道矩陣：每格底色深淺 = 數值大小
+    function layer(svg, k, x0, y0, c) {
+      const g = s('g');
+      g.append(s('rect', { x: x0, y: y0, width: N * c, height: N * c, style: 'fill:var(--surface)' }));
+      for (let i = 0; i < N; i++) {
+        for (let j = 0; j < N; j++) {
+          const v = img[i][j][k], a = v / 255;
+          const r = s('rect', {
+            x: x0 + j * c, y: y0 + i * c, width: c, height: c,
+            fill: `rgba(${CH[k].rgb},${a.toFixed(3)})`, style: 'stroke:var(--border);cursor:pointer',
+          });
+          r.addEventListener('click', () => select(i, j));
+          g.append(r);
+          g.append(s('text', {
+            x: x0 + j * c + c / 2, y: y0 + i * c + c / 2 + 4, 'text-anchor': 'middle', 'font-size': 12,
+            'pointer-events': 'none', style: a > 0.55 ? 'fill:#fff;font-weight:600' : 'fill:var(--text)',
+          }, v));
+        }
+      }
+      svg.append(g);
+    }
+
+    function drawLayers() {
+      const svg = $('#arr-layers');
+      svg.replaceChildren();
+      svg.style.maxWidth = { stack: '440px', gray: '300px' }[view] || 'none';   // 攤開時三層並排，用滿整行才看得清楚
+      const c = 40, G = N * c;
+      const font = { 'font-size': 13, style: 'fill:var(--text-2)' };
+      const label = (k, x, y, extra) => svg.append(s('text', { x, y, 'font-size': 13, 'font-weight': 700, fill: `rgb(${CH[k].rgb})` }, CH[k].name + (extra || '')));
+      const origins = [];
+      if (view === 'gray') {
+        // 只有一層：每格就是灰階本身的顏色
+        const padL = 26, padT = 22, padB = 26, padR = 78;
+        svg.setAttribute('viewBox', `0 0 ${padL + G + padR} ${padT + G + padB}`);
+        const x0 = padL, y0 = padT;
+        origins[0] = [x0, y0];
+        for (let i = 0; i < N; i++) {
+          for (let j = 0; j < N; j++) {
+            const v = grayOf(img[i][j]);
+            const r = s('rect', { x: x0 + j * c, y: y0 + i * c, width: c, height: c, fill: `rgb(${v},${v},${v})`, style: 'stroke:var(--border);cursor:pointer' });
+            r.addEventListener('click', () => select(i, j));
+            svg.append(r);
+            svg.append(s('text', {
+              x: x0 + j * c + c / 2, y: y0 + i * c + c / 2 + 4, 'text-anchor': 'middle', 'font-size': 12, 'font-weight': 600,
+              'pointer-events': 'none', fill: v < 128 ? '#fff' : '#1f2328',
+            }, v));
+          }
+        }
+        svg.append(s('text', { x: x0, y: y0 - 7, 'font-size': 13, 'font-weight': 700, style: 'fill:var(--text)' }, '灰階　img[:, :, 0]'));
+        svg.append(s('text', { x: x0 + G / 2, y: y0 + G + 18, 'text-anchor': 'middle', ...font }, '寬 W = 4'));
+        svg.append(s('text', { x: x0 - 8, y: y0 + G / 2, 'text-anchor': 'middle', transform: `rotate(-90 ${x0 - 8} ${y0 + G / 2})`, ...font }, '高 H = 4'));
+        svg.append(s('text', { x: x0 + G + 10, y: y0 + 16, ...font }, '頻道'));
+        svg.append(s('text', { x: x0 + G + 10, y: y0 + 32, ...font }, 'C = 1'));
+      } else if (view === 'stack') {
+        const d = 26, padL = 26, padT = 22, padB = 26, padR = 78;
+        svg.setAttribute('viewBox', `0 0 ${padL + G + 2 * d + padR} ${padT + G + 2 * d + padB}`);
+        for (let k = 0; k < 3; k++) origins[k] = [padL + k * d, padT + (2 - k) * d];
+        for (let k = 2; k >= 0; k--) layer(svg, k, ...origins[k], c);   // 後面的先畫
+        for (let k = 0; k < 3; k++) label(k, origins[k][0], origins[k][1] - 6);
+        // 三個軸
+        const [rx, ry] = origins[0], [bx, by] = origins[2];
+        svg.append(s('text', { x: rx + G / 2, y: ry + G + 18, 'text-anchor': 'middle', ...font }, '寬 W = 4'));
+        svg.append(s('text', { x: rx - 8, y: ry + G / 2, 'text-anchor': 'middle', transform: `rotate(-90 ${rx - 8} ${ry + G / 2})`, ...font }, '高 H = 4'));
+        svg.append(s('line', { x1: rx + G + 4, y1: ry - 4, x2: bx + G + 4, y2: by - 4, 'stroke-dasharray': '3 3', style: 'stroke:var(--text-2)' }));
+        svg.append(s('text', { x: bx + G + 10, y: by + d, ...font }, '頻道'));
+        svg.append(s('text', { x: bx + G + 10, y: by + d + 16, ...font }, 'C = 3'));
+      } else {
+        const gap = 22, padL = 6, padT = 22, padB = 24;
+        svg.setAttribute('viewBox', `0 0 ${padL * 2 + 3 * G + 2 * gap} ${padT + G + padB}`);
+        for (let k = 0; k < 3; k++) {
+          origins[k] = [padL + k * (G + gap), padT];
+          layer(svg, k, ...origins[k], c);
+          label(k, origins[k][0], padT - 7, ` 頻道　img[:, :, ${k}]`);
+          svg.append(s('text', { x: origins[k][0] + G / 2, y: padT + G + 17, 'text-anchor': 'middle', ...font }, '4 × 4'));
+        }
+      }
+      // 選取的像素：三層同一個位置。被擋住的層用虛線框，看得出它在後面
+      for (let k = origins.length - 1; k >= 0; k--) {
+        const [x0, y0] = origins[k];
+        const hidden = view === 'stack' && k > 0;
+        svg.append(s('rect', {
+          x: x0 + sel[1] * c, y: y0 + sel[0] * c, width: c, height: c, fill: 'none', 'pointer-events': 'none',
+          'stroke-width': hidden ? 2 : 3, ...(hidden ? { 'stroke-dasharray': '4 3' } : {}), style: 'stroke:var(--accent)',
+        }));
+      }
+    }
+
+    const sliders = [$('#arr-r'), $('#arr-g'), $('#arr-b')];
+    function readout() {
+      const [i, j] = sel, p = img[i][j];
+      sliders.forEach((x, k) => { x.value = p[k]; $(`[data-for="${x.id}"]`).textContent = p[k]; });
+      if (view === 'gray') {
+        const g = grayOf(p);
+        $('#arr-out').innerHTML =
+          `第 ${i + 1} 列、第 ${j + 1} 行的像素：彩色是 [${p.join(', ')}]，灰階只剩<span class="big"> ${g} </span>一個數字` +
+          `（0.299×${p[0]} + 0.587×${p[1]} + 0.114×${p[2]} ≈ ${g}）。<br>` +
+          `<span class="muted">灰階圖的形狀是 (4, 4, 1)，只有 4 × 4 × 1 ＝ 16 個數字，是彩色的 1/3。` +
+          `代價是少了顏色資訊：不同顏色可能變成同一個灰階值，例如預設的紅花和右下角的泥土都是 84。` +
+          `加權公式是常見的轉換方式 <span class="tag add">補充</span>，講義只說灰階圖只有一個頻道。</span>`;
+        return;
+      }
+      $('#arr-out').innerHTML =
+        `第 ${i + 1} 列、第 ${j + 1} 行的像素（程式從 0 開始數，寫成 <code>img[${i}, ${j}]</code>）＝ ` +
+        `<span class="big">[${p.join(', ')}]</span>，就是三層同一個位置的三個數字。<br>` +
+        `<span class="muted">整張圖的形狀是 (高, 寬, 頻道) ＝ (4, 4, 3)，共 4 × 4 × 3 ＝ 48 個 0～255 的數字；` +
+        `<code>img[:, :, 0]</code> 取出整個 R 頻道，是一個 4×4 矩陣。灰階圖只有一層，形狀是 (4, 4, 1)。</span>`;
+    }
+
+    function select(i, j) { sel = [i, j]; render(); }
+    function render() { drawImage(); drawLayers(); readout(); }
+
+    sliders.forEach((x, k) => x.addEventListener('input', () => {
+      img[sel[0]][sel[1]][k] = +x.value;
+      render();
+    }));
+    const btns = Array.from(document.querySelectorAll('#w-arr [data-view]'));
+    btns.forEach((b) => b.addEventListener('click', () => {
+      view = b.dataset.view;
+      btns.forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+      render();
+    }));
+    render();
+  })();
+
   /* ===== 像素 ===== */
   (function pixel() {
     const r = $('#px-r'), g = $('#px-g'), b = $('#px-b');

@@ -10,8 +10,10 @@
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
   <link rel="stylesheet" href="../assets/style.css">
+  <link rel="stylesheet" href="../assets/highlighter.css">
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"></script>
+  <script defer src="../assets/highlighter.js"></script>
   <script defer src="../assets/common.js"></script>
   <script defer src="c2.js"></script>
 </head>
@@ -77,7 +79,7 @@
     <li>彩色圖有 3 個頻道（R、G、B），濾波器也要有<strong>相同的頻道數</strong></li>
     <li>一個濾波器在三個頻道各自相乘後全部加總（dot product），得到<strong>一張</strong>單頻道的特徵圖</li>
     <li>用 \(n_f\) 個濾波器 → 輸出 \(n_f\) 張特徵圖（輸出深度 = 濾波器數量）</li>
-    <li>講義圖中標註「Sliding filter with 48 weights」、「+Padding」，濾波器大小未能從文字確認 <span class="tag chk">待確認</span>48 = 4×4×3？</li>
+    <li>講義圖：R、G、B 三層疊成的立體影像外圍加了 padding，一個同樣有三層深的濾波器在上面滑動（標註「Sliding filter with 48 weights」），每個位置做一次點積（dot product），得到下方單層輸出圖的一個值。48 個權重分給 3 個頻道，每個頻道 16 個，也就是 4×4×3 的濾波器（圖中格子太小無法逐格數，依 48 推算）</li>
   </ul>
 
   <div class="widget" id="w-rgb">
@@ -400,13 +402,13 @@
   <h2 id="figures">6. 圖表說明</h2>
   <ul>
     <li><strong>特徵偵測器圖</strong>：一個圖案被拆成「上邊、下邊、左邊、右邊」四種偵測器，每個偵測器只負責一種邊，組合起來就能辨識整個形狀。</li>
-    <li><strong>手寫數字像素圖</strong>：展示一張灰階圖的每個像素值，背景幾乎都是 255（白），筆畫處數值較小（深色），說明電腦看到的只是數字矩陣。數字內容無法從文字擷取 <span class="tag chk">待確認</span></li>
+    <li><strong>手寫數字像素圖</strong>：展示一張灰階圖的每個像素值，圖中是一個手寫的「1」，約 20×20 格：背景全是 255（白），中間一道直的筆畫數值降到幾十甚至個位數（黑），筆畫邊緣是 100～240 的灰色過渡，說明電腦看到的只是數字矩陣。</li>
     <li><strong>卷積逐步圖解</strong>：3×3 濾波器從 5×5 輸入的左上角開始，一格一格往右、往下滑，每次得到輸出的一個值，最後完成 3×3 的特徵圖。</li>
     <li><strong>彩色圖卷積示意圖</strong>：三層 R、G、B 疊在一起，濾波器也有三層一起滑動，點積後得到單一輸出值。</li>
-    <li><strong>如何分類 image（兩頁圖）</strong>：多層卷積依序抽出由簡單到複雜的特徵，最後分類 <span class="tag chk">待確認</span>圖片內容未能擷取，此為依標題推測。</li>
+    <li><strong>如何分類 image（兩頁圖）</strong>：一張貓的照片，左上角的藍色方塊代表濾波器在圖上滑動做卷積 → 得到一疊特徵圖（Conv Filters）→ 黑色的「Hidden Layers」用這些特徵圖判斷類別 → 輸出 Cat = 0.99、Dog = 0.01。第二頁把濾波器畫成它們抓到的局部特徵：鬍鬚的弧線、一對眼睛、一對耳朵，說明 CNN 是先找局部特徵、再組合起來分類。</li>
     <li><strong>Padding 圖</strong>：5×5 外圍補一圈 0 變成 7×7，輸出維持 5×5；另一張圖用顏色標出角落像素只被卷到一次、中間像素被卷到好幾次。</li>
     <li><strong>Stride 圖</strong>：對照 stride 1（輸出 3×3）與 stride 2（輸出 2×2）的濾波器移動路徑。</li>
-    <li><strong>Max Pooling 圖</strong>：4×4 特徵圖切成四個 2×2 區塊，各取最大值得到 2×2 輸出 <span class="tag chk">待確認</span>圖中實際數值。</li>
+    <li><strong>Max Pooling 圖</strong>：Stride = 2、Kernel = 2×2。4×4 輸入 [[4, 123, 1, 34], [56, 99, 222, 253], [45, 122, 165, 12], [21, 187, 133, 124]] 用四種顏色分成四個 2×2 區塊，各取最大值得到 [[123, 253], [187, 165]]（左上 max(4, 123, 56, 99) = 123，依此類推）。</li>
     <li><strong>4 層 CNN for MNIST 架構圖</strong>：28×28 輸入 → 26×26×32 → 24×24×64 → 12×12×64 → 9216 → 128 → 10，立體方塊的厚度代表深度（濾波器數），長寬代表空間尺寸，越往後空間越小、深度越深。</li>
   </ul>
 

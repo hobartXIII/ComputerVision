@@ -10,8 +10,10 @@
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
   <link rel="stylesheet" href="../assets/style.css">
+  <link rel="stylesheet" href="../assets/highlighter.css">
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"></script>
+  <script defer src="../assets/highlighter.js"></script>
   <script defer src="../assets/common.js"></script>
   <script defer src="c0.js"></script>
 </head>
@@ -180,7 +182,15 @@
 
   <h2 id="figures">6. 圖表說明</h2>
   <ul>
-    <li><strong>四大任務示意圖</strong>（來源 infolks.info，重複出現四頁，每頁依序強調一種任務）：用同一張圖對照四種任務的輸出，從「整張圖一個標籤」→「一個框」→「多個框」→「逐像素上色」，細緻程度逐步提高。圖中的具體物體無法從講義文字擷取 <span class="tag chk">待確認</span>，上方互動元件用自製圖示範同樣的概念。</li>
+    <li><strong>四大任務示意圖</strong>（來源 infolks.info，四頁依序強調一種任務），從「整張圖一個標籤」→「一個框」→「多個框」→「逐像素上色」，細緻程度逐步提高：
+      <ul>
+        <li>圖像分類：一張蘋果、一張驢子的照片，下方各只標一個類別名稱（Apple、Donkey）</li>
+        <li>物件定位：同樣兩張照片，各在物體上畫一個紅框</li>
+        <li>物件偵測：一張城市斑馬線街景，汽車、紅綠燈、行人、狗各自被框出並標上類別，同一類可以有很多個框（這張街景也單獨放大在任務介紹的前一頁）</li>
+        <li>圖像分割：另一張城市街景，每個像素依類別上色：建築、道路、汽車各是一種顏色</li>
+        <li>上方互動元件用自製的同一張小圖示範同樣的概念，方便直接比較四種輸出</li>
+      </ul>
+    </li>
     <li><strong>蘋果例子對照圖</strong>：左邊是傳統 CV，人工寫出「直徑 5～5.1 公分、紅色、圓形」三個特徵後判斷為蘋果；右邊是現代 CV，把圖片丟進模型，由模型自動學出一連串特徵後輸出「蘋果」。重點在於<strong>特徵是誰決定的</strong>。</li>
     <li><strong>應用例子圖</strong>：Instagram 濾鏡、車牌辨識、自駕車、運動分析、臉部辨識、換臉、姿態辨識、圖像生成，說明 CV 的應用範圍很廣。</li>
   </ul>

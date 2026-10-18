@@ -10,8 +10,10 @@
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
   <link rel="stylesheet" href="../assets/style.css">
+  <link rel="stylesheet" href="../assets/highlighter.css">
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"></script>
+  <script defer src="../assets/highlighter.js"></script>
   <script defer src="../assets/common.js"></script>
   <script defer src="c4-2.js"></script>
 </head>
@@ -331,10 +333,15 @@
   <ul>
     <li><strong>Classical CNN 圖</strong>：層與層一條直線串起來，每層只看前一層。</li>
     <li><strong>ResNet Convolution 圖</strong>：一條弧線把 \(x\) 接到輸出處，與 \(F(x)\) 在「⊕」相加。</li>
-    <li><strong>Dense Block 圖</strong>：每一層都有線連到後面所有層，輸入在通道方向越疊越厚（不同顏色代表不同來源層）<span class="tag chk">待確認</span>圖片內容未能擷取，依文字描述；<a href="#w-dense">2.4 的元件</a>重現了這個概念。</li>
+    <li><strong>Dense Block 圖</strong>：每一層都有線連到後面所有層，輸入在通道方向越疊越厚（不同顏色代表不同來源層）。講義用的是 DenseNet 論文的 5 層 Dense Block 圖：輸入 \(x_0\)（紅）→ \(H_1\)（BN-ReLU-Conv）→ \(x_1\)（綠）→ \(H_2\) → \(x_2\)（紫）→ \(H_3\) → \(x_3\)（黃）→ \(H_4\) → \(x_4\)（橘）→ Transition Layer，每一層都有一條同色的弧線連到後面所有層；<a href="#w-dense">2.4 的元件</a>重現了這個概念。</li>
     <li><strong>Composition／Bottleneck 圖</strong>：BN → ReLU →（1×1 Conv → BN → ReLU →）3×3 Conv。</li>
     <li><strong>多個 Dense Block ＋ 過渡層圖</strong>：Conv → Dense Block 1 →（Conv、Pool）→ Dense Block 2 →（Conv、Pool）→ Dense Block 3 → Pooling → Linear。</li>
-    <li><strong>DenseNet Performance 圖</strong>：橫軸為參數量或 FLOPs、縱軸為 ImageNet 驗證錯誤率，DenseNet 曲線在 ResNet 左下方 <span class="tag chk">待確認</span>圖片數值未能擷取。<span class="tag add">補充</span>原論文數字：DenseNet-121／169／201／264 約 8.0M／14.1M／20.0M／33.3M 參數；ResNet-50／101／152 約 25.6M／44.5M／60.2M（<a href="#w-net">4.5 的元件</a>可以算出 DenseNet 這四個數字）。</li>
+    <li><strong>DenseNet Performance 圖</strong>：
+      <ul>
+        <li>左邊是論文 Table 3，ImageNet 驗證集的 top-1／top-5 錯誤率（%，single-crop／10-crop）：DenseNet-121 25.02／23.61、7.71／6.66；DenseNet-169 23.80／22.08、6.85／5.92；DenseNet-201 22.58／21.46、6.34／5.54；DenseNet-264 22.15／20.80、6.12／5.29</li>
+        <li>右邊是論文 Figure 3：兩張圖縱軸都是驗證錯誤率，橫軸分別是參數量與測試時的 FLOPs；藍色 DenseNet-BC 曲線都在紅色 ResNet（34／50／101／152）的左下方。講義的結論：在相近的錯誤率下，DenseNet 所需的參數量與計算量都比 ResNet 少，例如 DenseNet-201 和 ResNet-101 錯誤率差不多，參數量卻少一半以上</li>
+      </ul>
+      <span class="tag add">補充</span>原論文數字：DenseNet-121／169／201／264 約 8.0M／14.1M／20.0M／33.3M 參數；ResNet-50／101／152 約 25.6M／44.5M／60.2M（<a href="#w-net">4.5 的元件</a>可以算出 DenseNet 這四個數字）。</li>
   </ul>
 
   <h2 id="traps">7. 常見觀念陷阱</h2>

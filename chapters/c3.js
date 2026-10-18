@@ -37,15 +37,20 @@
 
   /* ===== MNIST 混淆矩陣 ===== */
   (function confusion() {
-    const SUP = [980, 1135, 1032, 1010, 982, 892, 958, 1028, 974, 1009]; // MNIST 測試集各數字張數
-    const BIG = { '4,9': 18, '7,2': 14, '9,4': 9, '3,5': 8, '8,3': 7, '5,3': 7, '2,7': 6 };
-    const r = rng(7);
-    const M = SUP.map((s, i) => {
-      const row = Array(10).fill(0);
-      for (let j = 0; j < 10; j++) if (j !== i) row[j] = BIG[i + ',' + j] ?? Math.floor(r() * r() * 4);
-      row[i] = s - row.reduce((a, b) => a + b, 0);
-      return row;
-    });
+    // 講義「MNIST Confusion Matrix Example」頁的數字（列 = 真實、行 = 預測）
+    const M = [
+      [973, 0, 2, 0, 0, 1, 1, 1, 2, 0],
+      [0, 1128, 1, 1, 0, 0, 2, 1, 2, 0],
+      [2, 2, 1018, 1, 1, 0, 0, 4, 4, 0],
+      [0, 0, 0, 1001, 0, 5, 0, 0, 4, 0],
+      [0, 0, 2, 0, 971, 0, 0, 0, 0, 9],
+      [2, 0, 0, 3, 0, 884, 1, 0, 0, 2],
+      [6, 2, 1, 0, 2, 5, 939, 0, 3, 0],
+      [0, 2, 7, 1, 0, 0, 0, 1014, 2, 2],
+      [5, 0, 3, 0, 0, 1, 1, 2, 959, 3],
+      [2, 2, 0, 3, 5, 3, 0, 5, 3, 986],
+    ];
+    const SUP = M.map((row) => row.reduce((a, b) => a + b, 0)); // 每列總和 = MNIST 測試集各數字張數
     const colSum = (j) => M.reduce((a, row) => a + row[j], 0);
     const total = SUP.reduce((a, b) => a + b, 0);
     const correct = M.reduce((a, row, i) => a + row[i], 0);
@@ -200,7 +205,7 @@
       for (let r = n - 1; r >= 0; r--) { let s = M[r][n]; for (let j = r + 1; j < n; j++) s -= M[r][j] * x[j]; x[r] = s / M[r][r]; }
       return x;
     }
-    // 最小化 MSE + λΣθ²（不懲罰常數項）
+    // 最小化 MSE + λΣβ²（不懲罰常數項）
     function fit(d, lam) {
       const n = train.length, A = Array.from({ length: d + 1 }, () => Array(d + 1).fill(0)), b = Array(d + 1).fill(0);
       for (const [x, y] of train) {
@@ -363,8 +368,8 @@
       const par = (v) => (v < 0 ? `(${v})` : String(v));
       const l1 = w.reduce((s, v) => s + Math.abs(v), 0), l2 = w.reduce((s, v) => s + v * v, 0);
       const a = el('div'), b = el('div');
-      tex(a, `\\text{L1}=\\lambda\\sum|\\theta_j|=${lam}\\times(${w.map((v) => fmt(Math.abs(v), 4)).join('+')})=${lam}\\times${fmt(l1, 4)}=\\mathbf{${fmt(lam * l1, 6)}}`);
-      tex(b, `\\text{L2}=\\lambda\\sum\\theta_j^2=${lam}\\times(${w.map((v) => par(v) + '^2').join('+')})=${lam}\\times${fmt(l2, 4)}=\\mathbf{${fmt(lam * l2, 6)}}`);
+      tex(a, `\\text{L1}=\\lambda\\sum|\\beta_j|=${lam}\\times(${w.map((v) => fmt(Math.abs(v), 4)).join('+')})=${lam}\\times${fmt(l1, 4)}=\\mathbf{${fmt(lam * l1, 6)}}`);
+      tex(b, `\\text{L2}=\\lambda\\sum\\beta_j^2=${lam}\\times(${w.map((v) => par(v) + '^2').join('+')})=${lam}\\times${fmt(l2, 4)}=\\mathbf{${fmt(lam * l2, 6)}}`);
       out.append(a, b);
       const big = w.reduce((m, v) => (Math.abs(v) > Math.abs(m) ? v : m), 0);
       if (l2 > 0 && w.length > 1) out.append(el('div', { class: 'muted', style: 'margin-top:6px', text: `L2 裡最大的權重 ${big} 就貢獻了 ${fmt((100 * big * big) / l2, 1)}% 的 penalty；L1 裡它佔 ${fmt((100 * Math.abs(big)) / l1, 1)}%。` }));

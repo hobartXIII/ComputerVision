@@ -10,8 +10,10 @@
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
   <link rel="stylesheet" href="../assets/style.css">
+  <link rel="stylesheet" href="../assets/highlighter.css">
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"></script>
+  <script defer src="../assets/highlighter.js"></script>
   <script defer src="../assets/common.js"></script>
   <script defer src="c1.js"></script>
 </head>
@@ -44,6 +46,30 @@
     <li>影像格式可表示為「高 × 寬 × 頻道數」的數字矩陣 <span class="tag add">補充</span></li>
   </ul>
 
+  <div class="widget" id="w-arr">
+    <p class="w-title">RGB 影像 = 高 × 寬 × 3 的立體陣列</p>
+    <p class="w-desc">講義「圖像格式」與「灰階圖片」兩張圖的互動版：左邊是一張 4×4 像素的小圖，右邊把它拆成 R、G、B 三層數字疊起來；切到「灰階」看同一張圖只剩一層。點任一個像素（左圖或任一層都可以），看它在各層是哪個數字；拉滑桿可以改它的顏色。</p>
+    <div class="row" style="align-items:center">
+      <div class="col" style="flex:0 0 auto">
+        <div class="matrix-block"><svg id="arr-img" width="132" height="132" role="img" aria-label="4×4 像素的小圖"></svg><div class="cap" id="arr-img-cap">看到的圖（4×4 像素）</div></div>
+      </div>
+      <div class="col" style="flex:1 1 280px">
+        <svg id="arr-layers" style="width:100%;max-width:440px;display:block" role="img" aria-label="R、G、B 三個頻道的數字矩陣"></svg>
+      </div>
+    </div>
+    <div class="controls">
+      <button class="btn" type="button" data-view="stack" aria-pressed="true">疊起來（3D 陣列）</button>
+      <button class="btn" type="button" data-view="flat" aria-pressed="false">攤開成三層</button>
+      <button class="btn" type="button" data-view="gray" aria-pressed="false">灰階（1 層）</button>
+    </div>
+    <div class="controls">
+      <label><span style="color:#e5484d;font-weight:700">R</span> <input type="range" id="arr-r" min="0" max="255"> <span class="val" data-for="arr-r"></span></label>
+      <label><span style="color:#30a46c;font-weight:700">G</span> <input type="range" id="arr-g" min="0" max="255"> <span class="val" data-for="arr-g"></span></label>
+      <label><span style="color:#3e63dd;font-weight:700">B</span> <input type="range" id="arr-b" min="0" max="255"> <span class="val" data-for="arr-b"></span></label>
+    </div>
+    <div class="readout" id="arr-out"></div>
+  </div>
+
   <div class="widget" id="w-rgb">
     <p class="w-title">一個像素 = 三個 0～255 的數字</p>
     <p class="w-desc">拉動 R、G、B 三個頻道的值，看像素顏色怎麼變。下方把一張 H×W 的圖換算成電腦要處理的數字個數。</p>
@@ -69,11 +95,58 @@
     <div class="readout" id="px-out"></div>
   </div>
 
+  <h4 class="formula-head">公式：影像資料量</h4>
+  <p>28×28 灰階圖 → 784 個數值；224×224 RGB 圖 → 224×224×3 = 150,528 個數值 <span class="tag add">補充</span>。這就是為什麼高維的影像資料對 KNN、SVM 來說很吃力（可以用上方「一個像素」元件自己換算）。</p>
+
+  <div class="steps">
+    <p class="steps-title">逐步展開：一張 224×224 的彩色圖有幾個數值</p>
+    <ol>
+      <li><strong>像素數</strong>：\(224\times224=50{,}176\) 個像素。</li>
+      <li><strong>每個像素幾個數值</strong>：RGB 三個頻道，每個 0～255 → 3 個數值（灰階只有 1 個）。</li>
+      <li><strong>總數</strong>：\(50{,}176\times3=150{,}528\)。對 KNN 來說，每算一次距離都要比較 150,528 個維度。</li>
+    </ol>
+  </div>
+
   <h3>2.3 機器學習 × 電腦視覺</h3>
   <ul>
-    <li>講義以圖說明「什麼是機器學習」、「ML 與 DL 的差異」、「ML 的不同任務」、「ML 流程圖」，圖中文字未能擷取 <span class="tag chk">待確認</span></li>
-    <li><span class="tag add">補充</span>ML 與深度學習（Deep Learning, DL）的核心差異與 C0 對應：ML 多需人工設計特徵，DL 由多層神經網路自動學特徵；ML 任務常分為監督式、非監督式、強化學習</li>
+    <li><strong>什麼是機器學習</strong>：三層同心圓，人工智慧（Artificial Intelligence, AI）⊃ 機器學習（Machine Learning, ML）⊃ 深度學習（Deep Learning, DL）
+      <ul>
+        <li>AI：能感知、推理、行動並適應環境的程式</li>
+        <li>ML：接觸越多資料、表現就越好的演算法</li>
+        <li>DL：ML 的一個子集，用多層神經網路從大量資料中學習</li>
+      </ul>
+    </li>
+    <li><strong>ML 與 DL 的差異</strong>（以「是不是車子」為例）：
+      <ul>
+        <li>ML：輸入 → <strong>人工做特徵擷取</strong> → 分類模型 → 輸出「是車／不是車」</li>
+        <li>DL：輸入 → <strong>同一個神經網路同時做特徵擷取＋分類</strong> → 輸出</li>
+        <li>和 C0「傳統 vs 現代電腦視覺」是同一件事：差別在特徵是人設計的，還是模型自己學的</li>
+      </ul>
+    </li>
+    <li><strong>ML 的不同任務</strong>：依輸入資料分成監督式、非監督式、強化學習三種（見下表）</li>
+    <li><strong>ML 流程圖</strong>：
+      <ul>
+        <li>訓練：原始訓練資料 → 特徵擷取 → 特徵矩陣（搭配標籤）→ 機器學習演算法 → 模型；評估模型後，回頭調整特徵擷取與演算法</li>
+        <li>預測：新資料 → 同樣的特徵擷取 → 特徵向量 → 預測模型 → 輸出標籤</li>
+      </ul>
+    </li>
   </ul>
+
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th></th><th>監督式學習<br>（Supervised）</th><th>非監督式學習<br>（Unsupervised）</th><th>強化學習<br>（Reinforcement）</th></tr></thead>
+      <tbody>
+        <tr><th>輸入</th><td>有標籤的資料</td><td>沒有標籤的資料</td><td>狀態＋動作</td></tr>
+        <tr><th>輸出</th><td>輸入到標籤的對應（Mapping）</td><td>資料分成的群（Classes）</td><td>要採取的行動（Action）</td></tr>
+        <tr><th>回饋</th><td>和正確答案（Targets）比較，算出誤差（Error）來修正</td><td>沒有正確答案，自己找資料的結構</td><td>不給正確答案，只依結果評估（Evaluations）給獎勵（Reward）</td></tr>
+        <tr><th>學什麼 <span class="tag add">補充</span></th><td>學「答案」：照著標好的例子學會預測</td><td>學「結構」：找出相似的資料、分群或降維</td><td>學「策略」：試錯，學會讓長期獎勵最大的行動</td></tr>
+        <tr><th>典型任務 <span class="tag add">補充</span></th><td>分類、回歸</td><td>分群、降維</td><td>遊戲、機器人控制、自駕決策</td></tr>
+        <tr><th>本章例子 <span class="tag add">補充</span></th><td>SVM、KNN、神經網路影像分類</td><td>PCA</td><td>（本章沒有）</td></tr>
+        <tr><th>主要成本 <span class="tag add">補充</span></th><td>需要大量人工標註</td><td>不用標註，但結果較難評估好壞</td><td>需要大量試錯，獎勵設計困難</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="muted" style="font-size:.88rem">前三列整理自講義「ML 的不同任務」圖；標【補充】的列是講義沒有的延伸說明。</p>
 
   <h3>2.4 支持向量機（Support Vector Machine, SVM）</h3>
   <ul>
@@ -119,7 +192,7 @@
     <li>監督式學習演算法，主要用於分類，核心是<strong>以距離判斷類別</strong></li>
     <li>基本三步驟：① 計算新樣本與所有訓練樣本的距離 ② 取最近的 K 個鄰居 ③ 多數決決定類別 <span class="tag add">補充</span>講義以圖說明</li>
     <li>投票結果各半怎麼辦？→ <strong>K 通常設為奇數</strong></li>
-    <li>距離計算：歐幾里得距離（Euclidean Distance）與曼哈頓距離（Manhattan Distance）；高維時曼哈頓距離較穩健（見 4.1）</li>
+    <li>距離計算：歐幾里得距離（Euclidean Distance）、曼哈頓距離（Manhattan Distance），以及把兩者統整起來的明氏距離（Minkowski Distance）；高維時曼哈頓距離較穩健（見下方公式）</li>
     <li>在 CV 的應用：圖像分類、物件偵測、圖像分割</li>
     <li>缺點：
       <ul>
@@ -142,6 +215,56 @@
     <div class="canvas-wrap"><canvas id="knn-canvas" aria-label="KNN 示意"></canvas></div>
     <div class="readout" id="knn-out"></div>
   </div>
+
+  <h4 class="formula-head">公式：距離（KNN）</h4>
+  $$d_{\text{Euclidean}}(\mathbf{x},\mathbf{y})=\sqrt{\sum_{i=1}^{n}(x_i-y_i)^2},\qquad d_{\text{Manhattan}}(\mathbf{x},\mathbf{y})=\sum_{i=1}^{n}\lvert x_i-y_i\rvert$$
+  <p>\(n\)：維度數；\(x_i, y_i\)：兩點在第 \(i\) 維的值。</p>
+  <p>講義把兩者統整成<strong>明氏距離（Minkowski Distance）</strong>：</p>
+  $$d_{\text{Minkowski}}(\mathbf{x},\mathbf{y})=\Big(\sum_{i=1}^{n}\lvert x_i-y_i\rvert^{p}\Big)^{1/p}$$
+  <ul>
+    <li>\(p=1\) → 曼哈頓距離（L1 norm）；\(p=2\) → 歐幾里得距離（L2 norm）</li>
+    <li>C3 的 L1／L2 正則化用的就是同樣的 L1、L2 norm，只是對象從「兩點的差」換成「模型參數」 <span class="tag add">補充</span></li>
+    <li>\(p\) 越大，結果越被差距最大的那一維主導；\(p\to\infty\) 時只剩最大的那一維，稱為切比雪夫距離（Chebyshev Distance）<span class="tag add">補充</span></li>
+  </ul>
+  <div class="table-wrap">
+    <table style="width:auto">
+      <tr><th>\(p\)</th><th>A→B（10, 1）</th><th>A→C（7, 7）</th><th>誰比較遠</th></tr>
+      <tr><td>1（曼哈頓）</td><td>\(10+1=11\)</td><td>\(7+7=14\)</td><td>C 明顯較遠</td></tr>
+      <tr><td>2（歐幾里得）</td><td>\(\sqrt{101}\approx10.05\)</td><td>\(\sqrt{98}\approx9.90\)</td><td>幾乎一樣，B 略遠</td></tr>
+      <tr><td>∞（切比雪夫）<span class="tag add">補充</span></td><td>\(\max(10,1)=10\)</td><td>\(\max(7,7)=7\)</td><td>B 明顯較遠</td></tr>
+    </table>
+  </div>
+  <p class="muted" style="font-size:.9rem">同樣三個點，換一個 \(p\) 結論就反過來：\(p\) 小時每一維都算得一樣重，\(p\) 大時只看差距最大的那一維。</p>
+
+  <div class="steps">
+    <p class="steps-title">逐步展開：講義例子 A(0,0)、B(10,1)、C(7,7)，B 和 C 誰離 A 比較遠？</p>
+    <ol>
+      <li><strong>先算每一維的差</strong>：A→B：x 差 \(10-0=10\)、y 差 \(1-0=1\)；A→C：x 差 7、y 差 7。</li>
+      <li><strong>歐幾里得（直線距離）A→B</strong>：每一維的差先平方再加總，最後開根號：\(\sqrt{10^2+1^2}=\sqrt{100+1}=\sqrt{101}\approx10.05\)
+        <span class="why">就是國中的畢氏定理：兩股是 10 和 1，求斜邊。</span></li>
+      <li><strong>歐幾里得 A→C</strong>：\(\sqrt{7^2+7^2}=\sqrt{49+49}=\sqrt{98}\approx9.90\)</li>
+      <li><strong>歐幾里得的結論</strong>：10.05 vs 9.90，B 和 C 幾乎一樣遠。
+        <span class="why">平方會把大的差距放得更大：B 的 \(10^2=100\) 一項就佔了 101 中的 100，y 方向的差異幾乎被忽略。</span></li>
+      <li><strong>曼哈頓（走棋盤格）A→B</strong>：每一維的差取絕對值後直接加：\(|10|+|1|=11\)</li>
+      <li><strong>曼哈頓 A→C</strong>：\(|7|+|7|=14\)</li>
+      <li><strong>曼哈頓的結論</strong>：11 vs 14，C 明顯比較遠。曼哈頓不平方，每一維的差異都算得一樣重，所以「兩維都有中等差異」的 C 被判得比較遠。</li>
+    </ol>
+  </div>
+
+  <div class="widget" id="w-dist">
+    <p class="w-title">歐幾里得 vs 曼哈頓：誰比較遠？</p>
+    <p class="w-desc">講義例子：A(0,0)、B(10,1)、C(7,7)。拖動 B 或 C（或直接改座標），看兩種距離的結論是否一致。</p>
+    <div class="controls">
+      <label>B = (<input type="number" id="d-bx" value="10" step="1">, <input type="number" id="d-by" value="1" step="1">)</label>
+      <label>C = (<input type="number" id="d-cx" value="7" step="1">, <input type="number" id="d-cy" value="7" step="1">)</label>
+      <button class="btn" id="d-reset" type="button">講義例子</button>
+    </div>
+    <div class="row">
+      <div class="col" style="flex:1 1 300px"><div class="canvas-wrap"><canvas id="d-canvas" aria-label="距離比較"></canvas></div></div>
+      <div class="col" style="flex:1 1 260px"><div class="readout" id="d-out" style="margin-top:0"></div></div>
+    </div>
+  </div>
+  <p>講義的結論：歐幾里得距離下 B、C 幾乎一樣遠（B 在 x 軸的巨大差異主導了計算）；曼哈頓距離下 C 明顯比較遠，反映「兩個維度都有中等差異」。想像在 1000 維的空間裡，歐幾里得距離會完全由少數差異最大的維度決定，曼哈頓距離則能更穩健地反映所有維度的整體差異。</p>
 
   <h3>2.6 主成分分析（Principal Component Analysis, PCA）</h3>
   <ul>
@@ -182,120 +305,7 @@
     <li>前向傳播（Forward Propagation）：資料從輸入一層層算到輸出，得到預測</li>
   </ul>
 
-  <h3>2.8 訓練損失（Training Loss）</h3>
-  <ul>
-    <li>衡量預測與真實值的差距，並據以調整權重</li>
-    <li>分類任務：交叉熵（Cross-Entropy），比較「真實機率分布」與「預測機率分布」</li>
-    <li>迴歸任務：均方誤差（Mean Squared Error, MSE）或平均絕對誤差（Mean Absolute Error, MAE）</li>
-  </ul>
-
-  <h3>2.9 反向傳播與梯度下降</h3>
-  <ul>
-    <li>反向傳播（Backward Propagation）：從輸出端往回計算損失對每個權重的<strong>梯度（Gradient）</strong></li>
-    <li>梯度下降（Gradient Descent）：優化演算法，依損失的梯度更新權重，使損失最小化</li>
-    <li>學習率（Learning Rate）：決定每次更新的步伐大小
-      <ul>
-        <li>太大 → 更新過快，可能跳過最佳解</li>
-        <li>太小 → 更新太慢，可能到不了最佳解</li>
-        <li>是需要調整的<strong>超參數（Hyperparameter）</strong></li>
-      </ul>
-    </li>
-  </ul>
-
-  <h3>2.10 優化器（Optimizer）</h3>
-  <ul>
-    <li><strong>隨機梯度下降（Stochastic Gradient Descent, SGD）</strong>：每次只用一筆或一個 batch 的資料計算梯度；訓練較快，但更新會波動、收斂不穩；這種不穩定反而<strong>可能幫助模型跳出局部最小值（local minima）</strong></li>
-    <li><strong>自適應梯度（Adaptive Moment Estimation, Adam）</strong>：結合<strong>動量（Momentum）</strong>與 <strong>RMSProp</strong> 的優點；用動量調整更新方向，同時自適應地調整學習率</li>
-    <li><strong>RMSProp</strong>：依每個參數最近幾次「平方梯度均值」調整學習率。梯度變化大 → 降低學習率，避免步伐太大；梯度變化小 → 相對增大學習率，加速收斂</li>
-  </ul>
-  <p>👉 優化器的互動比較在 <a href="#w-gd">4.4 梯度下降</a>。</p>
-
-  <h3>2.11 標籤編碼與評估指標</h3>
-  <ul>
-    <li>標籤編碼（Label Encoding，密集表示）：類別轉成 0, 1, 2…，<strong>需注意虛假順序問題</strong></li>
-    <li>獨熱編碼（One-Hot Encoding，稀疏表示）：每類一個維度，<strong>需注意維度爆炸問題</strong></li>
-    <li>評估指標（Metrics）：通常使用準確率（Accuracy），另有精確率（Precision）與召回率（Recall）</li>
-  </ul>
-
-  <div class="widget" id="w-enc">
-    <p class="w-title">Label Encoding vs One-Hot Encoding</p>
-    <p class="w-desc">輸入類別名稱（用逗號分隔），看兩種編碼的結果與向量長度。</p>
-    <div class="controls"><label style="flex:1 1 100%">類別 <input type="text" id="enc-in" value="貓, 狗, 鳥" style="flex:1;min-width:0;padding:3px 8px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);font:inherit"></label></div>
-    <div class="table-wrap" id="enc-out"></div>
-    <p class="muted" id="enc-note" style="font-size:.9rem;margin:0"></p>
-  </div>
-
-  <h3>2.12 需要設定的超參數</h3>
-  <ul>
-    <li>每一層的節點數（Number of nodes）與激活函數（Activation function）</li>
-    <li>優化器（Optimizer）、學習率（Learning rate）</li>
-    <li>訓練損失函數（Training loss）、評估指標（Metrics）</li>
-  </ul>
-
-  <h2 id="glossary">3. 關鍵名詞表</h2>
-  <div class="table-wrap">
-    <table class="glossary">
-      <tr><th>名詞（中／英）</th><th>定義</th><th>一句話直覺解釋</th></tr>
-      <tr><td>像素（Pixel）</td><td>影像最小單位，值介於 0～255</td><td>圖片裡的一個小格子</td></tr>
-      <tr><td>頻道（Channel）</td><td>影像的顏色分量，RGB 有 3 個、灰階有 1 個</td><td>疊在一起的幾張單色底片</td></tr>
-      <tr><td>支持向量機（SVM）</td><td>找最佳超平面並最大化間隔的分類器</td><td>在兩群點中間畫一條「最寬的馬路」</td></tr>
-      <tr><td>間隔（Margin）</td><td>資料點到超平面的距離</td><td>馬路的寬度，越寬越安全</td></tr>
-      <tr><td>核技巧（Kernel Trick）</td><td>把資料投影到更高維空間，讓原本線性不可分的資料變得可分</td><td>平面切不開就把資料「抬起來」再切</td></tr>
-      <tr><td>K 最近鄰（KNN）</td><td>以最近的 K 個鄰居多數決決定類別</td><td>近朱者赤，看你身邊多數是誰</td></tr>
-      <tr><td>主成分分析（PCA）</td><td>沿變異最大方向投影的線性降維法</td><td>從最能看出差異的角度拍一張「壓扁」的照片</td></tr>
-      <tr><td>激活函數（Activation Function）</td><td>套在節點輸出上的非線性函數</td><td>讓網路能學「彎曲」的關係</td></tr>
-      <tr><td>Sigmoid</td><td>把實數壓到 0～1，用於二元分類輸出</td><td>輸出「是」的機率</td></tr>
-      <tr><td>Softmax</td><td>把多個分數轉成加總為 1 的機率分布，用於多類別分類</td><td>把各類分數轉成「得票率」</td></tr>
-      <tr><td>交叉熵（Cross-Entropy）</td><td>衡量真實分布與預測分布差異的分類損失</td><td>對正確答案越沒信心，罰得越重</td></tr>
-      <tr><td>前向傳播（Forward Propagation）</td><td>資料從輸入層逐層計算到輸出層</td><td>模型「作答」</td></tr>
-      <tr><td>反向傳播（Backward Propagation）</td><td>從損失往回用連鎖律算每個權重的梯度</td><td>模型「檢討是誰的錯」</td></tr>
-      <tr><td>梯度下降（Gradient Descent）</td><td>沿著損失梯度的反方向更新權重</td><td>往山谷最低點一步步走</td></tr>
-      <tr><td>學習率（Learning Rate）</td><td>每次更新權重的步伐大小，屬於超參數</td><td>下山時每步跨多大</td></tr>
-      <tr><td>局部最小值（Local Minima）</td><td>附近最低但不是全域最低的點</td><td>小坑洞，不是真正的谷底</td></tr>
-      <tr><td>動量（Momentum）</td><td>更新時參考過去的更新方向</td><td>球滾下山會有慣性</td></tr>
-      <tr><td>精確率（Precision）</td><td>預測為正的結果中，真的是正的比例</td><td>「我說是的」有幾成對</td></tr>
-      <tr><td>召回率（Recall）</td><td>實際為正的樣本中，被正確找出的比例</td><td>「該抓的」抓到幾成</td></tr>
-      <tr><td>超參數（Hyperparameter）</td><td>訓練前由人設定、不會被學習的設定值</td><td>訓練的「遊戲規則」</td></tr>
-    </table>
-  </div>
-
-  <h2 id="formula">4. 公式與計算</h2>
-
-  <h3>4.1 距離（KNN）</h3>
-  $$d_{\text{Euclidean}}(\mathbf{x},\mathbf{y})=\sqrt{\sum_{i=1}^{n}(x_i-y_i)^2},\qquad d_{\text{Manhattan}}(\mathbf{x},\mathbf{y})=\sum_{i=1}^{n}\lvert x_i-y_i\rvert$$
-  <p>\(n\)：維度數；\(x_i, y_i\)：兩點在第 \(i\) 維的值。</p>
-
-  <div class="steps">
-    <p class="steps-title">逐步展開：講義例子 A(0,0)、B(10,1)、C(7,7)，B 和 C 誰離 A 比較遠？</p>
-    <ol>
-      <li><strong>先算每一維的差</strong>：A→B：x 差 \(10-0=10\)、y 差 \(1-0=1\)；A→C：x 差 7、y 差 7。</li>
-      <li><strong>歐幾里得（直線距離）A→B</strong>：每一維的差先平方再加總，最後開根號：\(\sqrt{10^2+1^2}=\sqrt{100+1}=\sqrt{101}\approx10.05\)
-        <span class="why">就是國中的畢氏定理：兩股是 10 和 1，求斜邊。</span></li>
-      <li><strong>歐幾里得 A→C</strong>：\(\sqrt{7^2+7^2}=\sqrt{49+49}=\sqrt{98}\approx9.90\)</li>
-      <li><strong>歐幾里得的結論</strong>：10.05 vs 9.90，B 和 C 幾乎一樣遠。
-        <span class="why">平方會把大的差距放得更大：B 的 \(10^2=100\) 一項就佔了 101 中的 100，y 方向的差異幾乎被忽略。</span></li>
-      <li><strong>曼哈頓（走棋盤格）A→B</strong>：每一維的差取絕對值後直接加：\(|10|+|1|=11\)</li>
-      <li><strong>曼哈頓 A→C</strong>：\(|7|+|7|=14\)</li>
-      <li><strong>曼哈頓的結論</strong>：11 vs 14，C 明顯比較遠。曼哈頓不平方，每一維的差異都算得一樣重，所以「兩維都有中等差異」的 C 被判得比較遠。</li>
-    </ol>
-  </div>
-
-  <div class="widget" id="w-dist">
-    <p class="w-title">歐幾里得 vs 曼哈頓：誰比較遠？</p>
-    <p class="w-desc">講義例子：A(0,0)、B(10,1)、C(7,7)。拖動 B 或 C（或直接改座標），看兩種距離的結論是否一致。</p>
-    <div class="controls">
-      <label>B = (<input type="number" id="d-bx" value="10" step="1">, <input type="number" id="d-by" value="1" step="1">)</label>
-      <label>C = (<input type="number" id="d-cx" value="7" step="1">, <input type="number" id="d-cy" value="7" step="1">)</label>
-      <button class="btn" id="d-reset" type="button">講義例子</button>
-    </div>
-    <div class="row">
-      <div class="col" style="flex:1 1 300px"><div class="canvas-wrap"><canvas id="d-canvas" aria-label="距離比較"></canvas></div></div>
-      <div class="col" style="flex:1 1 260px"><div class="readout" id="d-out" style="margin-top:0"></div></div>
-    </div>
-  </div>
-  <p>講義的結論：歐幾里得距離下 B、C 幾乎一樣遠（B 在 x 軸的巨大差異主導了計算）；曼哈頓距離下 C 明顯比較遠，反映「兩個維度都有中等差異」。想像在 1000 維的空間裡，歐幾里得距離會完全由少數差異最大的維度決定，曼哈頓距離則能更穩健地反映所有維度的整體差異。</p>
-
-  <h3>4.2 Sigmoid 與 Softmax</h3>
+  <h4 class="formula-head">公式：Sigmoid 與 Softmax</h4>
   <p>講義以圖呈現，以下為標準寫法 <span class="tag add">補充</span></p>
   $$\sigma(z)=\frac{1}{1+e^{-z}},\qquad \text{softmax}(z_i)=\frac{e^{z_i}}{\sum_{j=1}^{K}e^{z_j}}$$
   <p>\(z\)：輸出層節點的原始分數（logit）；\(K\)：類別數。</p>
@@ -315,7 +325,22 @@
     </ol>
   </div>
 
-  <h3>4.3 損失函數</h3>
+  <div class="widget" id="w-sig">
+    <p class="w-title">Sigmoid：二元分類的輸出</p>
+    <p class="w-desc">拖動 \(z\)，看 \(\sigma(z)\) 在曲線上的位置。\(\sigma(0)=0.5\)；\(z\) 很大或很小時曲線變平，斜率（梯度）接近 0，這就是 C2 會提到的「梯度消失」。</p>
+    <div class="controls"><label>\(z\) <input type="range" id="sig-z" min="-8" max="8" step="0.1" value="0"> <span class="val" data-for="sig-z"></span></label></div>
+    <div class="canvas-wrap"><canvas id="sig-canvas" aria-label="Sigmoid 曲線"></canvas></div>
+    <div class="readout" id="sig-out"></div>
+  </div>
+
+  <h3>2.8 訓練損失（Training Loss）</h3>
+  <ul>
+    <li>衡量預測與真實值的差距，並據以調整權重</li>
+    <li>分類任務：交叉熵（Cross-Entropy），比較「真實機率分布」與「預測機率分布」</li>
+    <li>迴歸任務：均方誤差（Mean Squared Error, MSE）或平均絕對誤差（Mean Absolute Error, MAE）</li>
+  </ul>
+
+  <h4 class="formula-head">公式：損失函數</h4>
   <p>講義以圖呈現，以下為標準寫法 <span class="tag add">補充</span></p>
   $$L_{CE}=-\sum_{i=1}^{K}y_i\log\hat{y}_i,\qquad \text{MSE}=\frac{1}{N}\sum_{j=1}^{N}(y_j-\hat{y}_j)^2,\qquad \text{MAE}=\frac{1}{N}\sum_{j=1}^{N}\lvert y_j-\hat{y}_j\rvert$$
   <p>\(y_i\)：真實機率分布（one-hot）；\(\hat{y}_i\)：預測機率分布；\(N\)：樣本數。</p>
@@ -331,14 +356,6 @@
     </div>
     <div class="bars" id="s-bars"></div>
     <div class="readout" id="s-out"></div>
-  </div>
-
-  <div class="widget" id="w-sig">
-    <p class="w-title">Sigmoid：二元分類的輸出</p>
-    <p class="w-desc">拖動 \(z\)，看 \(\sigma(z)\) 在曲線上的位置。\(\sigma(0)=0.5\)；\(z\) 很大或很小時曲線變平，斜率（梯度）接近 0，這就是 C2 會提到的「梯度消失」。</p>
-    <div class="controls"><label>\(z\) <input type="range" id="sig-z" min="-8" max="8" step="0.1" value="0"> <span class="val" data-for="sig-z"></span></label></div>
-    <div class="canvas-wrap"><canvas id="sig-canvas" aria-label="Sigmoid 曲線"></canvas></div>
-    <div class="readout" id="sig-out"></div>
   </div>
 
   <p>迴歸損失的例子：真實值 (3, 5)、預測 (2, 7) → MAE = (1+2)/2 = 1.5；MSE = (1+4)/2 = 2.5。</p>
@@ -358,7 +375,20 @@
     </ol>
   </div>
 
-  <h3>4.4 梯度下降</h3>
+  <h3>2.9 反向傳播與梯度下降</h3>
+  <ul>
+    <li>反向傳播（Backward Propagation）：從輸出端往回計算損失對每個權重的<strong>梯度（Gradient）</strong></li>
+    <li>梯度下降（Gradient Descent）：優化演算法，依損失的梯度更新權重，使損失最小化</li>
+    <li>學習率（Learning Rate）：決定每次更新的步伐大小
+      <ul>
+        <li>太大 → 更新過快，可能跳過最佳解</li>
+        <li>太小 → 更新太慢，可能到不了最佳解</li>
+        <li>是需要調整的<strong>超參數（Hyperparameter）</strong></li>
+      </ul>
+    </li>
+  </ul>
+
+  <h4 class="formula-head">公式：梯度下降</h4>
   $$w \leftarrow w-\eta\,\frac{\partial L}{\partial w}$$
   <p>\(w\)：權重；\(\eta\)：學習率；\(\partial L/\partial w\)：損失對權重的梯度。例：\(w=2\)、梯度 \(=4\)、\(\eta=0.1\) → \(w=2-0.1\times4=1.6\)；若 \(\eta=1\) → \(w=-2\)（步伐太大，可能跳過最佳解）。</p>
 
@@ -401,7 +431,30 @@
     <p class="muted" style="font-size:.88rem;margin:8px 0 0">試試看：① GD、η=0.05 從 w₀=3 出發 → 卡在右邊的局部最小值　② η 調到 0.01 → 要走很多步　③ η 調到 0.5 → 來回震盪、停不下來；0.8 → 發散　④ 換成 Momentum（η=0.05）→ 靠慣性衝過小山丘，到達全域最小值　⑤ 換成 SGD（雜訊 6）→ 多按幾次執行，大多數時候會被雜訊「震」出局部最小值</p>
   </div>
 
-  <h3>4.5 評估指標</h3>
+  <h3>2.10 優化器（Optimizer）</h3>
+  <ul>
+    <li><strong>隨機梯度下降（Stochastic Gradient Descent, SGD）</strong>：每次只用一筆或一個 batch 的資料計算梯度；訓練較快，但更新會波動、收斂不穩；這種不穩定反而<strong>可能幫助模型跳出局部最小值（local minima）</strong></li>
+    <li><strong>自適應梯度（Adaptive Moment Estimation, Adam）</strong>：結合<strong>動量（Momentum）</strong>與 <strong>RMSProp</strong> 的優點；用動量調整更新方向，同時自適應地調整學習率</li>
+    <li><strong>RMSProp</strong>：依每個參數最近幾次「平方梯度均值」調整學習率。梯度變化大 → 降低學習率，避免步伐太大；梯度變化小 → 相對增大學習率，加速收斂</li>
+  </ul>
+  <p>👉 優化器的互動比較在 <a href="#w-gd">2.9 的梯度下降元件</a>。</p>
+
+  <h3>2.11 標籤編碼與評估指標</h3>
+  <ul>
+    <li>標籤編碼（Label Encoding，密集表示）：類別轉成 0, 1, 2…，<strong>需注意虛假順序問題</strong></li>
+    <li>獨熱編碼（One-Hot Encoding，稀疏表示）：每類一個維度，<strong>需注意維度爆炸問題</strong></li>
+    <li>評估指標（Metrics）：通常使用準確率（Accuracy），另有精確率（Precision）與召回率（Recall）</li>
+  </ul>
+
+  <div class="widget" id="w-enc">
+    <p class="w-title">Label Encoding vs One-Hot Encoding</p>
+    <p class="w-desc">輸入類別名稱（用逗號分隔），看兩種編碼的結果與向量長度。</p>
+    <div class="controls"><label style="flex:1 1 100%">類別 <input type="text" id="enc-in" value="貓, 狗, 鳥" style="flex:1;min-width:0;padding:3px 8px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);font:inherit"></label></div>
+    <div class="table-wrap" id="enc-out"></div>
+    <p class="muted" id="enc-note" style="font-size:.9rem;margin:0"></p>
+  </div>
+
+  <h4 class="formula-head">公式：評估指標</h4>
   <p>講義以文字定義，公式為 <span class="tag add">補充</span></p>
   $$\text{Precision}=\frac{TP}{TP+FP},\qquad \text{Recall}=\frac{TP}{TP+FN},\qquad \text{Accuracy}=\frac{TP+TN}{TP+TN+FP+FN}$$
   <p>TP：正確判為正（True Positive）；FP：誤判為正（False Positive）；FN：漏判（False Negative）；TN：正確判為負（True Negative）。</p>
@@ -434,20 +487,43 @@
     </div>
   </div>
 
-  <h3>4.6 影像資料量</h3>
-  <p>28×28 灰階圖 → 784 個數值；224×224 RGB 圖 → 224×224×3 = 150,528 個數值 <span class="tag add">補充</span>。這就是為什麼高維的影像資料對 KNN、SVM 來說很吃力（可以用 <a href="#w-rgb">2.2 的元件</a>自己換算）。</p>
+  <h3>2.12 需要設定的超參數</h3>
+  <ul>
+    <li>每一層的節點數（Number of nodes）與激活函數（Activation function）</li>
+    <li>優化器（Optimizer）、學習率（Learning rate）</li>
+    <li>訓練損失函數（Training loss）、評估指標（Metrics）</li>
+  </ul>
 
-  <div class="steps">
-    <p class="steps-title">逐步展開：一張 224×224 的彩色圖有幾個數值</p>
-    <ol>
-      <li><strong>像素數</strong>：\(224\times224=50{,}176\) 個像素。</li>
-      <li><strong>每個像素幾個數值</strong>：RGB 三個頻道，每個 0～255 → 3 個數值（灰階只有 1 個）。</li>
-      <li><strong>總數</strong>：\(50{,}176\times3=150{,}528\)。對 KNN 來說，每算一次距離都要比較 150,528 個維度。</li>
-    </ol>
+  <h2 id="glossary">3. 關鍵名詞表</h2>
+  <div class="table-wrap">
+    <table class="glossary">
+      <tr><th>名詞（中／英）</th><th>定義</th><th>一句話直覺解釋</th></tr>
+      <tr><td>像素（Pixel）</td><td>影像最小單位，值介於 0～255</td><td>圖片裡的一個小格子</td></tr>
+      <tr><td>頻道（Channel）</td><td>影像的顏色分量，RGB 有 3 個、灰階有 1 個</td><td>疊在一起的幾張單色底片</td></tr>
+      <tr><td>支持向量機（SVM）</td><td>找最佳超平面並最大化間隔的分類器</td><td>在兩群點中間畫一條「最寬的馬路」</td></tr>
+      <tr><td>間隔（Margin）</td><td>資料點到超平面的距離</td><td>馬路的寬度，越寬越安全</td></tr>
+      <tr><td>核技巧（Kernel Trick）</td><td>把資料投影到更高維空間，讓原本線性不可分的資料變得可分</td><td>平面切不開就把資料「抬起來」再切</td></tr>
+      <tr><td>明氏距離（Minkowski Distance）</td><td>\(\big(\sum|x_i-y_i|^p\big)^{1/p}\)，\(p=1\) 為曼哈頓、\(p=2\) 為歐幾里得</td><td>調一個旋鈕 \(p\)，就能在兩種距離之間切換</td></tr>
+      <tr><td>K 最近鄰（KNN）</td><td>以最近的 K 個鄰居多數決決定類別</td><td>近朱者赤，看你身邊多數是誰</td></tr>
+      <tr><td>主成分分析（PCA）</td><td>沿變異最大方向投影的線性降維法</td><td>從最能看出差異的角度拍一張「壓扁」的照片</td></tr>
+      <tr><td>激活函數（Activation Function）</td><td>套在節點輸出上的非線性函數</td><td>讓網路能學「彎曲」的關係</td></tr>
+      <tr><td>Sigmoid</td><td>把實數壓到 0～1，用於二元分類輸出</td><td>輸出「是」的機率</td></tr>
+      <tr><td>Softmax</td><td>把多個分數轉成加總為 1 的機率分布，用於多類別分類</td><td>把各類分數轉成「得票率」</td></tr>
+      <tr><td>交叉熵（Cross-Entropy）</td><td>衡量真實分布與預測分布差異的分類損失</td><td>對正確答案越沒信心，罰得越重</td></tr>
+      <tr><td>前向傳播（Forward Propagation）</td><td>資料從輸入層逐層計算到輸出層</td><td>模型「作答」</td></tr>
+      <tr><td>反向傳播（Backward Propagation）</td><td>從損失往回用連鎖律算每個權重的梯度</td><td>模型「檢討是誰的錯」</td></tr>
+      <tr><td>梯度下降（Gradient Descent）</td><td>沿著損失梯度的反方向更新權重</td><td>往山谷最低點一步步走</td></tr>
+      <tr><td>學習率（Learning Rate）</td><td>每次更新權重的步伐大小，屬於超參數</td><td>下山時每步跨多大</td></tr>
+      <tr><td>局部最小值（Local Minima）</td><td>附近最低但不是全域最低的點</td><td>小坑洞，不是真正的谷底</td></tr>
+      <tr><td>動量（Momentum）</td><td>更新時參考過去的更新方向</td><td>球滾下山會有慣性</td></tr>
+      <tr><td>精確率（Precision）</td><td>預測為正的結果中，真的是正的比例</td><td>「我說是的」有幾成對</td></tr>
+      <tr><td>召回率（Recall）</td><td>實際為正的樣本中，被正確找出的比例</td><td>「該抓的」抓到幾成</td></tr>
+      <tr><td>超參數（Hyperparameter）</td><td>訓練前由人設定、不會被學習的設定值</td><td>訓練的「遊戲規則」</td></tr>
+    </table>
   </div>
 
-  <h2 id="compare">5. 模型／方法比較</h2>
-  <h3>5.1 傳統機器學習方法 vs 神經網路</h3>
+  <h2 id="compare">4. 模型／方法比較</h2>
+  <h3>4.1 傳統機器學習方法 vs 神經網路</h3>
   <div class="table-wrap">
     <table>
       <tr><th>方法</th><th>核心想法</th><th>優點</th><th>缺點</th><th>CV 適用情境</th></tr>
@@ -457,7 +533,7 @@
       <tr><td>神經網路</td><td>多層節點 ＋ 激活函數，用反向傳播學權重</td><td>能學非線性、自動學特徵</td><td>超參數多、需要大量資料 <span class="tag add">補充</span></td><td>現代 CV 各種任務（下一章 CNN）</td></tr>
     </table>
   </div>
-  <h3>5.2 優化器比較</h3>
+  <h3>4.2 優化器比較</h3>
   <div class="table-wrap">
     <table>
       <tr><th>優化器</th><th>核心想法</th><th>優點</th><th>缺點</th></tr>
@@ -467,7 +543,7 @@
       <tr><td>Adam</td><td>Momentum ＋ RMSProp</td><td>同時調方向與學習率，常用預設</td><td>超參數較多 <span class="tag add">補充</span></td></tr>
     </table>
   </div>
-  <h3>5.3 標籤編碼比較</h3>
+  <h3>4.3 標籤編碼比較</h3>
   <div class="table-wrap">
     <table>
       <tr><th>編碼</th><th>表示方式</th><th>要注意的問題</th><th>例子（貓、狗、鳥）<span class="tag add">補充</span></th></tr>
@@ -476,21 +552,21 @@
     </table>
   </div>
 
-  <h2 id="figures">6. 圖表說明</h2>
+  <h2 id="figures">5. 圖表說明</h2>
   <ul>
     <li><strong>電腦眼中的圖</strong>：一張圖被拆成 R、G、B 三張疊在一起的矩陣，每格是 0～255 的數字；灰階圖則只有一張矩陣。</li>
     <li><strong>SVM 二元／多類別分類圖</strong>：兩群點中間有一條實線（超平面）與兩條虛線，虛線之間的寬度就是 margin，貼在虛線上的點是支持向量 <span class="tag add">補充</span>。</li>
-    <li><strong>Kernel Trick 圖</strong>：平面上內層一圈、外層一圈的資料無法用直線切開，投影到三維後就能用一個平面切開 <span class="tag chk">待確認</span>圖中實際資料形狀。</li>
+    <li><strong>Kernel Trick 圖</strong>：紅色方塊聚在中間、綠色圓點圍在外圈，用直線切不開；kernel 把資料投影到三維後，紅點被抬高成一座山丘、綠點留在底部，中間就能用一個平面（decision surface）切開。</li>
     <li><strong>SVM × 物件偵測圖</strong>：把圖切成網格或偵測框，對每個格子用 SVM 回答「是不是這個物體」。</li>
     <li><strong>KNN 三步驟圖</strong>：新點落在兩類點之間，畫圈找出最近的 K 個點，以多數決決定類別；圖中也示範 K 為偶數時可能平手。</li>
     <li><strong>PCA 二維降一維圖</strong>：斜向分佈的點雲沿著最長的那個方向（主成分）投影到一條線上。</li>
     <li><strong>Forward／Backward Propagation 圖</strong>：前向是由左往右算預測，反向是由右往左傳梯度，再用梯度下降更新權重。</li>
     <li><strong>梯度下降圖</strong>：損失曲線像一個山谷，每次沿斜率反方向走一步，步伐大小由學習率決定。</li>
     <li><strong>Local Minima 圖</strong>：曲線上有多個凹處，最低的是全域最小值（global minimum），其他是局部最小值。</li>
-    <li><strong>Whole picture</strong>：把輸入 → 前向傳播 → 計算損失 → 反向傳播 → 優化器更新權重 串成一個訓練迴圈 <span class="tag chk">待確認</span>圖片內容未能擷取，此為依標題推測。</li>
+    <li><strong>Whole picture</strong>：上方是前向傳播：輸入 x₁、x₂（加上偏差節點）經過兩個隱藏層（每個節點先算 z、再套激活函數 f）得到預測值 y′；預測值和真實值 y 一起送進損失函數得到損失分數。下方是反向傳播：優化器依損失分數更新權重。整個過程反覆進行，直到損失函數最小化。</li>
   </ul>
 
-  <h2 id="traps">7. 常見觀念陷阱</h2>
+  <h2 id="traps">6. 常見觀念陷阱</h2>
   <ul>
     <li><strong>二元分類用 Sigmoid、多類別用 Softmax</strong>，不要弄反。</li>
     <li><strong>分類用交叉熵，迴歸用 MSE 或 MAE</strong>。</li>
@@ -506,7 +582,7 @@
     <li><strong>Precision vs Recall</strong>：Precision 的分母是「預測為正」，Recall 的分母是「實際為正」。</li>
   </ul>
 
-  <h2 id="quiz">8. 自我測驗</h2>
+  <h2 id="quiz">7. 自我測驗</h2>
   <div class="quiz" data-answer="B">
     <p class="q">1.（選擇）Adam 優化器結合了哪兩種方法的優點？</p>
     <div class="opts">

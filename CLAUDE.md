@@ -45,23 +45,26 @@ C4 講義標註 (Skip) 的 LeNet、AlexNet、EfficientNet 不在考試範圍，�
 ```
 index.html            首頁：考試倒數、章節卡片（由 CHAPTERS 產生）
 assets/style.css      共用樣式與色彩 tokens（淺色／深色）
-assets/common.js      CHAPTERS 與 EXAMS 清單、頁首、目錄、主題切換、KaTeX、測驗、螢光筆、
+assets/common.js      CHAPTERS、EXAMS、COURSE 清單、頁首、目錄、主題切換、KaTeX、測驗、
                       matrix()、setupCanvas()、onRedraw()、bindRange() 等工具，掛在 window.CV
-assets/highlights.js  共享螢光筆標記（由 tools/merge-highlights.js 產生）
+assets/highlighter.js 螢光筆（獨立模組，window.Highlighter；可直接複製到其他課程）
+assets/highlighter.css 螢光筆樣式與 --mk-* 色彩 tokens
+assets/highlights.js  共享螢光筆標記 window.HL_SHARED（由 tools/merge-highlights.js 產生）
 tools/merge-highlights.js  把頁面匯出的螢光筆 JSON 合併進 highlights.js（Node）
 chapters/c<n>.html    每章一頁，檔名與講義章號一致
 chapters/c<n>.js      該章的互動元件，每個元件一個 IIFE，對應 HTML 裡的 .widget#w-xxx
 ```
 
-- 所有 script 都用 `defer` 載入，順序是 KaTeX → `common.js` → `c<n>.js`。不能用 ES modules，因為用 `file://` 直接開啟時會被擋。
+- 所有 script 都用 `defer` 載入，順序是 KaTeX → `highlighter.js` → `common.js` → `c<n>.js`；樣式是 `style.css` → `highlighter.css`。新增頁面時兩個都要加。不能用 ES modules，因為用 `file://` 直接開啟時會被擋。
 - 頁首、目錄、測驗行為由 `common.js` 自動產生，章節頁只需寫 `<body data-chapter="c<n>">` 和 `<nav class="toc">`。
 - 靜態文字的公式用 `\( \)`（行內）與 `$$ $$`（區塊），在 `load` 時由 auto-render 處理；互動元件的動態公式用 `CV.tex(el, str)`。
 - 畫布元件用 `CV.onRedraw(draw)` 註冊，視窗縮放與切換主題時會自動重畫；顏色一律從 CSS 變數讀取（`CV.cssVar('--c-a')`）。
 - 測驗：選擇題寫 `<div class="quiz" data-answer="B">`，選項 `<button data-opt="A">`，解析放 `.explain[hidden]`；簡答題用 `<details class="answer">`。
 - 螢光筆（完整規格與移植說明見 `docs/highlighter.md`，給其他課程的筆記專案使用；改了螢光筆行為要同步更新該文件）：章節頁 `<main>` 裡選取文字會跳出色票（黃／綠／粉底、紅／藍字），點已標記的文字可換色或移除。新標記會取代重疊的舊標記（不疊層），選取範圍有標記時可用「🧽 清除」挖掉；頁首「🖍 標記」選單有匯出、清除本頁、清除本課程全部（都按兩次確認）。首頁不啟動。`.widget`、公式、按鈕不能標記。標記以「純文字位置＋原文＋前後各 20 字」記錄；位置對不上時，在相同文字中挑前後文最像的。
   - 個人標記：存在瀏覽器 `localStorage` 的 `cv-hl:<chapter>`，只留在那個網址來源（GitHub Pages、localhost、`file://` 各自分開）。前綴 `cv` 來自 `common.js` 的 `COURSE.id`：同一個 github.io 網域下的其他課程筆記共用 localStorage，靠前綴分開，其他課程要換成自己的識別。
-  - 共享標記：`assets/highlights.js`（`window.CV_SHARED_HL`），由 `common.js` 自動載入，每台裝置都看得到。在頁面上改色或隱藏只記在 `cv-hl-ovr:<chapter>`。
-  - 回寫流程：使用者在 GitHub Pages 按頁首「🖍 匯出」下載 `ComputerVision-highlights-YYYY-MM-DD.json`（檔名來自 `COURSE.name`，檔內也記錄 `course`）→ `node tools/merge-highlights.js <檔案>` 合併（課程不符會拒絕；新增、改色、刪除，重複執行不會重複加）→ commit／push。部署後，瀏覽器裡已寫進共享檔的個人標記與修改會自動清掉。
+  - 程式在 `assets/highlighter.js`，`common.js` 只負責 `Highlighter.setup()`（`COURSE`、章節、`skip`）、把 `menu()` 放進頁首、在 `load` 時 `renderMath()` 之後呼叫 `start()`。
+  - 共享標記：`assets/highlights.js`（`window.HL_SHARED = { course, marks }`），由 `highlighter.js` 自動載入，每台裝置都看得到。在頁面上改色或隱藏只記在 `cv-hl-ovr:<chapter>`。
+  - 回寫流程：使用者在 GitHub Pages 按頁首「🖍 標記 → 匯出標記」下載 `ComputerVision-highlights-YYYY-MM-DD.json`（檔名來自 `COURSE.name`，檔內也記錄 `course`）→ `node tools/merge-highlights.js <檔案>` 合併（與 `highlights.js` 的 `course` 不符會拒絕；新增、改色、刪除，重複執行不會重複加）→ commit／push。部署後，瀏覽器裡已寫進共享檔的個人標記與修改會自動清掉。
 - 逐步展開：`<div class="steps"><p class="steps-title">題目</p><ol><li>…</li></ol></div>`，每步的解釋放 `<span class="why">`；`common.js` 會自動加上「下一步／全部展開／收起」按鈕，一開始只顯示題目。
 
 ## 每章頁面的結構
@@ -87,6 +90,7 @@ chapters/c<n>.js      該章的互動元件，每個元件一個 IIFE，對應 H
   - Conv 層參數量範例：講義寫 `(3×3×3)+1=10`、×16=160，正確應為 28×16=448（160 是輸入深度為 1 的情況）
   - Simple CNN 的 Conv_2：有一頁寫 18,494，正確值為 18,496
   - Padding 頁的 5×5 輸出矩陣與實際計算不符，應以重算結果為準
+- 已知的不一致（C1）：「如何計算距離」頁的明氏距離寫成 \((\sum_{i=1} n|x_i-y_i|^p)^{1/p}\)，\(n\) 被放成係數，正確應為加總上限 \((\sum_{i=1}^{n}|x_i-y_i|^p)^{1/p}\)。使用者要求網頁直接顯示正確公式，不加【待確認】說明
 - 互動元件的預設值要用**講義的原例子**，讓頁面一打開看到的就和上課內容相同。
 
 ## 各章的互動元件與驗證值
@@ -96,6 +100,7 @@ chapters/c<n>.js      該章的互動元件，每個元件一個 IIFE，對應 H
 | 章 | 元件 | 預設值應得到 |
 |---|---|---|
 | C0 | 四大任務切換（`#w-tasks`）、手寫規則判斷蘋果（`#w-rules`）、成績計算器（`#w-grade`） | 成績 70/80/90/85/100 → 84 |
+| C1 | RGB 3D 陣列（`#w-arr`，4×4 小圖，講義「圖像格式」圖的互動版） | 預設選紅花 img[2, 1] → [220, 20, 60]；shape (4, 4, 3) = 48 個數字 |
 | C1 | RGB 像素（`#w-rgb`）、SVM 間隔（`#w-svm`）、Kernel Trick（`#w-kernel`）、KNN（`#w-knn`）、PCA（`#w-pca`） | 224×224×3 = 150,528 |
 | C1 | 距離比較（`#w-dist`） | 歐幾里得 10.05 vs 9.9；曼哈頓 11 vs 14 |
 | C1 | Softmax＋交叉熵（`#w-soft`）、Sigmoid（`#w-sig`） | z=(2,1,0) → (0.665, 0.245, 0.090)，損失 0.408 |
@@ -104,7 +109,7 @@ chapters/c<n>.js      該章的互動元件，每個元件一個 IIFE，對應 H
 | C2 | 卷積逐步（`#w-conv`） | p0 s1 → [[2,1,−1],[−1,1,3],[2,1,1]]；s2 → [[2,−1],[2,1]]；左亮右暗＋垂直邊緣 → 每列 3 3 0 |
 | C2 | 多頻道卷積（`#w-rgb`）、覆蓋次數（`#w-cover`）、天使與魔鬼（`#w-why`）、ReLU＋Pooling（`#w-pool`） | 覆蓋次數：p0 角落 1 次、p1 角落 4 次 |
 | C2 | 尺寸計算器（`#w-size`）、MNIST CNN（`#w-cnn`） | 合計 1,199,882 |
-| C3 | MNIST 混淆矩陣（`#w-cm`，示意數字） | 最常見錯誤 4→9（18）、7→2（14） |
+| C3 | MNIST 混淆矩陣（`#w-cm`，講義原始數字） | 最常見錯誤 4→9（9）、7→2（7）；Accuracy 9,873／10,000；分類報告與講義相同（0：0.98/0.99/0.99/980） |
 | C3 | 門檻值（`#w-thr`）、二元指標（`#w-bin`） | 門檻 0.5 → TP90/FN10/FP5/TN40；Acc 0.897、Recall 0.9、FPR 0.111、Spec 0.889、Precision 0.947、F1 0.923 |
 | C3 | 多項式擬合（`#w-fit`）、Dropout（`#w-drop`） | 次方 3、λ=0 為泛化良好；Dropout 0.5 → 每個隱藏層關 3/6 個節點 |
 | C3 | L1／L2（`#w-pen`） | 權重 (3, −0.1, 0)、λ=0.01 → L1 0.031、L2 0.0901 |

@@ -10,8 +10,10 @@
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
   <link rel="stylesheet" href="../assets/style.css">
+  <link rel="stylesheet" href="../assets/highlighter.css">
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"></script>
+  <script defer src="../assets/highlighter.js"></script>
   <script defer src="../assets/common.js"></script>
   <script defer src="c3.js"></script>
 </head>
@@ -46,7 +48,7 @@
 
   <div class="widget" id="w-cm">
     <p class="w-title">MNIST 混淆矩陣與分類報告</p>
-    <p class="w-desc"><span class="tag chk">待確認</span>講義圖中的數字未能擷取，這裡用<strong>示意數字</strong>：每列的總數是 MNIST 測試集各數字的實際張數，錯誤分布依講義結論設計（4 → 9、7 → 2 最多）。點任一格看它代表什麼，下方的分類報告會同步標示該類別。</p>
+    <p class="w-desc">講義「MNIST Confusion Matrix Example」頁的原始數字：每列是真實數字，每行是模型預測；每列總和就是 MNIST 測試集各數字的張數。點任一格看它代表什麼，下方的分類報告（由矩陣算出，與講義的 Classification Report 頁相同）會同步標示該類別。</p>
     <div class="table-wrap" id="cm-grid"></div>
     <div class="readout" id="cm-out"></div>
     <div class="table-wrap" id="cm-report"></div>
@@ -93,7 +95,7 @@
         <li>使用正則化：限制模型複雜度，讓模型學「對的特徵」（例如狗的尾巴、鼻子、耳朵，而不是背景的樹、草）</li>
       </ul>
     </li>
-    <li>「如何欺騙模型」：講義以圖說明模型可能被不相關的特徵帶著走 <span class="tag chk">待確認</span>圖片內容未能擷取</li>
+    <li>「如何欺騙模型」：講義放了一張 4×4 的拼圖，捲毛的棕色小狗和貼上塑膠眼睛的炸雞交錯排列，顏色、紋理幾乎一樣，連人一眼看過去都會搞混。只靠顏色、紋理這類表面特徵的模型很容易被騙，所以要讓模型學到真正有區別力的特徵（形狀、五官）。前一頁的例子也是同一件事：四張狗的照片背景都是草地，如果模型學到的是「草」，一張只有草地的照片也會被判成狗</li>
   </ul>
 
   <div class="widget" id="w-fit">
@@ -114,7 +116,7 @@
     <li>目的：迫使模型使用較小的參數（weights 和 biases），避免特定節點產生過大影響</li>
     <li>L1（L1-Norm、Lasso Regression）：加上權重絕對值的總和</li>
     <li>L2（Ridge Regression）：加上權重平方的總和</li>
-    <li>強度由一個係數控制，越大 Penalty 越重 <span class="tag chk">待確認</span>講義的符號在文字擷取時是亂碼，這裡用常見的 \(\theta_j\) 與 \(\lambda\)</li>
+    <li>強度由係數 \(\lambda\) 控制，越大 Penalty 越重；L1（又稱 L1-Norm、Lasso Regression）加的是 \(\lambda\sum_{j=1}^{p}\lvert\beta_j\rvert\)，L2（又稱 Ridge Regression）加的是 \(\lambda\sum_{j=1}^{p}\beta_j^2\)，\(\beta_j\) 是模型參數</li>
     <li>區別：
       <ul>
         <li><strong>L1 會優先把不重要特徵的權重降為 0</strong> → 有「特徵選取」的效果</li>
@@ -215,8 +217,8 @@
         <li><strong>針對性資料生成（Targeted Data Generation, TDG）</strong>：不是平均增加資料，而是針對模型容易誤判的子群（subgroup）生成標註正確的合成樣本；講義例子是「同時含正負面描述但整體偏正面」的評論（arXiv 2305.17804）</li>
       </ul>
     </li>
-    <li><span class="tag chk">待確認</span>Adaptive 頁附近出現「梯度上升」字樣，推測是指「朝讓 loss 變大的方向調整擴增強度」</li>
-    <li><span class="tag chk">待確認</span>講義文字在 TDG 頁中途截斷，後續若還有投影片未能收錄</li>
+    <li>Adaptive 頁的流程圖：從資料集取樣 → 抽樣擴增參數 \(O_1\ldots O_N\) → 算出目標模型對這些參數的梯度 \(G_1\ldots G_N\) → 沿梯度方向更新參數 → 再用新的擴增訓練目標模型。圖旁標「梯度上升」：擴增參數是往<strong>讓 loss 變大</strong>的方向更新，讓樣本越來越難、維持挑戰性（模型本身仍用梯度下降學習）</li>
+    <li>TDG 是講義最後一頁（共 51 頁），內容完整。第二頁的流程圖分兩段：① Automatic Subgroup Discovery：用不同的分群策略把資料分群，挑出「泛化高、干擾低」的分群結果，找出模型表現差的群；② Subgroup Augmentation with LLM：用大型語言模型（論文用 GPT-3）為這些表現差的群生成更多樣本，最後同時看群內準確率與整體準確率</li>
   </ul>
 
   <div class="widget" id="w-aug">
@@ -332,8 +334,8 @@
   </div>
 
   <h3>4.2 L1 與 L2 正則化</h3>
-  $$L_{L1}=L_{\text{original}}+\lambda\sum_{j}\lvert\theta_j\rvert,\qquad L_{L2}=L_{\text{original}}+\lambda\sum_{j}\theta_j^{2}$$
-  <p>\(\theta_j\)：模型參數；\(\lambda\)：控制 Penalty 強度，越大越重。</p>
+  $$L_{L1}=L_{\text{original}}+\lambda\sum_{j=1}^{p}\lvert\beta_j\rvert,\qquad L_{L2}=L_{\text{original}}+\lambda\sum_{j=1}^{p}\beta_j^{2}$$
+  <p>\(\beta_j\)：模型參數（weights and biases，共 \(p\) 個）；\(\lambda\)：控制 Penalty 強度，越大越重。符號與講義相同。</p>
   <p>例：權重 \((3,-0.1,0)\)、\(\lambda=0.01\)：L1 penalty \(=0.01\times(3+0.1+0)=0.031\)；L2 penalty \(=0.01\times(9+0.01+0)=0.0901\)。L2 裡大權重 3 貢獻了 0.09、小權重 0.1 幾乎沒影響 → L2 主要壓大權重；L1 對每個權重的「每單位懲罰」一樣，小權重也會被推到 0 <span class="tag add">補充</span>。</p>
 
   <div class="steps">
@@ -494,12 +496,12 @@
   <h2 id="figures">6. 圖表說明</h2>
   <ul>
     <li><strong>Train／Val／Test 流程圖</strong>：每個 epoch 都是一個「Train → Val」的小方塊（Train 用梯度下降與反向傳播更新權重，Val 算 loss 與 accuracy），重複到 epoch n；全部結束後才在另外一份「沒看過的」Test 上算一次。</li>
-    <li><strong>MNIST 混淆矩陣</strong>：10×10 的表格，對角線綠色是答對的張數，其他格紅色是答錯；數字最大的紅色格就是最常見的錯誤，講義指出是「4 → 9」與「7 → 2」。格子內的具體數字未能擷取 <span class="tag chk">待確認</span>（<a href="#w-cm">2.2 的元件</a>用示意數字重現）</li>
+    <li><strong>MNIST 混淆矩陣</strong>：10×10 的表格，對角線綠色是答對的張數，其他格紅色是答錯；數字最大的紅色格就是最常見的錯誤：「4 → 9」9 張、「7 → 2」7 張。下一頁「找出容易預測錯誤的類別」把這些格子標紅。數字 5 那一列整列標紅，示範怎麼讀一列：884 張答對，其餘 8 張被誤判成 0、3、6、9。整體 Accuracy = 9,873 ／ 10,000 = 0.9873（<a href="#w-cm">2.2 的元件</a>用講義的原始數字重現）</li>
     <li><strong>COVID 二元分類表</strong>：2×2 混淆矩陣，數字如 <a href="#w-bin">4.1</a>。</li>
     <li><strong>Classification Report</strong>：每個類別一列，欄位為 Precision、Recall、F1、Support <span class="tag add">補充</span>底下通常還有 macro avg 與 weighted avg。</li>
     <li><strong>消防車例子</strong>：模型把紅色的東西都當成消防車，說明它學到的是「顏色」這種捷徑特徵，而不是消防車的形狀結構，這就是泛化差。</li>
     <li><strong>Dropout 示意圖</strong>：左邊是完整的全連接網路，右邊是部分節點打叉關閉後、連線變少的網路（<a href="#w-drop">2.7 的元件</a>）。</li>
-    <li><strong>Batch Normalization 圖</strong>（csmoon-ml.com）：示意每個 mini-batch 的資料在進入下一層前先被拉回穩定的分布 <span class="tag chk">待確認</span>圖片內容未能擷取。</li>
+    <li><strong>Batch Normalization 圖</strong>（csmoon-ml.com）：兩頁同一個全連接網路（3 個輸入 → 三層隱藏層 → 2 個輸出）。第一頁只在輸入端標「Normalize the inputs」，也就是一般的資料標準化；第二頁在每兩層隱藏層之間都標上「Normalize」。BN 就是把「標準化」從輸入延伸到每一層，讓每層收到的資料分布都穩定。</li>
     <li><strong>遮擋類擴增對照圖</strong>：同一張狗的照片分別套用 CutOut（一塊黑色正方形）、Random Erasing（一塊隨機大小的雜訊矩形）、Hide-and-Seek（隨機幾格網格變黑）、GridMask（規律的網格遮擋）。</li>
     <li><strong>MixUp／CutMix／Mosaic 圖</strong>：MixUp 是兩張圖半透明疊合；CutMix 是一張圖裡貼了另一張圖的方塊；Mosaic 是四張圖拼成田字形（都可以在 <a href="#w-aug">資料擴增元件</a>看到）。</li>
   </ul>
