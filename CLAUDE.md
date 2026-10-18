@@ -47,6 +47,8 @@ index.html            首頁：考試倒數、章節卡片（由 CHAPTERS 產生
 assets/style.css      共用樣式與色彩 tokens（淺色／深色）
 assets/common.js      CHAPTERS 與 EXAMS 清單、頁首、目錄、主題切換、KaTeX、測驗、螢光筆、
                       matrix()、setupCanvas()、onRedraw()、bindRange() 等工具，掛在 window.CV
+assets/highlights.js  共享螢光筆標記（由 tools/merge-highlights.js 產生）
+tools/merge-highlights.js  把頁面匯出的螢光筆 JSON 合併進 highlights.js（Node）
 chapters/c<n>.html    每章一頁，檔名與講義章號一致
 chapters/c<n>.js      該章的互動元件，每個元件一個 IIFE，對應 HTML 裡的 .widget#w-xxx
 ```
@@ -56,7 +58,10 @@ chapters/c<n>.js      該章的互動元件，每個元件一個 IIFE，對應 H
 - 靜態文字的公式用 `\( \)`（行內）與 `$$ $$`（區塊），在 `load` 時由 auto-render 處理；互動元件的動態公式用 `CV.tex(el, str)`。
 - 畫布元件用 `CV.onRedraw(draw)` 註冊，視窗縮放與切換主題時會自動重畫；顏色一律從 CSS 變數讀取（`CV.cssVar('--c-a')`）。
 - 測驗：選擇題寫 `<div class="quiz" data-answer="B">`，選項 `<button data-opt="A">`，解析放 `.explain[hidden]`；簡答題用 `<details class="answer">`。
-- 螢光筆：章節頁 `<main>` 裡選取文字會跳出色票（黃／綠／粉底、紅／藍字），點已標記的文字可換色或移除。標記存在 `localStorage` 的 `cv-hl:<chapter>`，以純文字位置＋原文記錄，不會改到檔案；`.widget`、公式、按鈕不能標記。改了某段文字後，標在那段的標記會改用原文重新尋找。
+- 螢光筆（完整規格與移植說明見 `docs/highlighter.md`，給其他課程的筆記專案使用；改了螢光筆行為要同步更新該文件）：章節頁 `<main>` 裡選取文字會跳出色票（黃／綠／粉底、紅／藍字），點已標記的文字可換色或移除。`.widget`、公式、按鈕不能標記。標記以「純文字位置＋原文＋前後各 20 字」記錄；位置對不上時，在相同文字中挑前後文最像的。
+  - 個人標記：存在瀏覽器 `localStorage` 的 `cv-hl:<chapter>`，只留在那個網址來源（GitHub Pages、localhost、`file://` 各自分開）。前綴 `cv` 來自 `common.js` 的 `COURSE.id`：同一個 github.io 網域下的其他課程筆記共用 localStorage，靠前綴分開，其他課程要換成自己的識別。
+  - 共享標記：`assets/highlights.js`（`window.CV_SHARED_HL`），由 `common.js` 自動載入，每台裝置都看得到。在頁面上改色或隱藏只記在 `cv-hl-ovr:<chapter>`。
+  - 回寫流程：使用者在 GitHub Pages 按頁首「🖍 匯出」下載 `ComputerVision-highlights-YYYY-MM-DD.json`（檔名來自 `COURSE.name`，檔內也記錄 `course`）→ `node tools/merge-highlights.js <檔案>` 合併（課程不符會拒絕；新增、改色、刪除，重複執行不會重複加）→ commit／push。部署後，瀏覽器裡已寫進共享檔的個人標記與修改會自動清掉。
 - 逐步展開：`<div class="steps"><p class="steps-title">題目</p><ol><li>…</li></ol></div>`，每步的解釋放 `<span class="why">`；`common.js` 會自動加上「下一步／全部展開／收起」按鈕，一開始只顯示題目。
 
 ## 每章頁面的結構

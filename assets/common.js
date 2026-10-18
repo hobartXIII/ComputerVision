@@ -12,6 +12,9 @@
     { id: 'c4-2', no: 'C4-2', title: '進階影像視覺模型（Part 2）', desc: 'DenseNet、Dense Block、增長率、Bottleneck、過渡層、DenseNet-BC', done: true },
     { id: 'c5', no: 'C5', title: '遷移學習與微調', desc: '特徵提取、微調、Full／Partial（Last-k）、PEFT（LoRA）、Regularized（L2-SP）', done: true },
   ];
+  // 課程識別：用在 localStorage 鍵名與匯出檔名。其他課程的筆記若部署在同一個 github.io 網域，
+  // localStorage 是共用的，靠這個前綴分開
+  const COURSE = { id: 'cv', name: 'ComputerVision' };
   const EXAMS = [
     { name: '期中考', date: '2026-10-29' },
     { name: '期末考', date: '2026-12-17' },
@@ -93,10 +96,18 @@
       applyTheme(next);
       label();
     });
+    const exportBtn = el('button', { class: 'icon-btn', type: 'button', title: '把螢光筆標記下載成 JSON，交給 Claude 寫回 repo' }, [
+      '🖍', el('span', { class: 'lbl', text: ' 匯出' }),
+    ]);
+    exportBtn.addEventListener('click', () => {
+      const n = exportHighlights();
+      exportBtn.lastChild.textContent = n ? ` 已匯出 ${n}` : ' 沒有標記';
+      setTimeout(() => { exportBtn.lastChild.textContent = ' 匯出'; }, 2500);
+    });
     const bar = el('header', { class: 'topbar' }, [
       el('div', { class: 'topbar-inner' }, [
         el('a', { class: 'brand', href: prefix + 'index.html', text: '👁️ 電腦視覺筆記' }),
-        nav, themeBtn,
+        nav, exportBtn, themeBtn,
       ]),
     ]);
     document.body.prepend(bar);
@@ -285,22 +296,70 @@
 
   /* ---------- 螢光筆 ---------- */
   // 選取 <main> 裡的文字 → 跳出色票；點已標記的文字可換色或移除。
-  // 標記以「純文字位置＋原文」存在 localStorage（cv-hl:<chapter>），只留在這個瀏覽器。
-  // 互動元件、公式、按鈕裡的文字會變動，不能標記，也不算進位置。
+  // 個人標記存在 localStorage（<COURSE.id>-hl:<chapter>），只留在這個瀏覽器；
+  // 共享標記放在 assets/highlights.js（window.CV_SHARED_HL），每台裝置都看得到，
+  // 在頁面上改色或隱藏只記在 <COURSE.id>-hl-ovr:<chapter>，按「匯出」後由 tools/merge-highlights.js 寫回。
+  // 位置以「純文字位置＋原文＋前後文」記錄；互動元件、公式、按鈕裡的文字不能標記，也不算進位置。
   const MARKS = [
     { c: 'y', label: '黃底' }, { c: 'g', label: '綠底' }, { c: 'p', label: '粉底' },
     { c: 'r', label: '紅字' }, { c: 'b', label: '藍字' },
   ];
   const HL_SKIP = '.widget, .katex, script, style, button, .steps-ctrl, .hl-tool';
+  const HL_CTX = 20;
+
+  // 共享標記資料檔：跟 common.js 放在同一層，load 事件會等它載完
+  const sharedSrc = document.currentScript && document.currentScript.src;
+  if (sharedSrc) document.head.append(el('script', { src: new URL('highlights.js', sharedSrc).href }));
+
+  function readJSON(key, fallback) {
+    try { return JSON.parse(store(key)) || fallback; } catch (e) { return fallback; }
+  }
+
+  // 匯出這個網站所有章節的個人標記與對共享標記的修改
+  function exportHighlights() {
+    const data = { course: COURSE.id, exported: new Date().toISOString(), personal: {}, overrides: {} };
+    const re = new RegExp(`^${COURSE.id}-hl(-ovr)?:(.+)$`);
+    let n = 0;
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        const m = re.exec(k);
+        if (!m) continue;
+        const v = readJSON(k, null);
+        if (m[1] && v && Object.keys(v).length) { data.overrides[m[2]] = v; n += Object.keys(v).length; }
+        if (!m[1] && v && v.length) { data.personal[m[2]] = v; n += v.length; }
+      }
+    } catch (e) { /* 無法存取 localStorage */ }
+    if (!n) return 0;
+    const blob = new Blob([JSON.stringify(data, null, 1)], { type: 'application/json' });
+    const a = el('a', { href: URL.createObjectURL(blob), download: `${COURSE.name}-highlights-${data.exported.slice(0, 10)}.json` });
+    document.body.append(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    return n;
+  }
 
   function initHighlighter() {
     const chapter = document.body.dataset.chapter;
     const main = $('main');
     if (!chapter || !main) return;
-    const key = 'cv-hl:' + chapter;
-    let list = [];
-    try { list = JSON.parse(store(key) || '[]'); } catch (e) { list = []; }
-    const save = () => store(key, JSON.stringify(list));
+    const key = `${COURSE.id}-hl:${chapter}`, ovrKey = `${COURSE.id}-hl-ovr:${chapter}`;
+    const shared = ((window.CV_SHARED_HL || {})[chapter] || []).map((h) => ({ ...h, shared: true }));
+    const sharedIds = new Set(shared.map((h) => h.id));
+    let ovr = readJSON(ovrKey, {});                     // { id: 顏色 | null(隱藏) }
+    let list = readJSON(key, []);
+    // 已經寫進共享檔的個人標記不再重複保存
+    const kept = list.filter((h) => !sharedIds.has(h.id));
+    if (kept.length !== list.length) { list = kept; store(key, JSON.stringify(list)); }
+    // 共享檔已經反映的改色／刪除也不再保存
+    let pruned = false;
+    for (const [id, c] of Object.entries(ovr)) {
+      const h = shared.find((x) => x.id === id);
+      if (!h || h.c === c) { delete ovr[id]; pruned = true; }
+    }
+    if (pruned) store(ovrKey, JSON.stringify(ovr));
+    const save = () => { store(key, JSON.stringify(list)); store(ovrKey, JSON.stringify(ovr)); };
 
     // 可標記的文字節點與其在全文中的起點
     function textNodes() {
@@ -312,6 +371,7 @@
       for (let n = walker.nextNode(); n; n = walker.nextNode()) { out.push({ n, base }); base += n.length; }
       return out;
     }
+    const fullText = (nodes) => nodes.map((x) => x.n.data).join('');
 
     function rangeToOffsets(range) {
       let s = Infinity, e = -Infinity;
@@ -324,15 +384,30 @@
       return s < e ? { s, e } : null;
     }
 
+    // 找出標記目前的位置：原位置對得上就用；否則在所有相同文字中挑前後文最像的
+    function locate(h, full) {
+      if (full.slice(h.s, h.e) === h.text) return h.s;
+      const score = (i) => {
+        let k = 0;
+        const pre = h.pre || '', post = h.post || '';
+        while (k < pre.length && full[i - 1 - k] === pre[pre.length - 1 - k]) k++;
+        let j = 0;
+        while (j < post.length && full[i + h.text.length + j] === post[j]) j++;
+        return k + j;
+      };
+      let best = -1, bestScore = -1;
+      for (let i = full.indexOf(h.text); i >= 0; i = full.indexOf(h.text, i + 1)) {
+        const sc = score(i);
+        if (sc > bestScore) { best = i; bestScore = sc; }
+      }
+      return best;
+    }
+
     function wrap(h) {
       const nodes = textNodes();
-      const full = nodes.map((x) => x.n.data).join('');
-      let { s, e } = h;
-      if (full.slice(s, e) !== h.text) {       // 內容改過：改用原文找
-        s = full.indexOf(h.text);
-        if (s < 0) return false;
-        e = s + h.text.length;
-      }
+      const s = locate(h, fullText(nodes));
+      if (s < 0) return false;
+      const e = s + h.text.length;
       const segs = [];
       for (const { n, base } of nodes) {
         const a = Math.max(s, base) - base, b = Math.min(e, base + n.length) - base;
@@ -342,6 +417,7 @@
         if (b < n.length) n.splitText(b);
         if (a > 0) n = n.splitText(a);
         const m = el('mark', { class: 'cv-mark', 'data-c': h.c, 'data-id': h.id });
+        if (h.shared) m.dataset.shared = '';
         n.replaceWith(m);
         m.append(n);
       }
@@ -355,6 +431,7 @@
         p.normalize();
       }
     }
+    const recolorMarks = (id, c) => $$(`mark.cv-mark[data-id="${id}"]`, main).forEach((m) => { m.dataset.c = c; });
 
     // 浮動工具列
     const tool = el('div', { class: 'hl-tool', hidden: '' });
@@ -362,8 +439,8 @@
     tool.addEventListener('mousedown', (ev) => ev.preventDefault());   // 不要讓點按鈕清掉選取
     const hide = () => { tool.hidden = true; };
 
-    function show(rect, buttons) {
-      tool.replaceChildren(...buttons);
+    function show(rect, items) {
+      tool.replaceChildren(...items);
       tool.hidden = false;
       const vw = document.documentElement.clientWidth;
       const w = tool.offsetWidth;
@@ -386,8 +463,12 @@
       const off = rangeToOffsets(range);
       if (!off) return;
       show(range.getBoundingClientRect(), MARKS.map((m) => swatch(m.c, m.label, null, () => {
-        const full = textNodes().map((x) => x.n.data).join('');
-        const h = { id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), c: m.c, ...off, text: full.slice(off.s, off.e) };
+        const full = fullText(textNodes());
+        const h = {
+          id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), c: m.c, ...off,
+          text: full.slice(off.s, off.e),
+          pre: full.slice(Math.max(0, off.s - HL_CTX), off.s), post: full.slice(off.e, off.e + HL_CTX),
+        };
         sel.removeAllRanges();
         if (wrap(h)) { list.push(h); save(); }
         hide();
@@ -395,26 +476,36 @@
     }
 
     function onMarkClick(mark) {
-      const h = list.find((x) => x.id === mark.dataset.id);
+      const id = mark.dataset.id;
+      const h = list.find((x) => x.id === id) || shared.find((x) => x.id === id);
       if (!h) return;
+      const current = h.shared && ovr[id] ? ovr[id] : h.c;
       const recolor = (c) => () => {
-        h.c = c; save();
-        $$(`mark.cv-mark[data-id="${h.id}"]`, main).forEach((m) => { m.dataset.c = c; });
-        hide();
+        if (h.shared) { if (c === h.c) delete ovr[id]; else ovr[id] = c; } else h.c = c;
+        save(); recolorMarks(id, c); hide();
       };
-      const del = el('button', { type: 'button', class: 'btn', text: '移除', onclick: () => {
-        unwrap(h.id); list = list.filter((x) => x !== h); save(); hide();
-      } });
-      const clearAll = el('button', { type: 'button', class: 'btn', text: '清除本頁全部' });
-      clearAll.addEventListener('click', () => {
-        if (clearAll.dataset.armed) {
-          list.forEach((x) => unwrap(x.id)); list = []; save(); hide();
-        } else {
-          clearAll.dataset.armed = '1';
-          clearAll.textContent = `再按一次清除 ${list.length} 個`;
-        }
-      });
-      show(mark.getBoundingClientRect(), [...MARKS.map((m) => swatch(m.c, m.label, h.c, recolor(m.c))), del, clearAll]);
+      const items = MARKS.map((m) => swatch(m.c, m.label, current, recolor(m.c)));
+      if (h.shared) {
+        items.push(el('button', { type: 'button', class: 'btn', text: '隱藏', title: '只在這台裝置隱藏；匯出後可從共享檔刪除', onclick: () => {
+          ovr[id] = null; save(); unwrap(id); hide();
+        } }));
+        items.push(el('span', { class: 'hl-note', text: '共享標記' }));
+      } else {
+        items.push(el('button', { type: 'button', class: 'btn', text: '移除', onclick: () => {
+          unwrap(id); list = list.filter((x) => x !== h); save(); hide();
+        } }));
+        const clearAll = el('button', { type: 'button', class: 'btn', text: '清除本頁個人標記' });
+        clearAll.addEventListener('click', () => {
+          if (clearAll.dataset.armed) {
+            list.forEach((x) => unwrap(x.id)); list = []; save(); hide();
+          } else {
+            clearAll.dataset.armed = '1';
+            clearAll.textContent = `再按一次清除 ${list.length} 個`;
+          }
+        });
+        items.push(clearAll);
+      }
+      show(mark.getBoundingClientRect(), items);
     }
 
     document.addEventListener('mouseup', (ev) => { if (!tool.contains(ev.target)) setTimeout(onSelect, 0); });
@@ -427,7 +518,11 @@
       if (mark && window.getSelection().isCollapsed) onMarkClick(mark);
     });
 
-    // 公式渲染後才還原，位置才會跟選取時一致；找不到的先保留，不刪
+    // 公式渲染後才還原，位置才會跟選取時一致；先畫共享，個人標記疊在上面。找不到的先保留，不刪
+    for (const h of shared) {
+      if (ovr[h.id] === null) continue;
+      if (wrap(h) && ovr[h.id]) recolorMarks(h.id, ovr[h.id]);
+    }
     list.forEach(wrap);
   }
 

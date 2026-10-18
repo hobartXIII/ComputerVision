@@ -92,8 +92,9 @@ hr { border: 0; border-top: 1px solid var(--border); margin: 2em 0; }
 .chapnav a.active { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
 .icon-btn {
   border: 1px solid var(--border); background: var(--surface); color: var(--text);
-  border-radius: 8px; padding: 4px 10px; cursor: pointer; font: inherit; font-size: .9rem;
+  border-radius: 8px; padding: 4px 10px; cursor: pointer; font: inherit; font-size: .9rem; white-space: nowrap;
 }
+@media (max-width: 480px) { .icon-btn .lbl { display: none; } }
 
 /* ===== 版面 ===== */
 .layout {
@@ -298,3 +299,4 @@ mark.cv-mark[data-c="b"] { color: var(--mk-b); font-weight: 600; }
 .hl-sw[data-c="r"] { color: var(--mk-r); }
 .hl-sw[data-c="b"] { color: var(--mk-b); }
 .hl-tool .btn { padding: 3px 10px; font-size: .85rem; }
+.hl-note { color: var(--text-2); font-size: .8rem; }
