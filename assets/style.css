@@ -300,3 +300,19 @@ mark.cv-mark[data-c="b"] { color: var(--mk-b); font-weight: 600; }
 .hl-sw[data-c="b"] { color: var(--mk-b); }
 .hl-tool .btn { padding: 3px 10px; font-size: .85rem; }
 .hl-note { color: var(--text-2); font-size: .8rem; }
+.hl-menu-wrap { position: relative; }
+.hl-menu {
+  position: absolute; right: 0; top: calc(100% + 6px); z-index: 30; width: 230px;
+  display: flex; flex-direction: column; gap: 2px; padding: 6px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+  box-shadow: 0 4px 16px rgba(0,0,0,.18);
+}
+.hl-menu[hidden] { display: none; }
+.hl-menu-item {
+  text-align: left; padding: 6px 10px; border: 0; border-radius: 6px; background: none;
+  color: var(--text); font: inherit; font-size: .9rem; cursor: pointer;
+}
+.hl-menu-item:hover:not(:disabled) { background: var(--surface-2); }
+.hl-menu-item:disabled { opacity: .45; cursor: default; }
+.hl-menu-item[data-armed] { color: var(--neg); font-weight: 600; }
+.hl-menu-note { margin: 4px 10px 2px; color: var(--text-2); font-size: .78rem; line-height: 1.5; }
