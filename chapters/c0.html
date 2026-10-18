@@ -39,6 +39,33 @@
     <li>考試日期：期中考 2026-10-29、期末考 2026-12-17</li>
   </ul>
 
+  <h4 class="formula-head">公式：學期成績</h4>
+  $$\text{總成績} = 0.2\,M + 0.2\,F + 0.3\,E + 0.2\,P + 0.1\,A$$
+  <p>\(M\)：期中考、\(F\)：期末考、\(E\)：課堂練習、\(P\)：期末專題、\(A\)：出席。遲交作業分數上限 80 分。</p>
+
+  <div class="steps">
+    <p class="steps-title">逐步展開：期中 70、期末 80、課堂練習 90、期末專題 85、出席 100</p>
+    <ol>
+      <li><strong>先看權重</strong>：\(0.2+0.2+0.3+0.2+0.1=1\)，加起來剛好 100%，所以總成績也是 0～100 分。
+        <span class="why">這叫「加權平均」：每一項先乘上它佔的比例再加總。課堂練習佔 30% 最重。</span></li>
+      <li><strong>期中</strong>：\(0.2\times70=14\)</li>
+      <li><strong>期末</strong>：\(0.2\times80=16\)</li>
+      <li><strong>課堂練習</strong>：\(0.3\times90=27\)</li>
+      <li><strong>期末專題</strong>：\(0.2\times85=17\)</li>
+      <li><strong>出席</strong>：\(0.1\times100=10\)</li>
+      <li><strong>加總</strong>：\(14+16+27+17+10=84\) 分。</li>
+      <li><strong>反過來用</strong> <span class="tag add">補充</span>：如果其他四項不變，期末要考幾分總成績才有 90？其他四項合計 \(84-16=68\)，需要 \(0.2F\ge 90-68=22\)，\(F\ge110\)，不可能。
+        <span class="why">每一項最多只能貢獻「權重 × 100」分，期末最多 20 分。所以想拉高總成績，佔 30% 的課堂練習最有效。</span></li>
+    </ol>
+  </div>
+
+  <div class="widget" id="w-grade">
+    <p class="w-title">學期成績計算器</p>
+    <p class="w-desc">預設值是 Notion 筆記的數值例子<span class="tag add">補充</span>：期中 70、期末 80、課堂練習 90、期末專題 85、出席 100 → 84 分。</p>
+    <div class="controls" id="grade-ctrls"></div>
+    <div class="readout" id="grade-out"></div>
+  </div>
+
   <h3>2.2 什麼是電腦視覺</h3>
   <ul>
     <li>跨領域研究：結合電腦科學、機器學習（Machine Learning, ML）、人工智慧（Artificial Intelligence, AI）</li>
@@ -130,36 +157,8 @@
     </table>
   </div>
 
-  <h2 id="formula">4. 公式與計算</h2>
-  <p>本章沒有技術公式，以下整理學期成績的計算方式。</p>
-  $$\text{總成績} = 0.2\,M + 0.2\,F + 0.3\,E + 0.2\,P + 0.1\,A$$
-  <p>\(M\)：期中考、\(F\)：期末考、\(E\)：課堂練習、\(P\)：期末專題、\(A\)：出席。遲交作業分數上限 80 分。</p>
-
-  <div class="steps">
-    <p class="steps-title">逐步展開：期中 70、期末 80、課堂練習 90、期末專題 85、出席 100</p>
-    <ol>
-      <li><strong>先看權重</strong>：\(0.2+0.2+0.3+0.2+0.1=1\)，加起來剛好 100%，所以總成績也是 0～100 分。
-        <span class="why">這叫「加權平均」：每一項先乘上它佔的比例再加總。課堂練習佔 30% 最重。</span></li>
-      <li><strong>期中</strong>：\(0.2\times70=14\)</li>
-      <li><strong>期末</strong>：\(0.2\times80=16\)</li>
-      <li><strong>課堂練習</strong>：\(0.3\times90=27\)</li>
-      <li><strong>期末專題</strong>：\(0.2\times85=17\)</li>
-      <li><strong>出席</strong>：\(0.1\times100=10\)</li>
-      <li><strong>加總</strong>：\(14+16+27+17+10=84\) 分。</li>
-      <li><strong>反過來用</strong> <span class="tag add">補充</span>：如果其他四項不變，期末要考幾分總成績才有 90？其他四項合計 \(84-16=68\)，需要 \(0.2F\ge 90-68=22\)，\(F\ge110\)，不可能。
-        <span class="why">每一項最多只能貢獻「權重 × 100」分，期末最多 20 分。所以想拉高總成績，佔 30% 的課堂練習最有效。</span></li>
-    </ol>
-  </div>
-
-  <div class="widget" id="w-grade">
-    <p class="w-title">學期成績計算器</p>
-    <p class="w-desc">預設值是 Notion 筆記的數值例子<span class="tag add">補充</span>：期中 70、期末 80、課堂練習 90、期末專題 85、出席 100 → 84 分。</p>
-    <div class="controls" id="grade-ctrls"></div>
-    <div class="readout" id="grade-out"></div>
-  </div>
-
-  <h2 id="compare">5. 方法比較</h2>
-  <h3>5.1 四大任務比較</h3>
+  <h2 id="compare">4. 方法比較</h2>
+  <h3>4.1 四大任務比較</h3>
   <div class="table-wrap">
     <table>
       <tr><th>任務</th><th>輸出</th><th>細緻程度</th><th>應用例子 <span class="tag add">補充</span></th></tr>
@@ -169,7 +168,7 @@
       <tr><td>圖像分割</td><td>每個像素的類別</td><td>最細（像素）</td><td>醫學影像病灶範圍、去背</td></tr>
     </table>
   </div>
-  <h3>5.2 傳統 vs 現代電腦視覺</h3>
+  <h3>4.2 傳統 vs 現代電腦視覺</h3>
   <div class="table-wrap">
     <table>
       <tr><th>比較項目</th><th>傳統電腦視覺</th><th>現代電腦視覺</th></tr>
@@ -180,7 +179,7 @@
     </table>
   </div>
 
-  <h2 id="figures">6. 圖表說明</h2>
+  <h2 id="figures">5. 圖表說明</h2>
   <ul>
     <li><strong>四大任務示意圖</strong>（來源 infolks.info，四頁依序強調一種任務），從「整張圖一個標籤」→「一個框」→「多個框」→「逐像素上色」，細緻程度逐步提高：
       <ul>
@@ -195,7 +194,7 @@
     <li><strong>應用例子圖</strong>：Instagram 濾鏡、車牌辨識、自駕車、運動分析、臉部辨識、換臉、姿態辨識、圖像生成，說明 CV 的應用範圍很廣。</li>
   </ul>
 
-  <h2 id="traps">7. 常見觀念陷阱</h2>
+  <h2 id="traps">6. 常見觀念陷阱</h2>
   <ul>
     <li><strong>物件定位 ≠ 物件偵測</strong>：定位通常針對圖中單一（主要）物體；偵測要找出<strong>所有</strong>物體。<span class="tag add">補充</span></li>
     <li><strong>分割是像素層級</strong>，不是畫框；畫框的是定位與偵測。</li>
@@ -205,7 +204,7 @@
     <li>補考請假要在<strong>上課前至少三小時</strong>完成，且要有有效證明。</li>
   </ul>
 
-  <h2 id="quiz">8. 自我測驗</h2>
+  <h2 id="quiz">7. 自我測驗</h2>
   <div class="quiz" data-answer="C">
     <p class="q">1.（選擇）一張圖片中有三隻狗和兩隻貓，要把每一隻動物都用框標出並註明類別，屬於哪一種任務？</p>
     <div class="opts">

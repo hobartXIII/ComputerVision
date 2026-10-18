@@ -61,8 +61,52 @@
     <li>偽陽性率（False Positive Rate, FPR）：沒有 COVID 的人中，被誤判有 COVID 的比例</li>
     <li>真陰性率（True Negative Rate, TNR）＝ 特異度（Specificity）：沒有 COVID 的人中，正確判定的比例</li>
     <li>精確率（Precision）：預測有 COVID 的人中，真的有的比例</li>
-    <li>數值計算見 <a href="#w-bin">4.1 的計算器</a></li>
+    <li>數值計算見 <a href="#w-bin">2.3 的計算器</a></li>
   </ul>
+
+  <h4 class="formula-head">公式：二元分類指標</h4>
+  $$\text{Accuracy}=\frac{TP+TN}{\text{Total}},\quad \text{Error Rate}=1-\text{Accuracy},\quad \text{Recall (TPR)}=\frac{TP}{TP+FN}$$
+  $$\text{FPR}=\frac{FP}{FP+TN},\quad \text{Specificity (TNR)}=\frac{TN}{FP+TN},\quad \text{Precision}=\frac{TP}{TP+FP},\quad F_1=\frac{2\cdot\text{Precision}\cdot\text{Recall}}{\text{Precision}+\text{Recall}}$$
+  <p>TP：有病且判有病；FN：有病卻判沒病；FP：沒病卻判有病；TN：沒病且判沒病。<span class="tag add">補充</span>F1 公式（講義只寫「調和平均數」）。</p>
+  <p><strong>講義 COVID 例子</strong>（由講義數字反推：TP = 90、FN = 10、FP = 5、TN = 40、共 145 人）：</p>
+
+  <div class="steps">
+    <p class="steps-title">逐步展開：講義 COVID 例子（TP 90、FN 10、FP 5、TN 40）</p>
+    <ol>
+      <li><strong>先算四個小計</strong>：實際有病 \(TP+FN=100\)；實際沒病 \(FP+TN=45\)；預測有病 \(TP+FP=95\)；全部 145。
+        <span class="why">每個指標都是「某一格 ÷ 某個小計」，先把小計算好就不會搞錯分母。</span></li>
+      <li><strong>Accuracy</strong>：答對的是 TP 和 TN：\((90+40)\div145=130\div145\approx0.897\)；Error Rate \(=1-0.897=0.103\)</li>
+      <li><strong>Recall（＝ Sensitivity ＝ TPR）</strong>：100 個病人抓到幾個？\(90\div100=0.9\)</li>
+      <li><strong>FPR</strong>：45 個沒病的人裡，幾個被誤判有病？\(5\div45\approx0.111\)</li>
+      <li><strong>Specificity（TNR）</strong>：45 個沒病的人裡，幾個被正確判為沒病？\(40\div45\approx0.889\)；也等於 \(1-\text{FPR}\)。</li>
+      <li><strong>Precision</strong>：模型說有病的 95 人裡，幾個真的有？\(90\div95\approx0.947\)</li>
+      <li><strong>F1</strong>：\(\dfrac{2\times0.947\times0.9}{0.947+0.9}=\dfrac{1.705}{1.847}\approx0.923\)</li>
+      <li><strong>為什麼 F1 用調和平均</strong> <span class="tag add">補充</span>：假設 Precision 1、Recall 0.1（只抓到一成病人）。算術平均 \((1+0.1)\div2=0.55\) 看起來還行；F1 \(=\frac{2\times1\times0.1}{1.1}\approx0.18\)，直接反映出「有一項很爛」。</li>
+    </ol>
+  </div>
+
+  <div class="widget" id="w-bin">
+    <p class="w-title">二元分類指標計算器</p>
+    <p class="w-desc">預設是講義的 COVID 例子。改任一格，所有指標一起更新；也可以套用自我測驗第 4 題的數字驗算。</p>
+    <div class="controls">
+      <span class="muted" style="font-size:.9rem">套用：</span>
+      <button class="btn" type="button" data-bin="90,10,5,40">講義 COVID</button>
+      <button class="btn" type="button" data-bin="80,20,40,860">自我測驗第 4 題</button>
+    </div>
+    <div class="row">
+      <div class="col" style="flex:0 1 auto;max-width:100%">
+        <div class="table-wrap" style="margin:0">
+          <table style="width:auto">
+            <tr><th></th><th>預測：有</th><th>預測：沒有</th><th class="num">小計</th></tr>
+            <tr><th>實際：有</th><td><label>TP <input type="number" id="b-tp" value="90" min="0" style="width:64px"></label></td><td><label>FN <input type="number" id="b-fn" value="10" min="0" style="width:64px"></label></td><td class="num" id="b-rp"></td></tr>
+            <tr><th>實際：沒有</th><td><label>FP <input type="number" id="b-fp" value="5" min="0" style="width:64px"></label></td><td><label>TN <input type="number" id="b-tn" value="40" min="0" style="width:64px"></label></td><td class="num" id="b-rn"></td></tr>
+            <tr><th>小計</th><td class="num" id="b-cp"></td><td class="num" id="b-cn"></td><td class="num" id="b-all"></td></tr>
+          </table>
+        </div>
+      </div>
+      <div class="col" style="flex:1 1 280px"><div class="readout" id="b-out" style="margin-top:0"></div></div>
+    </div>
+  </div>
 
   <h3>2.4 Precision、Recall、F1 與分類報告</h3>
   <ul>
@@ -126,6 +170,39 @@
     <li>總結：兩者都讓模型傾向用小權重，除非大權重能顯著降低原本的 Loss；模型在「較小權重」與「較低原始 Loss」之間取捨，由 \(\lambda\) 控制</li>
   </ul>
 
+  <h4 class="formula-head">公式：L1 與 L2 正則化</h4>
+  $$L_{L1}=L_{\text{original}}+\lambda\sum_{j=1}^{p}\lvert\beta_j\rvert,\qquad L_{L2}=L_{\text{original}}+\lambda\sum_{j=1}^{p}\beta_j^{2}$$
+  <p>\(\beta_j\)：模型參數（weights and biases，共 \(p\) 個）；\(\lambda\)：控制 Penalty 強度，越大越重。符號與講義相同。</p>
+  <p>例：權重 \((3,-0.1,0)\)、\(\lambda=0.01\)：L1 penalty \(=0.01\times(3+0.1+0)=0.031\)；L2 penalty \(=0.01\times(9+0.01+0)=0.0901\)。L2 裡大權重 3 貢獻了 0.09、小權重 0.1 幾乎沒影響 → L2 主要壓大權重；L1 對每個權重的「每單位懲罰」一樣，小權重也會被推到 0 <span class="tag add">補充</span>。</p>
+
+  <div class="steps">
+    <p class="steps-title">逐步展開：為什麼 L1 會把權重推到 0、L2 不會？<span class="tag add">補充</span></p>
+    <ol>
+      <li><strong>先算 penalty</strong>：權重 \((3,-0.1,0)\)。L1：\(|3|+|-0.1|+|0|=3.1\)，\(\times0.01=0.031\)；L2：\(3^2+(-0.1)^2+0^2=9.01\)，\(\times0.01=0.0901\)。</li>
+      <li><strong>梯度下降會怎麼推權重</strong>：penalty 對權重的斜率，就是每一步額外把權重往 0 推的力道。</li>
+      <li><strong>L1 的斜率</strong>：\(\lambda|w|\) 的斜率是 \(\lambda\times(\pm1)\)，不管 \(w\) 大小都是 \(0.01\)。\(w=3\) 和 \(w=0.1\) 都被推一樣大力 → 小權重很快就被推到 0。</li>
+      <li><strong>L2 的斜率</strong>：\(\lambda w^2\) 的斜率是 \(2\lambda w\)。\(w=3\)：\(2\times0.01\times3=0.06\)；\(w=0.1\)：\(2\times0.01\times0.1=0.002\)。
+        <span class="why">權重越小推力越小，越接近 0 越推不動，所以 L2 只會讓權重「變小」，很少剛好變 0；大權重則被推得最用力。</span></li>
+      <li><strong>結論</strong>：L1 → 很多權重剛好是 0（特徵選取）；L2 → 所有權重一起縮小、大的縮最多。</li>
+    </ol>
+  </div>
+
+  <div class="widget" id="w-pen">
+    <p class="w-title">L1 vs L2：Penalty 與權重怎麼縮</p>
+    <p class="w-desc">上半：輸入權重和 λ，算出兩種 Penalty（預設是筆記的例子）。下半 <span class="tag add">補充</span>：假設不加正則化時最佳權重是 \(a\)，加上 Penalty 後最佳權重會變成多少？拉大 λ 比較兩者：<strong>L1 把小權重直接歸零</strong>，<strong>L2 讓所有權重等比例縮小</strong>、永遠不會剛好變 0。</p>
+    <div class="controls">
+      <label>權重 <input type="text" id="pen-w" value="3, -0.1, 0" style="width:150px;padding:3px 6px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);font:inherit;font-size:.92rem"></label>
+      <label>λ <input type="number" id="pen-l" value="0.01" step="0.01" min="0"></label>
+    </div>
+    <div class="readout" id="pen-out"></div>
+    <hr style="margin:16px 0 8px">
+    <div class="controls">
+      <label>λ（縮小實驗）<input type="range" id="shr-l" min="0" max="3" step="0.05" value="0.5"> <span class="val" data-for="shr-l"></span></label>
+    </div>
+    <div id="shr-bars"></div>
+    <div class="readout" id="shr-out"></div>
+  </div>
+
   <h3>2.7 正則化方法二：Dropout</h3>
   <ul>
     <li>出處：Srivastava et al., “Dropout: a simple way to prevent neural networks from overfitting”, JMLR 2014</li>
@@ -160,8 +237,42 @@
   <ul>
     <li>設定一個門檻：如果接下來 <strong>P 個 epoch</strong> 都沒有更好的結果就停止訓練</li>
     <li>每個 epoch 都儲存模型權重（以便取回最佳的那一個）</li>
-    <li>互動例子見 <a href="#w-es">4.4</a></li>
+    <li>互動例子見 <a href="#w-es">2.8</a></li>
   </ul>
+
+  <h4 class="formula-head">公式：Early Stopping 的例子 <span class="tag add">補充</span></h4>
+  <p>若 patience P = 3，Val Loss 依序為 0.50、0.40、0.35、0.36、0.37、0.38 → 第 3 個 epoch 之後連續 3 個 epoch 沒有進步，在第 6 個 epoch 停止，取回第 3 個 epoch 的權重。</p>
+
+  <div class="steps">
+    <p class="steps-title">逐步展開：P = 3，Val Loss 0.50、0.40、0.35、0.36、0.37、0.38</p>
+    <ol>
+      <li><strong>規則</strong>：記住目前最好的 loss，和「已經連續幾個 epoch 沒進步」的計數器；計數器到 P 就停。</li>
+      <li><strong>Epoch 1</strong>：0.50，第一個，最佳 = 0.50，計數 0，存檔。</li>
+      <li><strong>Epoch 2</strong>：0.40 &lt; 0.50，進步 → 最佳 = 0.40，計數歸 0，存檔。</li>
+      <li><strong>Epoch 3</strong>：0.35 &lt; 0.40，進步 → 最佳 = 0.35，計數 0，存檔。</li>
+      <li><strong>Epoch 4</strong>：0.36 沒有比 0.35 好 → 計數 1。</li>
+      <li><strong>Epoch 5</strong>：0.37 → 計數 2。</li>
+      <li><strong>Epoch 6</strong>：0.38 → 計數 3 = P，停止。取回最佳的第 3 個 epoch 權重（0.35）。
+        <span class="why">停下來的時候已經多訓練了 P 個 epoch，所以一定要取回「之前存的最佳權重」，不是用最後一個。</span></li>
+    </ol>
+  </div>
+
+  <div class="widget" id="w-es">
+    <p class="w-title">Early Stopping 模擬</p>
+    <p class="w-desc">預設是上面的例子。可以直接改 Val Loss 序列（逗號分隔）或調 P；「模擬 40 epoch」會產生一條典型的 overfitting 曲線：Train Loss 一路下降，Val Loss 先降後升。</p>
+    <div class="controls">
+      <label>Val Loss <input type="text" id="es-v" value="0.50, 0.40, 0.35, 0.36, 0.37, 0.38" style="width:min(320px,60vw);padding:3px 6px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);font:inherit;font-size:.92rem"></label>
+      <label>patience P <input type="range" id="es-p" min="1" max="10" step="1" value="3"> <span class="val" data-for="es-p"></span></label>
+    </div>
+    <div class="controls">
+      <span class="muted" style="font-size:.9rem">套用：</span>
+      <button class="btn" type="button" data-es="note">筆記例子（P = 3）</button>
+      <button class="btn" type="button" data-es="quiz">自我測驗第 5 題（P = 2）</button>
+      <button class="btn" type="button" data-es="sim">模擬 40 epoch</button>
+    </div>
+    <div class="canvas-wrap"><canvas id="es-canvas"></canvas></div>
+    <div class="readout" id="es-out"></div>
+  </div>
 
   <h3>2.9 正則化方法四：Batch Normalization（BN）</h3>
   <ul>
@@ -192,6 +303,49 @@
       </ul>
     </li>
   </ul>
+
+  <h4 class="formula-head">公式：Batch Normalization</h4>
+  <p><span class="tag add">補充</span>標準化公式；仿射變換與 moving average 為講義內容：</p>
+  $$\mu_B=\frac{1}{m}\sum_{i=1}^{m}x_i,\quad \sigma_B^2=\frac{1}{m}\sum_{i=1}^{m}(x_i-\mu_B)^2,\quad \hat{x}_i=\frac{x_i-\mu_B}{\sqrt{\sigma_B^2+\epsilon}},\quad y_i=\gamma\hat{x}_i+\beta$$
+  $$\text{running\_mean}\leftarrow \text{momentum}\times\text{running\_mean}+(1-\text{momentum})\times\text{batch\_mean}$$
+  <p>\(m\)：mini-batch 大小；\(\epsilon\)：避免除以 0 的極小值；\(\gamma,\beta\)：可學習參數。STD 的更新方式相同。</p>
+
+  <div class="steps">
+    <p class="steps-title">逐步展開：batch \((2,4,6,8)\)、γ = 2、β = 1（ε 很小，先忽略）</p>
+    <ol>
+      <li><strong>平均 \(\mu_B\)</strong>：\((2+4+6+8)\div4=20\div4=5\)</li>
+      <li><strong>每個數減平均</strong>：\(2-5=-3\)、\(4-5=-1\)、\(6-5=1\)、\(8-5=3\)</li>
+      <li><strong>變異數 \(\sigma_B^2\)</strong>：平方再平均：\((9+1+1+9)\div4=20\div4=5\)；標準差 \(\sigma_B=\sqrt5\approx2.236\)</li>
+      <li><strong>標準化 \(\hat{x}\)</strong>：第 2 步的結果除以 2.236：\(-3\div2.236\approx-1.342\)、\(-1\div2.236\approx-0.447\)、\(0.447\)、\(1.342\)。
+        <span class="why">現在平均是 0、標準差是 1。</span></li>
+      <li><strong>縮放平移 \(y=\gamma\hat{x}+\beta\)</strong>：\(2\times(-1.342)+1=-1.683\)、\(2\times(-0.447)+1=0.106\)、\(2\times0.447+1=1.894\)、\(2\times1.342+1=3.683\)。
+        <span class="why">γ 把標準差變成 2、β 把平均移到 1。γ、β 是學出來的，網路可以自己決定要什麼分布。</span></li>
+      <li><strong>running_mean（momentum 0.9，初始 0）</strong>：第 1 個 batch mean 5：\(0.9\times0+0.1\times5=0.5\)；第 2 個 batch mean 4：\(0.9\times0.5+0.1\times4=0.45+0.4=0.85\)。
+        <span class="why">舊的估計佔 90%、新 batch 佔 10%，慢慢靠近真正的平均。推論時就用這個值。</span></li>
+    </ol>
+  </div>
+  <p><span class="tag add">補充</span>參數量：CNN 中每個 channel 有一組 γ、β，所以接在 32 個 filter 的 conv 後的 BN 有 \(2\times32=64\) 個可學習參數；running_mean／running_var 不是可學習參數。</p>
+
+  <div class="widget" id="w-bn">
+    <p class="w-title">BN 逐步計算 ＋ running mean</p>
+    <p class="w-desc">預設是筆記的例子：batch \((2,4,6,8)\)、γ = 2、β = 1。標準化後平均 0、標準差 1；再經 γ、β 變成平均 β、標準差 γ。下半部模擬訓練過程中 running_mean 的累積（初始 0、momentum 0.9，前兩個 batch mean 是 5 和 4）。</p>
+    <div class="controls">
+      <label>batch <input type="text" id="bn-x" value="2, 4, 6, 8" style="width:150px;padding:3px 6px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);font:inherit;font-size:.92rem"></label>
+      <label>γ <input type="range" id="bn-g" min="0" max="4" step="0.1" value="2"> <span class="val" data-for="bn-g"></span></label>
+      <label>β <input type="range" id="bn-b" min="-3" max="3" step="0.1" value="1"> <span class="val" data-for="bn-b"></span></label>
+    </div>
+    <div class="canvas-wrap"><canvas id="bn-canvas"></canvas></div>
+    <div class="readout" id="bn-out"></div>
+    <hr style="margin:16px 0 8px">
+    <div class="controls">
+      <label>momentum <select id="rm-m"><option value="0.9">0.9</option><option value="0.99">0.99</option><option value="0.5">0.5</option></select></label>
+      <button class="btn primary" id="rm-next" type="button">下一個 batch ▶</button>
+      <button class="btn" id="rm-run" type="button">連跑 50 個</button>
+      <button class="btn" id="rm-reset" type="button">重來</button>
+    </div>
+    <div class="canvas-wrap"><canvas id="rm-canvas"></canvas></div>
+    <div class="readout" id="rm-out"></div>
+  </div>
 
   <h3>2.10 正則化小建議</h3>
   <ul>
@@ -259,6 +413,26 @@
     <div class="readout" id="aug-out"></div>
   </div>
 
+  <h4 class="formula-head">公式：MixUp 與 CutMix <span class="tag add">補充</span></h4>
+  $$\tilde{x}=\lambda x_A+(1-\lambda)x_B,\qquad \tilde{y}=\lambda y_A+(1-\lambda)y_B$$
+  <ul>
+    <li>MixUp：例如 \(\lambda=0.7\)，狗圖與貓圖以 7:3 疊在一起，標籤變成「狗 0.7、貓 0.3」</li>
+    <li>CutMix：標籤依面積比例混合。例如在 32×32 的 A 圖上貼一塊 16×16 的 B 圖，面積比例 \(256/1024=0.25\) → 標籤為「A 0.75、B 0.25」</li>
+  </ul>
+  <div class="steps">
+    <p class="steps-title">逐步展開：MixUp（λ = 0.7）與 CutMix</p>
+    <ol>
+      <li><strong>MixUp 對每個像素做加權平均</strong>：某個位置狗圖是 200、貓圖是 100：\(0.7\times200+0.3\times100=140+30=170\)。整張圖每個像素都這樣混。</li>
+      <li><strong>MixUp 的標籤也一起混</strong>：狗 \(=(1,0)\)、貓 \(=(0,1)\)：\(0.7\times(1,0)+0.3\times(0,1)=(0.7,\ 0.3)\)。</li>
+      <li><strong>CutMix 先算面積</strong>：A 圖 \(32\times32=1{,}024\) 個像素；貼上的 B 方塊 \(16\times16=256\) 個像素。</li>
+      <li><strong>CutMix 的標籤比例</strong>：B 佔 \(256\div1{,}024=0.25\)，A 剩 \(1-0.25=0.75\) → 標籤 (A 0.75, B 0.25)。
+        <span class="why">邊長是一半，但面積是 1/4，因為面積是邊長的平方。自我測驗第 6 題的 8×8 就是 \(64\div1{,}024=0.0625\)。</span></li>
+    </ol>
+  </div>
+  <ul>
+    <li>可以在 <a href="#w-aug">2.11 的資料擴增元件</a>選 MixUp、CutMix 驗證</li>
+  </ul>
+
   <h2 id="glossary">3. 關鍵名詞表</h2>
   <div class="table-wrap">
     <table class="glossary">
@@ -287,184 +461,8 @@
     </table>
   </div>
 
-  <h2 id="formula">4. 公式與計算</h2>
-
-  <h3>4.1 二元分類指標</h3>
-  $$\text{Accuracy}=\frac{TP+TN}{\text{Total}},\quad \text{Error Rate}=1-\text{Accuracy},\quad \text{Recall (TPR)}=\frac{TP}{TP+FN}$$
-  $$\text{FPR}=\frac{FP}{FP+TN},\quad \text{Specificity (TNR)}=\frac{TN}{FP+TN},\quad \text{Precision}=\frac{TP}{TP+FP},\quad F_1=\frac{2\cdot\text{Precision}\cdot\text{Recall}}{\text{Precision}+\text{Recall}}$$
-  <p>TP：有病且判有病；FN：有病卻判沒病；FP：沒病卻判有病；TN：沒病且判沒病。<span class="tag add">補充</span>F1 公式（講義只寫「調和平均數」）。</p>
-  <p><strong>講義 COVID 例子</strong>（由講義數字反推：TP = 90、FN = 10、FP = 5、TN = 40、共 145 人）：</p>
-
-  <div class="steps">
-    <p class="steps-title">逐步展開：講義 COVID 例子（TP 90、FN 10、FP 5、TN 40）</p>
-    <ol>
-      <li><strong>先算四個小計</strong>：實際有病 \(TP+FN=100\)；實際沒病 \(FP+TN=45\)；預測有病 \(TP+FP=95\)；全部 145。
-        <span class="why">每個指標都是「某一格 ÷ 某個小計」，先把小計算好就不會搞錯分母。</span></li>
-      <li><strong>Accuracy</strong>：答對的是 TP 和 TN：\((90+40)\div145=130\div145\approx0.897\)；Error Rate \(=1-0.897=0.103\)</li>
-      <li><strong>Recall（＝ Sensitivity ＝ TPR）</strong>：100 個病人抓到幾個？\(90\div100=0.9\)</li>
-      <li><strong>FPR</strong>：45 個沒病的人裡，幾個被誤判有病？\(5\div45\approx0.111\)</li>
-      <li><strong>Specificity（TNR）</strong>：45 個沒病的人裡，幾個被正確判為沒病？\(40\div45\approx0.889\)；也等於 \(1-\text{FPR}\)。</li>
-      <li><strong>Precision</strong>：模型說有病的 95 人裡，幾個真的有？\(90\div95\approx0.947\)</li>
-      <li><strong>F1</strong>：\(\dfrac{2\times0.947\times0.9}{0.947+0.9}=\dfrac{1.705}{1.847}\approx0.923\)</li>
-      <li><strong>為什麼 F1 用調和平均</strong> <span class="tag add">補充</span>：假設 Precision 1、Recall 0.1（只抓到一成病人）。算術平均 \((1+0.1)\div2=0.55\) 看起來還行；F1 \(=\frac{2\times1\times0.1}{1.1}\approx0.18\)，直接反映出「有一項很爛」。</li>
-    </ol>
-  </div>
-
-  <div class="widget" id="w-bin">
-    <p class="w-title">二元分類指標計算器</p>
-    <p class="w-desc">預設是講義的 COVID 例子。改任一格，所有指標一起更新；也可以套用自我測驗第 4 題的數字驗算。</p>
-    <div class="controls">
-      <span class="muted" style="font-size:.9rem">套用：</span>
-      <button class="btn" type="button" data-bin="90,10,5,40">講義 COVID</button>
-      <button class="btn" type="button" data-bin="80,20,40,860">自我測驗第 4 題</button>
-    </div>
-    <div class="row">
-      <div class="col" style="flex:0 1 auto;max-width:100%">
-        <div class="table-wrap" style="margin:0">
-          <table style="width:auto">
-            <tr><th></th><th>預測：有</th><th>預測：沒有</th><th class="num">小計</th></tr>
-            <tr><th>實際：有</th><td><label>TP <input type="number" id="b-tp" value="90" min="0" style="width:64px"></label></td><td><label>FN <input type="number" id="b-fn" value="10" min="0" style="width:64px"></label></td><td class="num" id="b-rp"></td></tr>
-            <tr><th>實際：沒有</th><td><label>FP <input type="number" id="b-fp" value="5" min="0" style="width:64px"></label></td><td><label>TN <input type="number" id="b-tn" value="40" min="0" style="width:64px"></label></td><td class="num" id="b-rn"></td></tr>
-            <tr><th>小計</th><td class="num" id="b-cp"></td><td class="num" id="b-cn"></td><td class="num" id="b-all"></td></tr>
-          </table>
-        </div>
-      </div>
-      <div class="col" style="flex:1 1 280px"><div class="readout" id="b-out" style="margin-top:0"></div></div>
-    </div>
-  </div>
-
-  <h3>4.2 L1 與 L2 正則化</h3>
-  $$L_{L1}=L_{\text{original}}+\lambda\sum_{j=1}^{p}\lvert\beta_j\rvert,\qquad L_{L2}=L_{\text{original}}+\lambda\sum_{j=1}^{p}\beta_j^{2}$$
-  <p>\(\beta_j\)：模型參數（weights and biases，共 \(p\) 個）；\(\lambda\)：控制 Penalty 強度，越大越重。符號與講義相同。</p>
-  <p>例：權重 \((3,-0.1,0)\)、\(\lambda=0.01\)：L1 penalty \(=0.01\times(3+0.1+0)=0.031\)；L2 penalty \(=0.01\times(9+0.01+0)=0.0901\)。L2 裡大權重 3 貢獻了 0.09、小權重 0.1 幾乎沒影響 → L2 主要壓大權重；L1 對每個權重的「每單位懲罰」一樣，小權重也會被推到 0 <span class="tag add">補充</span>。</p>
-
-  <div class="steps">
-    <p class="steps-title">逐步展開：為什麼 L1 會把權重推到 0、L2 不會？<span class="tag add">補充</span></p>
-    <ol>
-      <li><strong>先算 penalty</strong>：權重 \((3,-0.1,0)\)。L1：\(|3|+|-0.1|+|0|=3.1\)，\(\times0.01=0.031\)；L2：\(3^2+(-0.1)^2+0^2=9.01\)，\(\times0.01=0.0901\)。</li>
-      <li><strong>梯度下降會怎麼推權重</strong>：penalty 對權重的斜率，就是每一步額外把權重往 0 推的力道。</li>
-      <li><strong>L1 的斜率</strong>：\(\lambda|w|\) 的斜率是 \(\lambda\times(\pm1)\)，不管 \(w\) 大小都是 \(0.01\)。\(w=3\) 和 \(w=0.1\) 都被推一樣大力 → 小權重很快就被推到 0。</li>
-      <li><strong>L2 的斜率</strong>：\(\lambda w^2\) 的斜率是 \(2\lambda w\)。\(w=3\)：\(2\times0.01\times3=0.06\)；\(w=0.1\)：\(2\times0.01\times0.1=0.002\)。
-        <span class="why">權重越小推力越小，越接近 0 越推不動，所以 L2 只會讓權重「變小」，很少剛好變 0；大權重則被推得最用力。</span></li>
-      <li><strong>結論</strong>：L1 → 很多權重剛好是 0（特徵選取）；L2 → 所有權重一起縮小、大的縮最多。</li>
-    </ol>
-  </div>
-
-  <div class="widget" id="w-pen">
-    <p class="w-title">L1 vs L2：Penalty 與權重怎麼縮</p>
-    <p class="w-desc">上半：輸入權重和 λ，算出兩種 Penalty（預設是筆記的例子）。下半 <span class="tag add">補充</span>：假設不加正則化時最佳權重是 \(a\)，加上 Penalty 後最佳權重會變成多少？拉大 λ 比較兩者：<strong>L1 把小權重直接歸零</strong>，<strong>L2 讓所有權重等比例縮小</strong>、永遠不會剛好變 0。</p>
-    <div class="controls">
-      <label>權重 <input type="text" id="pen-w" value="3, -0.1, 0" style="width:150px;padding:3px 6px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);font:inherit;font-size:.92rem"></label>
-      <label>λ <input type="number" id="pen-l" value="0.01" step="0.01" min="0"></label>
-    </div>
-    <div class="readout" id="pen-out"></div>
-    <hr style="margin:16px 0 8px">
-    <div class="controls">
-      <label>λ（縮小實驗）<input type="range" id="shr-l" min="0" max="3" step="0.05" value="0.5"> <span class="val" data-for="shr-l"></span></label>
-    </div>
-    <div id="shr-bars"></div>
-    <div class="readout" id="shr-out"></div>
-  </div>
-
-  <h3>4.3 Batch Normalization</h3>
-  <p><span class="tag add">補充</span>標準化公式；仿射變換與 moving average 為講義內容：</p>
-  $$\mu_B=\frac{1}{m}\sum_{i=1}^{m}x_i,\quad \sigma_B^2=\frac{1}{m}\sum_{i=1}^{m}(x_i-\mu_B)^2,\quad \hat{x}_i=\frac{x_i-\mu_B}{\sqrt{\sigma_B^2+\epsilon}},\quad y_i=\gamma\hat{x}_i+\beta$$
-  $$\text{running\_mean}\leftarrow \text{momentum}\times\text{running\_mean}+(1-\text{momentum})\times\text{batch\_mean}$$
-  <p>\(m\)：mini-batch 大小；\(\epsilon\)：避免除以 0 的極小值；\(\gamma,\beta\)：可學習參數。STD 的更新方式相同。</p>
-
-  <div class="steps">
-    <p class="steps-title">逐步展開：batch \((2,4,6,8)\)、γ = 2、β = 1（ε 很小，先忽略）</p>
-    <ol>
-      <li><strong>平均 \(\mu_B\)</strong>：\((2+4+6+8)\div4=20\div4=5\)</li>
-      <li><strong>每個數減平均</strong>：\(2-5=-3\)、\(4-5=-1\)、\(6-5=1\)、\(8-5=3\)</li>
-      <li><strong>變異數 \(\sigma_B^2\)</strong>：平方再平均：\((9+1+1+9)\div4=20\div4=5\)；標準差 \(\sigma_B=\sqrt5\approx2.236\)</li>
-      <li><strong>標準化 \(\hat{x}\)</strong>：第 2 步的結果除以 2.236：\(-3\div2.236\approx-1.342\)、\(-1\div2.236\approx-0.447\)、\(0.447\)、\(1.342\)。
-        <span class="why">現在平均是 0、標準差是 1。</span></li>
-      <li><strong>縮放平移 \(y=\gamma\hat{x}+\beta\)</strong>：\(2\times(-1.342)+1=-1.683\)、\(2\times(-0.447)+1=0.106\)、\(2\times0.447+1=1.894\)、\(2\times1.342+1=3.683\)。
-        <span class="why">γ 把標準差變成 2、β 把平均移到 1。γ、β 是學出來的，網路可以自己決定要什麼分布。</span></li>
-      <li><strong>running_mean（momentum 0.9，初始 0）</strong>：第 1 個 batch mean 5：\(0.9\times0+0.1\times5=0.5\)；第 2 個 batch mean 4：\(0.9\times0.5+0.1\times4=0.45+0.4=0.85\)。
-        <span class="why">舊的估計佔 90%、新 batch 佔 10%，慢慢靠近真正的平均。推論時就用這個值。</span></li>
-    </ol>
-  </div>
-  <p><span class="tag add">補充</span>參數量：CNN 中每個 channel 有一組 γ、β，所以接在 32 個 filter 的 conv 後的 BN 有 \(2\times32=64\) 個可學習參數；running_mean／running_var 不是可學習參數。</p>
-
-  <div class="widget" id="w-bn">
-    <p class="w-title">BN 逐步計算 ＋ running mean</p>
-    <p class="w-desc">預設是筆記的例子：batch \((2,4,6,8)\)、γ = 2、β = 1。標準化後平均 0、標準差 1；再經 γ、β 變成平均 β、標準差 γ。下半部模擬訓練過程中 running_mean 的累積（初始 0、momentum 0.9，前兩個 batch mean 是 5 和 4）。</p>
-    <div class="controls">
-      <label>batch <input type="text" id="bn-x" value="2, 4, 6, 8" style="width:150px;padding:3px 6px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);font:inherit;font-size:.92rem"></label>
-      <label>γ <input type="range" id="bn-g" min="0" max="4" step="0.1" value="2"> <span class="val" data-for="bn-g"></span></label>
-      <label>β <input type="range" id="bn-b" min="-3" max="3" step="0.1" value="1"> <span class="val" data-for="bn-b"></span></label>
-    </div>
-    <div class="canvas-wrap"><canvas id="bn-canvas"></canvas></div>
-    <div class="readout" id="bn-out"></div>
-    <hr style="margin:16px 0 8px">
-    <div class="controls">
-      <label>momentum <select id="rm-m"><option value="0.9">0.9</option><option value="0.99">0.99</option><option value="0.5">0.5</option></select></label>
-      <button class="btn primary" id="rm-next" type="button">下一個 batch ▶</button>
-      <button class="btn" id="rm-run" type="button">連跑 50 個</button>
-      <button class="btn" id="rm-reset" type="button">重來</button>
-    </div>
-    <div class="canvas-wrap"><canvas id="rm-canvas"></canvas></div>
-    <div class="readout" id="rm-out"></div>
-  </div>
-
-  <h3>4.4 Early Stopping <span class="tag add">補充：例子</span></h3>
-  <p>若 patience P = 3，Val Loss 依序為 0.50、0.40、0.35、0.36、0.37、0.38 → 第 3 個 epoch 之後連續 3 個 epoch 沒有進步，在第 6 個 epoch 停止，取回第 3 個 epoch 的權重。</p>
-
-  <div class="steps">
-    <p class="steps-title">逐步展開：P = 3，Val Loss 0.50、0.40、0.35、0.36、0.37、0.38</p>
-    <ol>
-      <li><strong>規則</strong>：記住目前最好的 loss，和「已經連續幾個 epoch 沒進步」的計數器；計數器到 P 就停。</li>
-      <li><strong>Epoch 1</strong>：0.50，第一個，最佳 = 0.50，計數 0，存檔。</li>
-      <li><strong>Epoch 2</strong>：0.40 &lt; 0.50，進步 → 最佳 = 0.40，計數歸 0，存檔。</li>
-      <li><strong>Epoch 3</strong>：0.35 &lt; 0.40，進步 → 最佳 = 0.35，計數 0，存檔。</li>
-      <li><strong>Epoch 4</strong>：0.36 沒有比 0.35 好 → 計數 1。</li>
-      <li><strong>Epoch 5</strong>：0.37 → 計數 2。</li>
-      <li><strong>Epoch 6</strong>：0.38 → 計數 3 = P，停止。取回最佳的第 3 個 epoch 權重（0.35）。
-        <span class="why">停下來的時候已經多訓練了 P 個 epoch，所以一定要取回「之前存的最佳權重」，不是用最後一個。</span></li>
-    </ol>
-  </div>
-
-  <div class="widget" id="w-es">
-    <p class="w-title">Early Stopping 模擬</p>
-    <p class="w-desc">預設是上面的例子。可以直接改 Val Loss 序列（逗號分隔）或調 P；「模擬 40 epoch」會產生一條典型的 overfitting 曲線：Train Loss 一路下降，Val Loss 先降後升。</p>
-    <div class="controls">
-      <label>Val Loss <input type="text" id="es-v" value="0.50, 0.40, 0.35, 0.36, 0.37, 0.38" style="width:min(320px,60vw);padding:3px 6px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);font:inherit;font-size:.92rem"></label>
-      <label>patience P <input type="range" id="es-p" min="1" max="10" step="1" value="3"> <span class="val" data-for="es-p"></span></label>
-    </div>
-    <div class="controls">
-      <span class="muted" style="font-size:.9rem">套用：</span>
-      <button class="btn" type="button" data-es="note">筆記例子（P = 3）</button>
-      <button class="btn" type="button" data-es="quiz">自我測驗第 5 題（P = 2）</button>
-      <button class="btn" type="button" data-es="sim">模擬 40 epoch</button>
-    </div>
-    <div class="canvas-wrap"><canvas id="es-canvas"></canvas></div>
-    <div class="readout" id="es-out"></div>
-  </div>
-
-  <h3>4.5 MixUp 與 CutMix <span class="tag add">補充：公式</span></h3>
-  $$\tilde{x}=\lambda x_A+(1-\lambda)x_B,\qquad \tilde{y}=\lambda y_A+(1-\lambda)y_B$$
-  <ul>
-    <li>MixUp：例如 \(\lambda=0.7\)，狗圖與貓圖以 7:3 疊在一起，標籤變成「狗 0.7、貓 0.3」</li>
-    <li>CutMix：標籤依面積比例混合。例如在 32×32 的 A 圖上貼一塊 16×16 的 B 圖，面積比例 \(256/1024=0.25\) → 標籤為「A 0.75、B 0.25」</li>
-  </ul>
-  <div class="steps">
-    <p class="steps-title">逐步展開：MixUp（λ = 0.7）與 CutMix</p>
-    <ol>
-      <li><strong>MixUp 對每個像素做加權平均</strong>：某個位置狗圖是 200、貓圖是 100：\(0.7\times200+0.3\times100=140+30=170\)。整張圖每個像素都這樣混。</li>
-      <li><strong>MixUp 的標籤也一起混</strong>：狗 \(=(1,0)\)、貓 \(=(0,1)\)：\(0.7\times(1,0)+0.3\times(0,1)=(0.7,\ 0.3)\)。</li>
-      <li><strong>CutMix 先算面積</strong>：A 圖 \(32\times32=1{,}024\) 個像素；貼上的 B 方塊 \(16\times16=256\) 個像素。</li>
-      <li><strong>CutMix 的標籤比例</strong>：B 佔 \(256\div1{,}024=0.25\)，A 剩 \(1-0.25=0.75\) → 標籤 (A 0.75, B 0.25)。
-        <span class="why">邊長是一半，但面積是 1/4，因為面積是邊長的平方。自我測驗第 6 題的 8×8 就是 \(64\div1{,}024=0.0625\)。</span></li>
-    </ol>
-  </div>
-  <ul>
-    <li>可以在 <a href="#w-aug">2.11 的資料擴增元件</a>選 MixUp、CutMix 驗證</li>
-  </ul>
-
-  <h2 id="compare">5. 方法比較</h2>
-  <h3>5.1 四種正則化方法</h3>
+  <h2 id="compare">4. 方法比較</h2>
+  <h3>4.1 四種正則化方法</h3>
   <div class="table-wrap">
     <table>
       <tr><th>方法</th><th>核心想法</th><th>優點</th><th>缺點／注意</th><th>適用情境</th></tr>
@@ -475,7 +473,7 @@
       <tr><td>Batch Normalization</td><td>對 mini-batch 標準化 ＋ γ、β</td><td>穩定各層輸入分布、訓練更穩</td><td>訓練／推論行為不同，要切換模式</td><td>深層 CNN</td></tr>
     </table>
   </div>
-  <h3>5.2 資料擴增方法</h3>
+  <h3>4.2 資料擴增方法</h3>
   <div class="table-wrap">
     <table>
       <tr><th>方法</th><th>類別</th><th>做法</th><th>特點</th></tr>
@@ -493,11 +491,11 @@
     </table>
   </div>
 
-  <h2 id="figures">6. 圖表說明</h2>
+  <h2 id="figures">5. 圖表說明</h2>
   <ul>
     <li><strong>Train／Val／Test 流程圖</strong>：每個 epoch 都是一個「Train → Val」的小方塊（Train 用梯度下降與反向傳播更新權重，Val 算 loss 與 accuracy），重複到 epoch n；全部結束後才在另外一份「沒看過的」Test 上算一次。</li>
     <li><strong>MNIST 混淆矩陣</strong>：10×10 的表格，對角線綠色是答對的張數，其他格紅色是答錯；數字最大的紅色格就是最常見的錯誤：「4 → 9」9 張、「7 → 2」7 張。下一頁「找出容易預測錯誤的類別」把這些格子標紅。數字 5 那一列整列標紅，示範怎麼讀一列：884 張答對，其餘 8 張被誤判成 0、3、6、9。整體 Accuracy = 9,873 ／ 10,000 = 0.9873（<a href="#w-cm">2.2 的元件</a>用講義的原始數字重現）</li>
-    <li><strong>COVID 二元分類表</strong>：2×2 混淆矩陣，數字如 <a href="#w-bin">4.1</a>。</li>
+    <li><strong>COVID 二元分類表</strong>：2×2 混淆矩陣，數字如 <a href="#w-bin">2.3</a>。</li>
     <li><strong>Classification Report</strong>：每個類別一列，欄位為 Precision、Recall、F1、Support <span class="tag add">補充</span>底下通常還有 macro avg 與 weighted avg。</li>
     <li><strong>消防車例子</strong>：模型把紅色的東西都當成消防車，說明它學到的是「顏色」這種捷徑特徵，而不是消防車的形狀結構，這就是泛化差。</li>
     <li><strong>Dropout 示意圖</strong>：左邊是完整的全連接網路，右邊是部分節點打叉關閉後、連線變少的網路（<a href="#w-drop">2.7 的元件</a>）。</li>
@@ -506,7 +504,7 @@
     <li><strong>MixUp／CutMix／Mosaic 圖</strong>：MixUp 是兩張圖半透明疊合；CutMix 是一張圖裡貼了另一張圖的方塊；Mosaic 是四張圖拼成田字形（都可以在 <a href="#w-aug">資料擴增元件</a>看到）。</li>
   </ul>
 
-  <h2 id="traps">7. 常見觀念陷阱</h2>
+  <h2 id="traps">6. 常見觀念陷阱</h2>
   <ul>
     <li><strong>Validation ≠ Test</strong>：Validation 在訓練中用來評估與挑模型；Test 只在最後用一次。兩者常被混用，但考試要分清楚。</li>
     <li><strong>Recall ＝ Sensitivity ＝ TPR</strong>，<strong>Specificity ＝ TNR</strong>，而且 <strong>FPR ＝ 1 − Specificity</strong>。</li>
@@ -529,14 +527,14 @@
     <p>MNIST CNN 練習已經用了 Dropout(0.5)，也依 Validation 保留最佳模型（類似 Early Stopping 的存檔部分）。本章的混淆矩陣可以用來查出數字 9 被誤判成什麼；講義的例子正好有「4 容易被判成 9」。下一步可以試試 BN 與小幅度旋轉／平移的資料擴增。</p>
   </div>
 
-  <h2 id="quiz">8. 自我測驗</h2>
+  <h2 id="quiz">7. 自我測驗</h2>
   <div class="quiz" data-answer="B">
     <p class="q">1.（選擇）下列哪一種正則化方法最可能把不重要特徵的權重直接降為 0？</p>
     <div class="opts">
       <button data-opt="A">(A) L2</button><button data-opt="B">(B) L1</button>
       <button data-opt="C">(C) Dropout</button><button data-opt="D">(D) Batch Normalization</button>
     </div>
-    <div class="explain" hidden><strong>(B)</strong>。L1 會優先把不重要特徵的權重降為 0，有特徵選取效果；L2 是把所有權重一起變小（可以在 <a href="#w-pen">4.2 的元件</a>看到兩者的差別）。</div>
+    <div class="explain" hidden><strong>(B)</strong>。L1 會優先把不重要特徵的權重降為 0，有特徵選取效果；L2 是把所有權重一起變小（可以在 <a href="#w-pen">2.6 的元件</a>看到兩者的差別）。</div>
   </div>
   <div class="quiz" data-answer="C">
     <p class="q">2.（選擇）關於 Batch Normalization，下列何者正確？</p>
@@ -552,11 +550,11 @@
   </div>
   <div class="quiz">
     <p class="q">4.（計算）某篩檢模型結果：TP = 80、FN = 20、FP = 40、TN = 860。請計算 Accuracy、Recall、Precision、Specificity 與 F1。</p>
-    <details class="answer"><summary>看解答</summary><div>Accuracy = (80 + 860) ／ 1000 = 0.94；Recall = 80 ／ 100 = 0.8；Precision = 80 ／ 120 ≈ 0.667；Specificity = 860 ／ 900 ≈ 0.956；F1 = 2 × 0.667 × 0.8 ／ (0.667 + 0.8) ≈ 0.727。觀察：Accuracy 看起來很高，但因為負例佔大多數，Precision 其實不高。可以在 <a href="#w-bin">4.1 的計算器</a>按「自我測驗第 4 題」驗算。</div></details>
+    <details class="answer"><summary>看解答</summary><div>Accuracy = (80 + 860) ／ 1000 = 0.94；Recall = 80 ／ 100 = 0.8；Precision = 80 ／ 120 ≈ 0.667；Specificity = 860 ／ 900 ≈ 0.956；F1 = 2 × 0.667 × 0.8 ／ (0.667 + 0.8) ≈ 0.727。觀察：Accuracy 看起來很高，但因為負例佔大多數，Precision 其實不高。可以在 <a href="#w-bin">2.3 的計算器</a>按「自我測驗第 4 題」驗算。</div></details>
   </div>
   <div class="quiz">
     <p class="q">5.（計算）BN 的 momentum = 0.9，running_mean 目前為 2.0，新的 batch mean 為 4.0，更新後 running_mean 是多少？另外，若 Early Stopping 的 P = 2，Val Loss 依序為 0.9、0.6、0.5、0.55、0.52，會在第幾個 epoch 停止？</p>
-    <details class="answer"><summary>看解答</summary><div>running_mean = 0.9 × 2.0 ＋ 0.1 × 4.0 = <strong>2.2</strong>。Early Stopping：最佳是第 3 個 epoch 的 0.5，第 4、5 個 epoch 都沒有更好，連續 2 個 epoch 沒進步 → 在<strong>第 5 個 epoch</strong> 停止，取回第 3 個 epoch 的權重（可以在 <a href="#w-es">4.4 的元件</a>驗算）。</div></details>
+    <details class="answer"><summary>看解答</summary><div>running_mean = 0.9 × 2.0 ＋ 0.1 × 4.0 = <strong>2.2</strong>。Early Stopping：最佳是第 3 個 epoch 的 0.5，第 4、5 個 epoch 都沒有更好，連續 2 個 epoch 沒進步 → 在<strong>第 5 個 epoch</strong> 停止，取回第 3 個 epoch 的權重（可以在 <a href="#w-es">2.8 的元件</a>驗算）。</div></details>
   </div>
   <div class="quiz" data-answer="D">
     <p class="q">6.（選擇）在 32×32 的 A 圖上用 CutMix 貼一塊 8×8 的 B 圖，標籤應為？</p>

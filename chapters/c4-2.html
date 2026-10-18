@@ -62,6 +62,22 @@
     </li>
   </ul>
 
+  <h4 class="formula-head">公式：相加 vs 串接的數字例子 <span class="tag add">補充</span></h4>
+  <div class="steps">
+    <p class="steps-title">逐步展開：某個像素位置，\(x_0=(1,\ 2)\)、新算出的特徵 \(F=(3,\ -1)\)</p>
+    <ol>
+      <li><strong>ResNet（相加）</strong>：\(y=F+x_0=(3+1,\ -1+2)=(4,\ 1)\)，仍是 2 個通道。
+        <span class="why">看到 4 時，已經分不出是 1 + 3 還是 2 + 2：前面的特徵和新特徵「混在一起」。</span></li>
+      <li><strong>DenseNet（串接）</strong>：\(y=[x_0,F]=(1,\ 2,\ 3,\ -1)\)，變成 4 個通道。
+        <span class="why">\((1,2)\) 原封不動，後面的層想用原始特徵就直接拿。</span></li>
+      <li><strong>形狀要求</strong>：相加要求 \(F\) 和 \(x_0\) 形狀完全一樣；串接只要長寬一樣，通道數可以不同（例如 \(x_0\) 64 個、\(F\) 32 個）。</li>
+      <li><strong>反向傳播（ResNet）</strong>：假設 \(\partial L/\partial y=(0.1,\ 0.2)\)，捷徑和殘差分支<strong>各拿到一份完整的</strong> \((0.1,\ 0.2)\)。
+        <span class="why">\(\partial y/\partial x=\partial F/\partial x+1\)：那個 +1 就是捷徑複製過去的那一份。</span></li>
+      <li><strong>反向傳播（DenseNet）</strong>：假設 \(\partial L/\partial y=(0.1,\ 0.2,\ 0.3,\ 0.4)\)，依通道切開：前 2 個 \((0.1,0.2)\) 回到 \(x_0\)，後 2 個 \((0.3,0.4)\) 回到產生 \(F\) 的那一層。
+        <span class="why">每個來源層直接拿到屬於自己通道的梯度，不必經過中間的層 → 淺層也收得到梯度。</span></li>
+    </ol>
+  </div>
+
   <h3>2.4 Dense Block</h3>
   <ul>
     <li>同一個 Dense Block 中，每一層都接收<strong>前面所有層</strong>的特徵圖作為輸入
@@ -89,79 +105,7 @@
     <div class="readout" id="dn-out"></div>
   </div>
 
-  <h3>2.5 組成層（Composition Layer）</h3>
-  <ul>
-    <li>每一層的組成依序為 <strong>Batch Norm → ReLU → 3×3 Conv</strong>，輸出 \(k\) 個特徵圖</li>
-    <li>這種「先正規化與激活，再卷積」的順序稱為 <strong>pre-activation</strong>，和常見的 Conv → BN → ReLU 不同</li>
-  </ul>
-
-  <h3>2.6 Bottleneck Layer（DenseNet-B）</h3>
-  <ul>
-    <li>在 3×3 卷積之前，先加入 BN → ReLU → 1×1 Conv</li>
-    <li>由於串接使輸入通道數不斷增加，1×1 卷積先把通道數壓縮到 <strong>\(4k\)</strong>，再進行 3×3 卷積，可以大幅降低計算量</li>
-    <li>加入 bottleneck 的版本稱為 <strong>DenseNet-B</strong></li>
-    <li><span class="tag add">補充</span>只有當輸入通道數大於約 \(7.2k\) 時才真的省（見 <a href="#w-bottle">4.3</a>）；區塊前幾層通道還少，bottleneck 反而比較貴。整個網路算下來還是省：DenseNet-121 有 bottleneck 約 7.98M 參數，拿掉約 10.87M（<a href="#w-net">4.5 的元件</a>可切換）</li>
-  </ul>
-
-  <h3>2.7 過渡層（Transition Layer）與 DenseNet-BC</h3>
-  <ul>
-    <li>Dense Block 內的特徵圖長寬必須相同才能串接，因此<strong>降採樣要在區塊之間進行</strong></li>
-    <li>兩個 Dense Block 之間的過渡層由 <strong>BN、1×1 Conv 和 2×2 Average Pooling</strong> 組成
-      <ul>
-        <li>平均池化：將特徵圖的長寬減半</li>
-        <li>1×1 卷積：整合區塊內的特徵，並以<strong>壓縮因子 \(\theta\)</strong> 減少通道數（\(0&lt;\theta\le1\)，論文使用 \(\theta=0.5\)）</li>
-      </ul>
-    </li>
-    <li>同時使用 bottleneck 和壓縮的版本稱為 <strong>DenseNet-BC</strong></li>
-  </ul>
-
-  <h3>2.8 效能與效率</h3>
-  <ul>
-    <li>在相近的錯誤率下，DenseNet 所需的參數量與計算量都比 ResNet 少</li>
-    <li>為什麼 DenseNet 比 ResNet 有效率：
-      <ul>
-        <li><strong>特徵重用</strong>：每一層都能直接使用前面所有層的特徵，不需要重複學習相似的特徵，因此每層可以很窄</li>
-        <li><strong>增長率 \(k\) 限制每層的輸出</strong>：ResNet 為了相加，每層輸出的通道數必須和輸入相同，各層通常較寬；DenseNet 每層只新增 \(k\) 個特徵圖（ImageNet 上 \(k=32\)），每層的參數量因此大幅減少（見 <a href="#width">4.6</a>）</li>
-        <li><strong>DenseNet-BC 的輔助</strong>：bottleneck 在 3×3 卷積前用 1×1 卷積壓縮通道數；過渡層再以壓縮因子 \(\theta\) 減少通道數</li>
-      </ul>
-    </li>
-  </ul>
-
-  <h3>2.9 優缺點</h3>
-  <ul>
-    <li>優點：緩解梯度消失問題、促進特徵重用、參數量較少</li>
-    <li>缺點：
-      <ul>
-        <li><strong>記憶體需求高</strong>：需保存同一區塊內所有先前層的輸出</li>
-        <li><strong>實際執行速度不一定較快</strong>：雖然 FLOPs 較少，但大量的串接操作和記憶體存取會拖慢實際的訓練與推論速度</li>
-      </ul>
-    </li>
-  </ul>
-
-  <h2 id="glossary">3. 關鍵名詞表</h2>
-  <div class="table-wrap">
-    <table class="glossary">
-      <tr><th>名詞（中／英）</th><th>定義</th><th>一句話直覺解釋</th></tr>
-      <tr><td>密集連接卷積網路（DenseNet）</td><td>同一區塊內每層都接收前面所有層輸出的 CNN</td><td>每個人都拿得到前面所有人的筆記</td></tr>
-      <tr><td>Dense Block</td><td>內部所有層兩兩直接連接、長寬不變的區塊</td><td>大家共用一份越寫越厚的筆記本</td></tr>
-      <tr><td>增長率（Growth Rate）\(k\)</td><td>每一層新增的特徵圖數量</td><td>每人只在筆記本上加 \(k\) 頁</td></tr>
-      <tr><td>串接（Concatenation）</td><td>在通道方向把特徵圖疊在一起</td><td>疊起來，不混在一起</td></tr>
-      <tr><td>逐元素相加（Element-wise Addition）</td><td>同位置的數值相加，形狀必須相同</td><td>兩張圖疊印成一張</td></tr>
-      <tr><td>集體知識（Collective Knowledge）</td><td>所有先前層的特徵圖合起來的狀態</td><td>整本筆記本</td></tr>
-      <tr><td>特徵重用（Feature Reuse）</td><td>後面的層直接使用前面層的特徵，不重新學</td><td>別人寫過的不用再抄一次</td></tr>
-      <tr><td>組成層（Composition Layer）</td><td>BN → ReLU → 3×3 Conv</td><td>Dense Block 裡的一層</td></tr>
-      <tr><td>Pre-activation</td><td>先 BN、ReLU 再卷積的順序</td><td>先整理再加工</td></tr>
-      <tr><td>瓶頸層（Bottleneck Layer）</td><td>3×3 前用 1×1 把通道壓到 \(4k\)</td><td>筆記太厚，先摘要再讀</td></tr>
-      <tr><td>過渡層（Transition Layer）</td><td>BN ＋ 1×1 Conv（壓縮 \(\theta\)）＋ 2×2 Avg Pool</td><td>區塊之間的縮圖與瘦身站</td></tr>
-      <tr><td>壓縮因子（Compression Factor）\(\theta\)</td><td>過渡層輸出通道 \(=\lfloor\theta\times\) 輸入通道\(\rfloor\)</td><td>保留幾成通道</td></tr>
-      <tr><td>DenseNet-B／DenseNet-BC</td><td>B：加 bottleneck；BC：bottleneck ＋ 壓縮</td><td>B = Bottleneck、C = Compression</td></tr>
-      <tr><td>FLOPs</td><td>浮點運算次數</td><td>帳面上的計算量，不等於實際速度</td></tr>
-    </table>
-  </div>
-
-  <h2 id="formula">4. 公式與計算</h2>
-
-  <h3>4.1 Dense Block 的通道數</h3>
+  <h4 class="formula-head">公式：Dense Block 的通道數</h4>
   $$C^{(L)}_{in}=k_0+k\,(L-1),\qquad C_{\text{block out}}=k_0+k\,L$$
   <ul>
     <li><span class="tag add">補充</span>例：DenseNet-121 第一個 Dense Block，\(k_0=64\)、\(k=32\)、6 層 → 各層輸入 64、96、128、160、192、224，區塊輸出 \(64+6\times32=256\)（<a href="#w-dense">2.4 的元件</a>）</li>
@@ -184,23 +128,21 @@
     </ol>
   </div>
 
-  <h3>4.2 相加 vs 串接的數字例子 <span class="tag add">補充</span></h3>
-  <div class="steps">
-    <p class="steps-title">逐步展開：某個像素位置，\(x_0=(1,\ 2)\)、新算出的特徵 \(F=(3,\ -1)\)</p>
-    <ol>
-      <li><strong>ResNet（相加）</strong>：\(y=F+x_0=(3+1,\ -1+2)=(4,\ 1)\)，仍是 2 個通道。
-        <span class="why">看到 4 時，已經分不出是 1 + 3 還是 2 + 2：前面的特徵和新特徵「混在一起」。</span></li>
-      <li><strong>DenseNet（串接）</strong>：\(y=[x_0,F]=(1,\ 2,\ 3,\ -1)\)，變成 4 個通道。
-        <span class="why">\((1,2)\) 原封不動，後面的層想用原始特徵就直接拿。</span></li>
-      <li><strong>形狀要求</strong>：相加要求 \(F\) 和 \(x_0\) 形狀完全一樣；串接只要長寬一樣，通道數可以不同（例如 \(x_0\) 64 個、\(F\) 32 個）。</li>
-      <li><strong>反向傳播（ResNet）</strong>：假設 \(\partial L/\partial y=(0.1,\ 0.2)\)，捷徑和殘差分支<strong>各拿到一份完整的</strong> \((0.1,\ 0.2)\)。
-        <span class="why">\(\partial y/\partial x=\partial F/\partial x+1\)：那個 +1 就是捷徑複製過去的那一份。</span></li>
-      <li><strong>反向傳播（DenseNet）</strong>：假設 \(\partial L/\partial y=(0.1,\ 0.2,\ 0.3,\ 0.4)\)，依通道切開：前 2 個 \((0.1,0.2)\) 回到 \(x_0\)，後 2 個 \((0.3,0.4)\) 回到產生 \(F\) 的那一層。
-        <span class="why">每個來源層直接拿到屬於自己通道的梯度，不必經過中間的層 → 淺層也收得到梯度。</span></li>
-    </ol>
-  </div>
+  <h3>2.5 組成層（Composition Layer）</h3>
+  <ul>
+    <li>每一層的組成依序為 <strong>Batch Norm → ReLU → 3×3 Conv</strong>，輸出 \(k\) 個特徵圖</li>
+    <li>這種「先正規化與激活，再卷積」的順序稱為 <strong>pre-activation</strong>，和常見的 Conv → BN → ReLU 不同</li>
+  </ul>
 
-  <h3>4.3 Bottleneck 省多少 <span class="tag add">補充</span></h3>
+  <h3>2.6 Bottleneck Layer（DenseNet-B）</h3>
+  <ul>
+    <li>在 3×3 卷積之前，先加入 BN → ReLU → 1×1 Conv</li>
+    <li>由於串接使輸入通道數不斷增加，1×1 卷積先把通道數壓縮到 <strong>\(4k\)</strong>，再進行 3×3 卷積，可以大幅降低計算量</li>
+    <li>加入 bottleneck 的版本稱為 <strong>DenseNet-B</strong></li>
+    <li><span class="tag add">補充</span>只有當輸入通道數大於約 \(7.2k\) 時才真的省（見 <a href="#w-bottle">2.6</a>）；區塊前幾層通道還少，bottleneck 反而比較貴。整個網路算下來還是省：DenseNet-121 有 bottleneck 約 7.98M 參數，拿掉約 10.87M（<a href="#w-net">2.8 的元件</a>可切換）</li>
+  </ul>
+
+  <h4 class="formula-head">公式：Bottleneck 省多少 <span class="tag add">補充</span></h4>
   <p>不含 bias（DenseNet 的卷積接在 BN 後面，不用 bias）。輸入 \(C\) 通道、增長率 \(k\)：</p>
   <ul>
     <li>無 bottleneck：3×3 直接 \(C\to k\)，權重 \(9Ck\)</li>
@@ -245,13 +187,49 @@
     <div class="readout" id="bt-out"></div>
   </div>
 
-  <h3>4.4 過渡層</h3>
+  <h3>2.7 過渡層（Transition Layer）與 DenseNet-BC</h3>
+  <ul>
+    <li>Dense Block 內的特徵圖長寬必須相同才能串接，因此<strong>降採樣要在區塊之間進行</strong></li>
+    <li>兩個 Dense Block 之間的過渡層由 <strong>BN、1×1 Conv 和 2×2 Average Pooling</strong> 組成
+      <ul>
+        <li>平均池化：將特徵圖的長寬減半</li>
+        <li>1×1 卷積：整合區塊內的特徵，並以<strong>壓縮因子 \(\theta\)</strong> 減少通道數（\(0&lt;\theta\le1\)，論文使用 \(\theta=0.5\)）</li>
+      </ul>
+    </li>
+    <li>同時使用 bottleneck 和壓縮的版本稱為 <strong>DenseNet-BC</strong></li>
+  </ul>
+
+  <h4 class="formula-head">公式：過渡層</h4>
   <ul>
     <li>通道：\(\lfloor\theta\times C\rfloor\)；長寬：÷ 2（2×2 Average Pooling、stride 2）</li>
     <li>例：DenseNet-121 第一區塊輸出 56×56×256 → 過渡層（\(\theta=0.5\)）→ 28×28×128</li>
   </ul>
 
-  <h3>4.5 DenseNet-121 一路下來 <span class="tag add">補充</span></h3>
+  <div class="steps">
+    <p class="steps-title">逐步展開：56×56×256 經過過渡層（\(\theta=0.5\)）</p>
+    <ol>
+      <li><strong>過渡層的三個動作</strong>：BN → 1×1 Conv（壓縮通道）→ 2×2 Average Pooling（stride 2，縮小長寬）。
+        <span class="why">Dense Block 裡長寬不能變（才能串接），所以縮小長寬的工作全部交給區塊之間的過渡層。</span></li>
+      <li><strong>通道數</strong>：\(\lfloor\theta\times C\rfloor=\lfloor0.5\times256\rfloor=128\)。\(\theta=1\) 時不壓縮，仍是 256。</li>
+      <li><strong>長寬</strong>：2×2 視窗、stride 2，每 2×2 個像素取平均變成 1 個：\(56\div2=28\)。</li>
+      <li><strong>結果</strong>：56×56×256 → <strong>28×28×128</strong>。數值總數從 \(56\times56\times256=802{,}816\) 降到 \(28\times28\times128=100{,}352\)，剩 1/8（長寬各 1/2、通道 1/2）。</li>
+      <li><strong>這層的參數</strong> <span class="tag add">補充</span>：1×1 Conv 256 → 128，權重 \(1\times1\times256\times128=32{,}768\)（接在 BN 後面不用 bias）；BN 的 \(\gamma,\beta\) 各 256 個，共 512；Average Pooling 沒有參數。</li>
+    </ol>
+  </div>
+
+  <h3>2.8 效能與效率</h3>
+  <ul>
+    <li>在相近的錯誤率下，DenseNet 所需的參數量與計算量都比 ResNet 少</li>
+    <li>為什麼 DenseNet 比 ResNet 有效率：
+      <ul>
+        <li><strong>特徵重用</strong>：每一層都能直接使用前面所有層的特徵，不需要重複學習相似的特徵，因此每層可以很窄</li>
+        <li><strong>增長率 \(k\) 限制每層的輸出</strong>：ResNet 為了相加，每層輸出的通道數必須和輸入相同，各層通常較寬；DenseNet 每層只新增 \(k\) 個特徵圖（ImageNet 上 \(k=32\)），每層的參數量因此大幅減少（見 <a href="#width">2.8</a>）</li>
+        <li><strong>DenseNet-BC 的輔助</strong>：bottleneck 在 3×3 卷積前用 1×1 卷積壓縮通道數；過渡層再以壓縮因子 \(\theta\) 減少通道數</li>
+      </ul>
+    </li>
+  </ul>
+
+  <h4 class="formula-head">公式：DenseNet-121 一路下來 <span class="tag add">補充</span></h4>
   <p>\(k=32\)、\(\theta=0.5\)、各區塊層數 (6, 12, 24, 16)、輸入 224×224×3：</p>
   <div class="table-wrap">
     <table>
@@ -272,6 +250,21 @@
     <li>參數量：逐層加總（卷積無 bias、BN 含 \(\gamma,\beta\)）＝ <strong>7,978,856 ≈ 8.0M</strong>；同等級的 ResNet-50 約 25.6M</li>
   </ul>
 
+  <div class="steps">
+    <p class="steps-title">逐步展開：224×224×3 一路算到 DenseNet-121 的輸出</p>
+    <ol>
+      <li><strong>開頭（stem）</strong>：7×7 Conv、\(2k=64\) 個濾波器、stride 2 → \(224\div2=112\)，得 112×112×64；再 3×3 Max Pool、stride 2 → \(112\div2=56\)，得 <strong>56×56×64</strong>。</li>
+      <li><strong>Dense Block 1（6 層）</strong>：每層新增 \(k=32\) 個通道，長寬不變：\(64+6\times32=64+192=256\) → <strong>56×56×256</strong>。
+        <span class="why">就是 2.4 的 \(C_{\text{block out}}=k_0+kL\)，\(k_0=64\)、\(L=6\)。</span></li>
+      <li><strong>Transition 1</strong>：通道 \(\lfloor0.5\times256\rfloor=128\)、長寬 \(56\div2=28\) → <strong>28×28×128</strong>。</li>
+      <li><strong>Dense Block 2（12 層）</strong>：\(128+12\times32=128+384=512\) → <strong>28×28×512</strong>；Transition 2：\(512\div2=256\)、\(28\div2=14\) → <strong>14×14×256</strong>。</li>
+      <li><strong>Dense Block 3（24 層）</strong>：\(256+24\times32=256+768=1024\) → <strong>14×14×1024</strong>；Transition 3：→ <strong>7×7×512</strong>。</li>
+      <li><strong>Dense Block 4（16 層）</strong>：\(512+16\times32=512+512=1024\) → <strong>7×7×1024</strong>。最後一個區塊後面沒有過渡層。</li>
+      <li><strong>分類</strong>：GAP 把每個 7×7 通道平均成 1 個數 → 1024 維 → FC 1000 類。</li>
+      <li><strong>為什麼叫 121</strong>：只數有權重的層。開頭 1 層 Conv；四個區塊共 \(6+12+24+16=58\) 層，每層有 1×1 和 3×3 兩個 Conv → \(58\times2=116\)；3 個過渡層各 1 個 Conv；最後 1 個 FC：\(1+116+3+1=121\)。</li>
+    </ol>
+  </div>
+
   <div class="widget" id="w-net">
     <p class="w-title">DenseNet 整個網路：通道數與參數量</p>
     <p class="w-desc"><span class="tag add">補充</span>預設是 DenseNet-121（\(k=32\)、\(\theta=0.5\)、有 bottleneck），合計應為 <strong>7,978,856</strong>（和 PyTorch torchvision 的 <code>densenet121</code> 一致）。關掉 bottleneck 或把 \(\theta\) 改成 1，看參數量怎麼變。</p>
@@ -286,15 +279,58 @@
     <div class="readout" id="net-out"></div>
   </div>
 
-  <h3 id="width">4.6 每層寬度：ResNet vs DenseNet <span class="tag add">補充</span></h3>
+  <h4 class="formula-head" id="width">公式：每層寬度：ResNet vs DenseNet <span class="tag add">補充</span></h4>
   <ul>
     <li>ResNet 一層 3×3、256 → 256：\(9\times256\times256=589{,}824\) 個權重</li>
     <li>DenseNet 一層 3×3、輸入 256、只輸出 \(k=32\)：\(9\times256\times32=73{,}728\)，約 1/8</li>
     <li>ResNet 每層要「承載」所有累積的資訊，所以必須寬；DenseNet 舊資訊都還在，每層只要補上 32 個新特徵</li>
   </ul>
 
-  <h2 id="compare">5. 方法比較</h2>
-  <h3>5.1 相加 vs 串接（講義表格）</h3>
+  <div class="steps">
+    <p class="steps-title">逐步展開：同樣輸入 256 通道的 3×3 卷積，ResNet 和 DenseNet 各要多少權重</p>
+    <ol>
+      <li><strong>一個 3×3 濾波器的權重數</strong>：長 × 寬 × 輸入通道 \(=3\times3\times256=2{,}304\)。兩者輸入都是 256 通道，這一步一樣。</li>
+      <li><strong>ResNet 要幾個濾波器</strong>：輸出要和輸入一樣 256 通道（才能和 \(x\) 相加）→ 256 個濾波器：\(2{,}304\times256=589{,}824\)。</li>
+      <li><strong>DenseNet 要幾個濾波器</strong>：每層只新增 \(k=32\) 個通道 → 32 個濾波器：\(2{,}304\times32=73{,}728\)。</li>
+      <li><strong>比較</strong>：\(589{,}824\div73{,}728=8\)，剛好就是輸出通道的比例 \(256\div32\)。
+        <span class="why">權重數 ＝ 3×3 × 輸入通道 × 輸出通道，輸入一樣時只差在輸出通道數。DenseNet 每層很「窄」，因為前面所有層的特徵都直接串接保留下來，不用每層重新輸出一份完整的。</span></li>
+    </ol>
+  </div>
+
+  <h3>2.9 優缺點</h3>
+  <ul>
+    <li>優點：緩解梯度消失問題、促進特徵重用、參數量較少</li>
+    <li>缺點：
+      <ul>
+        <li><strong>記憶體需求高</strong>：需保存同一區塊內所有先前層的輸出</li>
+        <li><strong>實際執行速度不一定較快</strong>：雖然 FLOPs 較少，但大量的串接操作和記憶體存取會拖慢實際的訓練與推論速度</li>
+      </ul>
+    </li>
+  </ul>
+
+  <h2 id="glossary">3. 關鍵名詞表</h2>
+  <div class="table-wrap">
+    <table class="glossary">
+      <tr><th>名詞（中／英）</th><th>定義</th><th>一句話直覺解釋</th></tr>
+      <tr><td>密集連接卷積網路（DenseNet）</td><td>同一區塊內每層都接收前面所有層輸出的 CNN</td><td>每個人都拿得到前面所有人的筆記</td></tr>
+      <tr><td>Dense Block</td><td>內部所有層兩兩直接連接、長寬不變的區塊</td><td>大家共用一份越寫越厚的筆記本</td></tr>
+      <tr><td>增長率（Growth Rate）\(k\)</td><td>每一層新增的特徵圖數量</td><td>每人只在筆記本上加 \(k\) 頁</td></tr>
+      <tr><td>串接（Concatenation）</td><td>在通道方向把特徵圖疊在一起</td><td>疊起來，不混在一起</td></tr>
+      <tr><td>逐元素相加（Element-wise Addition）</td><td>同位置的數值相加，形狀必須相同</td><td>兩張圖疊印成一張</td></tr>
+      <tr><td>集體知識（Collective Knowledge）</td><td>所有先前層的特徵圖合起來的狀態</td><td>整本筆記本</td></tr>
+      <tr><td>特徵重用（Feature Reuse）</td><td>後面的層直接使用前面層的特徵，不重新學</td><td>別人寫過的不用再抄一次</td></tr>
+      <tr><td>組成層（Composition Layer）</td><td>BN → ReLU → 3×3 Conv</td><td>Dense Block 裡的一層</td></tr>
+      <tr><td>Pre-activation</td><td>先 BN、ReLU 再卷積的順序</td><td>先整理再加工</td></tr>
+      <tr><td>瓶頸層（Bottleneck Layer）</td><td>3×3 前用 1×1 把通道壓到 \(4k\)</td><td>筆記太厚，先摘要再讀</td></tr>
+      <tr><td>過渡層（Transition Layer）</td><td>BN ＋ 1×1 Conv（壓縮 \(\theta\)）＋ 2×2 Avg Pool</td><td>區塊之間的縮圖與瘦身站</td></tr>
+      <tr><td>壓縮因子（Compression Factor）\(\theta\)</td><td>過渡層輸出通道 \(=\lfloor\theta\times\) 輸入通道\(\rfloor\)</td><td>保留幾成通道</td></tr>
+      <tr><td>DenseNet-B／DenseNet-BC</td><td>B：加 bottleneck；BC：bottleneck ＋ 壓縮</td><td>B = Bottleneck、C = Compression</td></tr>
+      <tr><td>FLOPs</td><td>浮點運算次數</td><td>帳面上的計算量，不等於實際速度</td></tr>
+    </table>
+  </div>
+
+  <h2 id="compare">4. 方法比較</h2>
+  <h3>4.1 相加 vs 串接（講義表格）</h3>
   <div class="table-wrap">
     <table>
       <tr><th></th><th>ResNet（相加）</th><th>DenseNet（串接）</th></tr>
@@ -308,7 +344,7 @@
     </table>
   </div>
 
-  <h3>5.2 DenseNet 變體</h3>
+  <h3>4.2 DenseNet 變體</h3>
   <div class="table-wrap">
     <table>
       <tr><th>版本</th><th>Bottleneck（1×1 → 4k）</th><th>壓縮（\(\theta&lt;1\)）</th></tr>
@@ -319,7 +355,7 @@
     </table>
   </div>
 
-  <h3>5.3 和 Part 1 模型的關係 <span class="tag add">補充</span></h3>
+  <h3>4.3 和 Part 1 模型的關係 <span class="tag add">補充</span></h3>
   <div class="table-wrap">
     <table>
       <tr><th>模型</th><th>怎麼合併多條路</th><th>目的</th></tr>
@@ -329,7 +365,7 @@
     </table>
   </div>
 
-  <h2 id="figures">6. 圖表說明</h2>
+  <h2 id="figures">5. 圖表說明</h2>
   <ul>
     <li><strong>Classical CNN 圖</strong>：層與層一條直線串起來，每層只看前一層。</li>
     <li><strong>ResNet Convolution 圖</strong>：一條弧線把 \(x\) 接到輸出處，與 \(F(x)\) 在「⊕」相加。</li>
@@ -341,10 +377,10 @@
         <li>左邊是論文 Table 3，ImageNet 驗證集的 top-1／top-5 錯誤率（%，single-crop／10-crop）：DenseNet-121 25.02／23.61、7.71／6.66；DenseNet-169 23.80／22.08、6.85／5.92；DenseNet-201 22.58／21.46、6.34／5.54；DenseNet-264 22.15／20.80、6.12／5.29</li>
         <li>右邊是論文 Figure 3：兩張圖縱軸都是驗證錯誤率，橫軸分別是參數量與測試時的 FLOPs；藍色 DenseNet-BC 曲線都在紅色 ResNet（34／50／101／152）的左下方。講義的結論：在相近的錯誤率下，DenseNet 所需的參數量與計算量都比 ResNet 少，例如 DenseNet-201 和 ResNet-101 錯誤率差不多，參數量卻少一半以上</li>
       </ul>
-      <span class="tag add">補充</span>原論文數字：DenseNet-121／169／201／264 約 8.0M／14.1M／20.0M／33.3M 參數；ResNet-50／101／152 約 25.6M／44.5M／60.2M（<a href="#w-net">4.5 的元件</a>可以算出 DenseNet 這四個數字）。</li>
+      <span class="tag add">補充</span>原論文數字：DenseNet-121／169／201／264 約 8.0M／14.1M／20.0M／33.3M 參數；ResNet-50／101／152 約 25.6M／44.5M／60.2M（<a href="#w-net">2.8 的元件</a>可以算出 DenseNet 這四個數字）。</li>
   </ul>
 
-  <h2 id="traps">7. 常見觀念陷阱</h2>
+  <h2 id="traps">6. 常見觀念陷阱</h2>
   <ul>
     <li><strong>DenseNet 是串接，ResNet 是相加</strong>：串接讓通道數變多、原特徵保留；相加通道數不變、特徵混在一起。</li>
     <li><strong>串接只要求長寬相同</strong>，通道數可以不同；相加則形狀要完全相同。</li>
@@ -358,7 +394,7 @@
     <li><strong>DenseNet 的連接只在同一個 Dense Block 內</strong>，不同區塊之間只經過過渡層。</li>
   </ul>
 
-  <h2 id="quiz">8. 自我測驗</h2>
+  <h2 id="quiz">7. 自我測驗</h2>
   <div class="quiz" data-answer="B">
     <p class="q">1.（選擇）一個 Dense Block 的輸入有 24 個通道，增長率 \(k=12\)。第 5 層的輸入通道數是多少？</p>
     <div class="opts">
@@ -381,11 +417,11 @@
   </div>
   <div class="quiz">
     <p class="q">4.（計算）Dense Block 輸入 128 通道、\(k=32\)、共 12 層，接著過渡層 \(\theta=0.5\)，特徵圖 28×28。請求區塊輸出與過渡層輸出的形狀。</p>
-    <details class="answer"><summary>看解答</summary><div>區塊輸出：\(128+12\times32=512\) → 28×28×512；過渡層：\(\lfloor0.5\times512\rfloor=256\)、\(28\div2=14\) → 14×14×256。這正是 DenseNet-121 的 Block 2（在 <a href="#w-net">4.5 的元件</a>表格可以對照）。</div></details>
+    <details class="answer"><summary>看解答</summary><div>區塊輸出：\(128+12\times32=512\) → 28×28×512；過渡層：\(\lfloor0.5\times512\rfloor=256\)、\(28\div2=14\) → 14×14×256。這正是 DenseNet-121 的 Block 2（在 <a href="#w-net">2.8 的元件</a>表格可以對照）。</div></details>
   </div>
   <div class="quiz">
     <p class="q">5.（計算）輸入 \(C=512\)、\(k=32\)，分別計算有無 bottleneck 時一層的卷積權重數（不含 bias），以及 bottleneck 是否划算。</p>
-    <details class="answer"><summary>看解答</summary><div>無 bottleneck：\(9\times512\times32=147{,}456\)。有 bottleneck：1×1 \(512\to128\) = 65,536；3×3 \(128\to32\) = 36,864；合計 102,400，約 0.694 倍，划算（\(512&gt;7.2\times32=230.4\)）。可在 <a href="#w-bottle">4.3 的元件</a>按「自我測驗第 5 題」驗算。</div></details>
+    <details class="answer"><summary>看解答</summary><div>無 bottleneck：\(9\times512\times32=147{,}456\)。有 bottleneck：1×1 \(512\to128\) = 65,536；3×3 \(128\to32\) = 36,864；合計 102,400，約 0.694 倍，划算（\(512&gt;7.2\times32=230.4\)）。可在 <a href="#w-bottle">2.6 的元件</a>按「自我測驗第 5 題」驗算。</div></details>
   </div>
   <div class="quiz" data-answer="A">
     <p class="q">6.（選擇）DenseNet-BC 的「B」和「C」分別代表什麼？</p>

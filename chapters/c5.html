@@ -81,8 +81,25 @@
   <ul>
     <li><strong>先訓練新分類層，再解凍預訓練層</strong>：新分類層是隨機初始化的，若一開始就一起訓練，大的梯度會破壞預訓練權重</li>
     <li><strong>使用很小的學習率</strong>：通常比初始訓練小一到兩個數量級</li>
-    <li><strong>BatchNorm</strong>：新資料量小時，讓 BN 層沿用預訓練時的統計量（running mean 與 running std），避免小批次估計的雜訊打亂原本學到的特徵（數字例子見 <a href="#lr-bn">4.5</a>）</li>
+    <li><strong>BatchNorm</strong>：新資料量小時，讓 BN 層沿用預訓練時的統計量（running mean 與 running std），避免小批次估計的雜訊打亂原本學到的特徵（數字例子見 <a href="#lr-bn">2.5</a>）</li>
   </ul>
+
+  <h4 class="formula-head" id="lr-bn">公式：學習率與 BN 統計量 <span class="tag add">補充</span></h4>
+  <ul>
+    <li>學習率小一到兩個數量級：初始訓練 0.01 → 微調 0.001～0.0001</li>
+    <li>BN running mean（<a href="c3.html">C3</a>）：\(\mu_{run}\leftarrow(1-m)\,\mu_{run}+m\,\mu_{batch}\)</li>
+  </ul>
+  <div class="steps">
+    <p class="steps-title">逐步展開：為什麼小資料要讓 BN 沿用預訓練統計量</p>
+    <ol>
+      <li><strong>預訓練的統計量</strong>：在 120 萬張 ImageNet 上估出 \(\mu_{run}=0.5\)，很穩定。</li>
+      <li><strong>新資料的一個小批次</strong>：batch 只有 4 張，平均剛好是 \(\mu_{batch}=2.0\)（小批次的平均很容易偏）。</li>
+      <li><strong>如果 BN 在 train 模式</strong>（\(m=0.1\)）：\(0.9\times0.5+0.1\times2.0=0.45+0.2=0.65\)，一個批次就被拉走 0.15。
+        <span class="why">訓練時 BN 還會直接用這 4 張的平均來正規化，後面每一層看到的輸入分布都跟著晃動，原本學到的特徵就被打亂。</span></li>
+      <li><strong>設成 eval 模式</strong>：running mean 保持 0.5，正規化用的是預訓練的穩定統計量。
+        <span class="why">這就是 Last-k 提醒「凍結層的 BN 要另外設 eval」的原因：只把 requires_grad 關掉，running mean 仍會被更新。</span></li>
+    </ol>
+  </div>
 
   <h3>2.6 CV 裡常見的微調方式</h3>
   <ul>
@@ -113,6 +130,29 @@
     <div id="st-svg"></div>
     <div class="readout" id="st-out"></div>
     <div class="bars" id="st-bars" style="margin-top:10px"></div>
+  </div>
+
+  <h4 class="formula-head">公式：訓練時的記憶體（權重、梯度、優化器狀態）<span class="tag add">補充</span></h4>
+  $$\text{記憶體}\approx\underbrace{P}_{\text{全部權重}}+\underbrace{T}_{\text{梯度}}+\underbrace{s\cdot T}_{\text{優化器狀態}}\quad(\times4\text{ bytes，FP32})$$
+  <ul>
+    <li>\(P\)：全部參數；\(T\)：可訓練參數；\(s\)：每個參數的優化器狀態數（SGD 0、Momentum 1、Adam 2）</li>
+    <li>不含激活值（activations）：PEFT 仍要保存各層激活值做反向傳播</li>
+    <li>例：ResNet-50 ＋ 10 類 head、Adam：Full FT ≈ 23.53M × 4 × 4 B ≈ 376 MB；特徵提取 ≈ 94.1 MB ＋ 20,490 × 3 × 4 B ≈ 94.4 MB（在 <a href="#w-strat">2.6 的元件</a>切換比較）</li>
+  </ul>
+
+  <div class="steps">
+    <p class="steps-title">逐步展開：ResNet-50 ＋ 10 類、Adam，Full FT 與特徵提取各要多少記憶體</p>
+    <ol>
+      <li><strong>先確定三個數</strong>：全部參數 \(P=23{,}528{,}522\)（ResNet-50 主體 23,508,032 ＋ 新的 10 類 head \(2048\times10+10=20{,}490\)）；Adam 每個參數存 2 個狀態（一階、二階動量）→ \(s=2\)；FP32 每個數 4 bytes。</li>
+      <li><strong>Full FT 的可訓練參數</strong>：全部都訓練 → \(T=P\)。</li>
+      <li><strong>Full FT 加總</strong>：權重 \(P\) ＋ 梯度 \(T\) ＋ 優化器 \(2T\) \(=P+P+2P=4P\) 個數；\(4\times23{,}528{,}522\times4\text{ B}=376{,}456{,}352\text{ B}\approx376.5\text{ MB}\)。
+        <span class="why">權重本身只佔 1/4，另外 3/4 是訓練才需要的梯度與 Adam 狀態。</span></li>
+      <li><strong>特徵提取的可訓練參數</strong>：只訓練新的 head → \(T=20{,}490\)。</li>
+      <li><strong>特徵提取的權重</strong>：凍結的部分還是要載入 → 全部 \(P\) 都要存：\(23{,}528{,}522\times4\text{ B}=94{,}114{,}088\text{ B}\approx94.1\text{ MB}\)。</li>
+      <li><strong>特徵提取的梯度＋優化器</strong>：只有 head 需要：\((1+2)\times20{,}490\times4\text{ B}=245{,}880\text{ B}\approx0.25\text{ MB}\)。</li>
+      <li><strong>特徵提取加總</strong>：\(94{,}114{,}088+245{,}880=94{,}359{,}968\text{ B}\approx94.4\text{ MB}\)，大約是 Full FT 的 1/4。
+        <span class="why">省下的是梯度與優化器狀態；凍結的權重還是要佔記憶體。實際訓練還要再加上激活值，這裡沒有算。</span></li>
+    </ol>
   </div>
 
   <h3>2.7 Full Fine-tuning</h3>
@@ -173,6 +213,31 @@
     <div class="readout" id="k-out"></div>
   </div>
 
+  <h4 class="formula-head">公式：可訓練參數量（以 ResNet-50 為例）<span class="tag add">補充</span></h4>
+  <p>ResNet-50 各段參數（含 BN）：stem 9,536、layer1 215,808、layer2 1,219,584、layer3 7,098,368、layer4 14,964,736；原分類層 2048 → 1000 為 2,049,000，合計 25,557,032。換成 10 類的新 head：\(2048\times10+10=20{,}490\)。</p>
+  <div class="table-wrap">
+    <table>
+      <tr><th>策略</th><th>可訓練</th><th class="num">可訓練參數</th><th class="num">佔全部</th></tr>
+      <tr><td>特徵提取</td><td>新 head</td><td class="num">20,490</td><td class="num">0.09%</td></tr>
+      <tr><td>Last-k（k = 1）</td><td>layer4 ＋ head</td><td class="num">14,985,226</td><td class="num">63.7%</td></tr>
+      <tr><td>Last-k（k = 2）</td><td>layer3、4 ＋ head</td><td class="num">22,083,594</td><td class="num">93.9%</td></tr>
+      <tr><td>Full FT</td><td>全部</td><td class="num">23,528,522</td><td class="num">100%</td></tr>
+    </table>
+  </div>
+  <div class="steps">
+    <p class="steps-title">逐步展開：Last-k（k = 1）要訓練多少參數？</p>
+    <ol>
+      <li><strong>新的 head</strong>：GAP 後是 2,048 維，接 10 類：\((2048+1)\times10=20{,}490\)
+        <span class="why">C2／C4 的 FC 公式：(輸入 + 1) × 輸出。原本的 1000 類 head（2,049,000）被拿掉了。</span></li>
+      <li><strong>k = 1 解凍誰</strong>：最後 1 個 block，也就是 layer4：14,964,736。
+        <span class="why">Last-k 的 k 不含 head，head 本來就一定要訓練。</span></li>
+      <li><strong>合計</strong>：\(14{,}964{,}736+20{,}490=14{,}985{,}226\)</li>
+      <li><strong>全部參數</strong>：\(9{,}536+215{,}808+1{,}219{,}584+7{,}098{,}368+14{,}964{,}736+20{,}490=23{,}528{,}522\)</li>
+      <li><strong>比例</strong>：\(14{,}985{,}226\div23{,}528{,}522\approx63.7\%\)。只解凍 1 個 block 就已經是一大半的參數。
+        <span class="why">越後面的 block 通道越多（512 → 2048），參數也越多。所以「k 小」不代表「便宜很多」，要看解凍的是哪一段。</span></li>
+    </ol>
+  </div>
+
   <h3>2.10 Parameter-Efficient Fine-tuning（PEFT）</h3>
   <ul>
     <li>Freeze 大部分 pretrained model，只訓練非常少量的參數</li>
@@ -194,12 +259,30 @@
     <li>講義圖示（以 LoRA 為例）：在各層內部加入少量可訓練參數，原本的權重維持凍結；新的分類 head 仍需訓練</li>
   </ul>
 
+  <h4 class="formula-head">公式：多任務儲存 <span class="tag add">補充</span></h4>
+  <ul>
+    <li>\(N\) 個任務、backbone \(P\) 個參數、每個任務的小模組 \(p\) 個參數：Full FT 每個任務存一整份 → \(N\times P\)；PEFT 共用 backbone → \(P+N\times p\)</li>
+    <li>例：ViT-Base 約 86M、\(r=8\) 的 LoRA（Q／K／V／O）約 0.59M、10 個任務：Full FT 約 860M vs LoRA 約 86M + 5.9M ≈ 92M（<a href="#w-lora">LoRA 元件</a>下半部）</li>
+  </ul>
+
+  <div class="steps">
+    <p class="steps-title">逐步展開：ViT-Base、10 個任務，Full FT 和 LoRA 各要存多少參數</p>
+    <ol>
+      <li><strong>Full FT</strong>：每個任務都改動整個模型，要各存一整份：\(N\times P=10\times86\text{M}=860\text{M}\)。</li>
+      <li><strong>一個 LoRA 模組有多少參數</strong>：一個 768×768 的權重加上 \(r=8\) 的 LoRA，\(B\) 是 768×8、\(A\) 是 8×768：\(768\times8+8\times768=12{,}288\)（就是 2.11 的例子）。</li>
+      <li><strong>一個任務要幾個模組</strong>：ViT-Base 有 12 層，每層的 attention 有 Q、K、V、O 四個 768×768 權重：\(12\times4=48\) 個；\(48\times12{,}288=589{,}824\approx0.59\text{M}\)。</li>
+      <li><strong>LoRA 總共</strong>：backbone 共用一份 86M，再加 10 個任務各自的 0.59M：\(86+10\times0.59\approx86+5.9=91.9\text{M}\)。</li>
+      <li><strong>比較</strong>：\(860\div91.9\approx9.4\) 倍。任務越多差距越大：每多一個任務，Full FT 多 86M，LoRA 只多 0.59M。
+        <span class="why">LoRA 的 backbone 完全沒變，所以可以只存一份；換任務時只要換上那個任務的小模組。</span></li>
+    </ol>
+  </div>
+
   <h3>2.11 LoRA — Low-Rank Adaptation</h3>
   <ul>
     <li>Full fine-tuning 的缺點：訓練成本高、需要更多 GPU memory</li>
     <li>核心概念：凍結大部分 pretrained model 參數，在部分線性層加入 low-rank adapters，僅訓練這些少量參數</li>
     <li>原本為大型語言模型提出，後來廣泛用於 Transformer-based CV model：ViT、Swin Transformer、CLIP image encoder、DETR 類型模型</li>
-    <li>基本原理（公式見 <a href="#lora">4.3</a>）：
+    <li>基本原理（公式見 <a href="#lora">2.11</a>）：
       <ul>
         <li>原本某一層線性轉換：\(h=W_0x\)</li>
         <li>LoRA 不直接更新 \(W_0\)，而是加入一個低秩的更新量：\(h=W_0x+BAx\)</li>
@@ -268,115 +351,7 @@
     <div class="readout" id="mg-out"></div>
   </div>
 
-  <h3>2.12 Regularized Fine-tuning</h3>
-  <ul>
-    <li>核心概念：可以讓 parameters 動，但不要讓它們離 pretrained model 太遠</li>
-    <li>常見做法：L2-SP</li>
-    <li>優點：降低 overfitting、保留 pretrained knowledge、可以搭配 Full FT 或部分微調使用</li>
-    <li>缺點：Source／Target 差太多時可能反而有害；training cost 沒有 PEFT 那麼低</li>
-    <li>講義圖示：全部 block 可訓練，另有一份固定的預訓練權重 \(w^0\) 作為參考點，以懲罰項 \(\frac{\alpha}{2}\lVert w-w^0\rVert^2\) 限制 \(w\) 不要離 \(w^0\) 太遠；新 head 沒有預訓練值，改用一般 L2 正則化</li>
-  </ul>
-
-  <h3>2.13 L2-SP</h3>
-  <ul>
-    <li>Full fine-tuning 會更新整個模型，但在小資料集或 target domain 資料不足時，模型可能：overfitting、忘記 pretrained model 學到的通用視覺特徵、更新幅度過大導致泛化能力下降</li>
-    <li>核心概念：fine-tuning 時，不只是讓模型 fit 新資料，也要限制模型不要離 pretrained weights 太遠</li>
-    <li>最常用在 CNN／ResNet 等 backbone</li>
-    <li>基本原理（公式見 <a href="#l2sp">4.4</a>）：總損失 \(L=L_{task}+\Omega(w)\)，\(\Omega(w)=\frac{\alpha}{2}\lVert w-w^0\rVert^2\)
-      <ul>
-        <li>\(w\)：backbone 參數目前的值（訓練中會更新）；\(w^0\)：同一組參數的預訓練值（固定不變，作為參考點）；\(\alpha\)：正則化強度</li>
-        <li>新加入的分類 head 沒有預訓練值，改用一般 L2 正則化</li>
-        <li>和一般 weight decay 的差別：<strong>weight decay 把權重拉向 0，L2-SP 把權重拉向預訓練值 \(w^0\)</strong>（SP 即 starting point）</li>
-      </ul>
-    </li>
-    <li>流程：
-      <ol>
-        <li>載入 pretrained model（例如 ResNet），換上新的分類 head</li>
-        <li>複製一份 pretrained weights 作為 \(w^0\)</li>
-        <li>正常計算 task loss</li>
-        <li>加上 L2-SP penalty（新的分類 head 改用一般 L2）</li>
-        <li>更新模型，\(w^0\) 保持不變</li>
-      </ol>
-      注意：optimizer <strong>不要再另外設定 weight_decay</strong>，否則權重會同時被拉向 0 和 \(w^0\)
-    </li>
-    <li>優點：保留 pretrained model 的泛化能力、對小資料集友善、實作簡單不需改架構、CNN 與 ViT 都可用、比直接 full fine-tuning 更穩定</li>
-    <li>限制：\(\alpha\) 需要調整；target 與 source 差異太大時限制太強反而不好；所有參數仍需訓練，不像 LoRA 減少 trainable parameters</li>
-  </ul>
-
-  <div class="widget" id="w-l2sp">
-    <p class="w-title">L2-SP vs Weight Decay：權重被拉向哪裡</p>
-    <p class="w-desc"><span class="tag add">補充</span>兩個參數的示意：\(w^*\) 是只看新資料的最佳解（拖曳紅點移動），\(w^0\) 是預訓練值，原點是 weight decay 的目標。假設 \(L_{task}=\frac12\lVert w-w^*\rVert^2\)，加上懲罰後的最佳解有公式（見 <a href="#l2sp">4.4</a>）。預設 \(\alpha=1\)、\(w^0=(2,1)\)、\(w^*=(3,3)\)，應得到 L2-SP 停在 (2.5, 2)、weight decay 停在 (1.5, 1.5)。</p>
-    <div class="controls">
-      <label>\(\alpha\) <input type="range" id="sp-a" min="0" max="5" step="0.1" value="1"> <span class="val" data-for="sp-a"></span></label>
-      <label><input type="checkbox" id="sp-wd" checked> 顯示 weight decay</label>
-      <button class="btn" type="button" id="sp-reset">回到預設</button>
-    </div>
-    <div class="canvas-wrap"><canvas id="sp-canvas"></canvas></div>
-    <div class="readout" id="sp-out"></div>
-  </div>
-
-  <h2 id="glossary">3. 關鍵名詞表</h2>
-  <div class="table-wrap">
-    <table class="glossary">
-      <tr><th>名詞（中／英）</th><th>定義</th><th>一句話直覺解釋</th></tr>
-      <tr><td>遷移學習（Transfer Learning）</td><td>把在來源任務學到的模型用到目標任務</td><td>站在巨人的肩膀上</td></tr>
-      <tr><td>預訓練模型（Pretrained Model）</td><td>已在大型資料集（如 ImageNet）訓練好的模型</td><td>借來的「眼睛」</td></tr>
-      <tr><td>卷積基底（Convolutional Base）</td><td>卷積層與池化層，負責擷取特徵</td><td>看圖的部分</td></tr>
-      <tr><td>分類層（Classifier Head）</td><td>全連接層與輸出層，對應類別</td><td>下判斷的部分</td></tr>
-      <tr><td>凍結（Freeze）</td><td>訓練時不更新某些層的權重</td><td>這幾層上鎖</td></tr>
-      <tr><td>特徵提取（Feature Extraction）</td><td>凍結基底，只訓練新的分類層</td><td>眼睛照用，只換大腦</td></tr>
-      <tr><td>微調（Fine-tuning）</td><td>解凍部分或全部預訓練層，用小學習率再訓練</td><td>眼睛也稍微調一下焦</td></tr>
-      <tr><td>來源／目標領域（Source／Target Domain）</td><td>預訓練用的資料／新任務的資料</td><td>從哪裡學來、要用到哪裡</td></tr>
-      <tr><td>領域差距（Domain Gap）</td><td>來源與目標資料分布的差異</td><td>自然照片 vs X 光片差多遠</td></tr>
-      <tr><td>優化器狀態（Optimizer State）</td><td>優化器為每個可訓練參數額外保存的資料（如 momentum 速度）</td><td>每個參數旁邊的小筆記</td></tr>
-      <tr><td>Last-k Fine-tuning</td><td>只解凍最後 \(k\) 個 layer／block</td><td>只調最靠近輸出的幾層</td></tr>
-      <tr><td>參數高效微調（Parameter-Efficient Fine-tuning, PEFT）</td><td>凍結大部分模型，只訓練極少量參數</td><td>不動本體，只加小外掛</td></tr>
-      <tr><td>低秩適應（Low-Rank Adaptation, LoRA）</td><td>\(h=W_0x+BAx\)，只訓練低秩矩陣 \(B\)、\(A\)</td><td>用兩個細長矩陣表示權重的修改量</td></tr>
-      <tr><td>秩（Rank）\(r\)</td><td>\(BA\) 的秩上限，決定 LoRA 參數量</td><td>修改量的「自由度」</td></tr>
-      <tr><td>Adapter</td><td>在層之間插入的小型可訓練模組 <span class="tag add">補充</span></td><td>串接上去的小外掛，推論時要多算</td></tr>
-      <tr><td>Visual Prompt Tuning（VPT）</td><td>在輸入 token 前加上可訓練的 prompt 向量 <span class="tag add">補充</span></td><td>給模型多看幾個可學的提示</td></tr>
-      <tr><td>L2-SP（L2 Starting Point）</td><td>\(\Omega(w)=\frac{\alpha}{2}\lVert w-w^0\rVert^2\)</td><td>用橡皮筋把權重綁在預訓練值附近</td></tr>
-      <tr><td>權重衰減（Weight Decay）</td><td>\(\frac{\alpha}{2}\lVert w\rVert^2\)，把權重拉向 0（C3 的 L2 正則化）</td><td>橡皮筋綁在原點</td></tr>
-      <tr><td>Vision Transformer（ViT）</td><td>把影像切成 patch、用 Transformer 處理的模型 <span class="tag add">補充</span></td><td>LoRA 最常套用的對象</td></tr>
-    </table>
-  </div>
-
-  <h2 id="formula">4. 公式與計算</h2>
-
-  <h3>4.1 可訓練參數量（以 ResNet-50 為例）<span class="tag add">補充</span></h3>
-  <p>ResNet-50 各段參數（含 BN）：stem 9,536、layer1 215,808、layer2 1,219,584、layer3 7,098,368、layer4 14,964,736；原分類層 2048 → 1000 為 2,049,000，合計 25,557,032。換成 10 類的新 head：\(2048\times10+10=20{,}490\)。</p>
-  <div class="table-wrap">
-    <table>
-      <tr><th>策略</th><th>可訓練</th><th class="num">可訓練參數</th><th class="num">佔全部</th></tr>
-      <tr><td>特徵提取</td><td>新 head</td><td class="num">20,490</td><td class="num">0.09%</td></tr>
-      <tr><td>Last-k（k = 1）</td><td>layer4 ＋ head</td><td class="num">14,985,226</td><td class="num">63.7%</td></tr>
-      <tr><td>Last-k（k = 2）</td><td>layer3、4 ＋ head</td><td class="num">22,083,594</td><td class="num">93.9%</td></tr>
-      <tr><td>Full FT</td><td>全部</td><td class="num">23,528,522</td><td class="num">100%</td></tr>
-    </table>
-  </div>
-  <div class="steps">
-    <p class="steps-title">逐步展開：Last-k（k = 1）要訓練多少參數？</p>
-    <ol>
-      <li><strong>新的 head</strong>：GAP 後是 2,048 維，接 10 類：\((2048+1)\times10=20{,}490\)
-        <span class="why">C2／C4 的 FC 公式：(輸入 + 1) × 輸出。原本的 1000 類 head（2,049,000）被拿掉了。</span></li>
-      <li><strong>k = 1 解凍誰</strong>：最後 1 個 block，也就是 layer4：14,964,736。
-        <span class="why">Last-k 的 k 不含 head，head 本來就一定要訓練。</span></li>
-      <li><strong>合計</strong>：\(14{,}964{,}736+20{,}490=14{,}985{,}226\)</li>
-      <li><strong>全部參數</strong>：\(9{,}536+215{,}808+1{,}219{,}584+7{,}098{,}368+14{,}964{,}736+20{,}490=23{,}528{,}522\)</li>
-      <li><strong>比例</strong>：\(14{,}985{,}226\div23{,}528{,}522\approx63.7\%\)。只解凍 1 個 block 就已經是一大半的參數。
-        <span class="why">越後面的 block 通道越多（512 → 2048），參數也越多。所以「k 小」不代表「便宜很多」，要看解凍的是哪一段。</span></li>
-    </ol>
-  </div>
-
-  <h3>4.2 訓練時的記憶體（權重、梯度、優化器狀態）<span class="tag add">補充</span></h3>
-  $$\text{記憶體}\approx\underbrace{P}_{\text{全部權重}}+\underbrace{T}_{\text{梯度}}+\underbrace{s\cdot T}_{\text{優化器狀態}}\quad(\times4\text{ bytes，FP32})$$
-  <ul>
-    <li>\(P\)：全部參數；\(T\)：可訓練參數；\(s\)：每個參數的優化器狀態數（SGD 0、Momentum 1、Adam 2）</li>
-    <li>不含激活值（activations）：PEFT 仍要保存各層激活值做反向傳播</li>
-    <li>例：ResNet-50 ＋ 10 類 head、Adam：Full FT ≈ 23.53M × 4 × 4 B ≈ 376 MB；特徵提取 ≈ 94.1 MB ＋ 20,490 × 3 × 4 B ≈ 94.4 MB（在 <a href="#w-strat">2.6 的元件</a>切換比較）</li>
-  </ul>
-
-  <h3 id="lora">4.3 LoRA</h3>
+  <h4 class="formula-head" id="lora">公式：LoRA</h4>
   $$h=W_0x+BAx,\qquad W_0\in\mathbb{R}^{d\times k},\ B\in\mathbb{R}^{d\times r},\ A\in\mathbb{R}^{r\times k}$$
   <ul>
     <li>參數量：原本 \(d\times k\)；LoRA 只有 \(r(d+k)\)</li>
@@ -415,7 +390,54 @@
     </ol>
   </div>
 
-  <h3 id="l2sp">4.4 L2-SP</h3>
+  <h3>2.12 Regularized Fine-tuning</h3>
+  <ul>
+    <li>核心概念：可以讓 parameters 動，但不要讓它們離 pretrained model 太遠</li>
+    <li>常見做法：L2-SP</li>
+    <li>優點：降低 overfitting、保留 pretrained knowledge、可以搭配 Full FT 或部分微調使用</li>
+    <li>缺點：Source／Target 差太多時可能反而有害；training cost 沒有 PEFT 那麼低</li>
+    <li>講義圖示：全部 block 可訓練，另有一份固定的預訓練權重 \(w^0\) 作為參考點，以懲罰項 \(\frac{\alpha}{2}\lVert w-w^0\rVert^2\) 限制 \(w\) 不要離 \(w^0\) 太遠；新 head 沒有預訓練值，改用一般 L2 正則化</li>
+  </ul>
+
+  <h3>2.13 L2-SP</h3>
+  <ul>
+    <li>Full fine-tuning 會更新整個模型，但在小資料集或 target domain 資料不足時，模型可能：overfitting、忘記 pretrained model 學到的通用視覺特徵、更新幅度過大導致泛化能力下降</li>
+    <li>核心概念：fine-tuning 時，不只是讓模型 fit 新資料，也要限制模型不要離 pretrained weights 太遠</li>
+    <li>最常用在 CNN／ResNet 等 backbone</li>
+    <li>基本原理（公式見 <a href="#l2sp">2.13</a>）：總損失 \(L=L_{task}+\Omega(w)\)，\(\Omega(w)=\frac{\alpha}{2}\lVert w-w^0\rVert^2\)
+      <ul>
+        <li>\(w\)：backbone 參數目前的值（訓練中會更新）；\(w^0\)：同一組參數的預訓練值（固定不變，作為參考點）；\(\alpha\)：正則化強度</li>
+        <li>新加入的分類 head 沒有預訓練值，改用一般 L2 正則化</li>
+        <li>和一般 weight decay 的差別：<strong>weight decay 把權重拉向 0，L2-SP 把權重拉向預訓練值 \(w^0\)</strong>（SP 即 starting point）</li>
+      </ul>
+    </li>
+    <li>流程：
+      <ol>
+        <li>載入 pretrained model（例如 ResNet），換上新的分類 head</li>
+        <li>複製一份 pretrained weights 作為 \(w^0\)</li>
+        <li>正常計算 task loss</li>
+        <li>加上 L2-SP penalty（新的分類 head 改用一般 L2）</li>
+        <li>更新模型，\(w^0\) 保持不變</li>
+      </ol>
+      注意：optimizer <strong>不要再另外設定 weight_decay</strong>，否則權重會同時被拉向 0 和 \(w^0\)
+    </li>
+    <li>優點：保留 pretrained model 的泛化能力、對小資料集友善、實作簡單不需改架構、CNN 與 ViT 都可用、比直接 full fine-tuning 更穩定</li>
+    <li>限制：\(\alpha\) 需要調整；target 與 source 差異太大時限制太強反而不好；所有參數仍需訓練，不像 LoRA 減少 trainable parameters</li>
+  </ul>
+
+  <div class="widget" id="w-l2sp">
+    <p class="w-title">L2-SP vs Weight Decay：權重被拉向哪裡</p>
+    <p class="w-desc"><span class="tag add">補充</span>兩個參數的示意：\(w^*\) 是只看新資料的最佳解（拖曳紅點移動），\(w^0\) 是預訓練值，原點是 weight decay 的目標。假設 \(L_{task}=\frac12\lVert w-w^*\rVert^2\)，加上懲罰後的最佳解有公式（見 <a href="#l2sp">2.13</a>）。預設 \(\alpha=1\)、\(w^0=(2,1)\)、\(w^*=(3,3)\)，應得到 L2-SP 停在 (2.5, 2)、weight decay 停在 (1.5, 1.5)。</p>
+    <div class="controls">
+      <label>\(\alpha\) <input type="range" id="sp-a" min="0" max="5" step="0.1" value="1"> <span class="val" data-for="sp-a"></span></label>
+      <label><input type="checkbox" id="sp-wd" checked> 顯示 weight decay</label>
+      <button class="btn" type="button" id="sp-reset">回到預設</button>
+    </div>
+    <div class="canvas-wrap"><canvas id="sp-canvas"></canvas></div>
+    <div class="readout" id="sp-out"></div>
+  </div>
+
+  <h4 class="formula-head" id="l2sp">公式：L2-SP</h4>
   $$L=L_{task}+\frac{\alpha}{2}\lVert w-w^0\rVert^2,\qquad \frac{\partial\Omega}{\partial w}=\alpha\,(w-w^0)$$
   <ul>
     <li>對照 weight decay：\(\frac{\alpha}{2}\lVert w\rVert^2\)，梯度 \(\alpha w\)（拉向 0）</li>
@@ -436,31 +458,34 @@
     </ol>
   </div>
 
-  <h3 id="lr-bn">4.5 學習率與 BN 統計量 <span class="tag add">補充</span></h3>
-  <ul>
-    <li>學習率小一到兩個數量級：初始訓練 0.01 → 微調 0.001～0.0001</li>
-    <li>BN running mean（<a href="c3.html">C3</a>）：\(\mu_{run}\leftarrow(1-m)\,\mu_{run}+m\,\mu_{batch}\)</li>
-  </ul>
-  <div class="steps">
-    <p class="steps-title">逐步展開：為什麼小資料要讓 BN 沿用預訓練統計量</p>
-    <ol>
-      <li><strong>預訓練的統計量</strong>：在 120 萬張 ImageNet 上估出 \(\mu_{run}=0.5\)，很穩定。</li>
-      <li><strong>新資料的一個小批次</strong>：batch 只有 4 張，平均剛好是 \(\mu_{batch}=2.0\)（小批次的平均很容易偏）。</li>
-      <li><strong>如果 BN 在 train 模式</strong>（\(m=0.1\)）：\(0.9\times0.5+0.1\times2.0=0.45+0.2=0.65\)，一個批次就被拉走 0.15。
-        <span class="why">訓練時 BN 還會直接用這 4 張的平均來正規化，後面每一層看到的輸入分布都跟著晃動，原本學到的特徵就被打亂。</span></li>
-      <li><strong>設成 eval 模式</strong>：running mean 保持 0.5，正規化用的是預訓練的穩定統計量。
-        <span class="why">這就是 Last-k 提醒「凍結層的 BN 要另外設 eval」的原因：只把 requires_grad 關掉，running mean 仍會被更新。</span></li>
-    </ol>
+  <h2 id="glossary">3. 關鍵名詞表</h2>
+  <div class="table-wrap">
+    <table class="glossary">
+      <tr><th>名詞（中／英）</th><th>定義</th><th>一句話直覺解釋</th></tr>
+      <tr><td>遷移學習（Transfer Learning）</td><td>把在來源任務學到的模型用到目標任務</td><td>站在巨人的肩膀上</td></tr>
+      <tr><td>預訓練模型（Pretrained Model）</td><td>已在大型資料集（如 ImageNet）訓練好的模型</td><td>借來的「眼睛」</td></tr>
+      <tr><td>卷積基底（Convolutional Base）</td><td>卷積層與池化層，負責擷取特徵</td><td>看圖的部分</td></tr>
+      <tr><td>分類層（Classifier Head）</td><td>全連接層與輸出層，對應類別</td><td>下判斷的部分</td></tr>
+      <tr><td>凍結（Freeze）</td><td>訓練時不更新某些層的權重</td><td>這幾層上鎖</td></tr>
+      <tr><td>特徵提取（Feature Extraction）</td><td>凍結基底，只訓練新的分類層</td><td>眼睛照用，只換大腦</td></tr>
+      <tr><td>微調（Fine-tuning）</td><td>解凍部分或全部預訓練層，用小學習率再訓練</td><td>眼睛也稍微調一下焦</td></tr>
+      <tr><td>來源／目標領域（Source／Target Domain）</td><td>預訓練用的資料／新任務的資料</td><td>從哪裡學來、要用到哪裡</td></tr>
+      <tr><td>領域差距（Domain Gap）</td><td>來源與目標資料分布的差異</td><td>自然照片 vs X 光片差多遠</td></tr>
+      <tr><td>優化器狀態（Optimizer State）</td><td>優化器為每個可訓練參數額外保存的資料（如 momentum 速度）</td><td>每個參數旁邊的小筆記</td></tr>
+      <tr><td>Last-k Fine-tuning</td><td>只解凍最後 \(k\) 個 layer／block</td><td>只調最靠近輸出的幾層</td></tr>
+      <tr><td>參數高效微調（Parameter-Efficient Fine-tuning, PEFT）</td><td>凍結大部分模型，只訓練極少量參數</td><td>不動本體，只加小外掛</td></tr>
+      <tr><td>低秩適應（Low-Rank Adaptation, LoRA）</td><td>\(h=W_0x+BAx\)，只訓練低秩矩陣 \(B\)、\(A\)</td><td>用兩個細長矩陣表示權重的修改量</td></tr>
+      <tr><td>秩（Rank）\(r\)</td><td>\(BA\) 的秩上限，決定 LoRA 參數量</td><td>修改量的「自由度」</td></tr>
+      <tr><td>Adapter</td><td>在層之間插入的小型可訓練模組 <span class="tag add">補充</span></td><td>串接上去的小外掛，推論時要多算</td></tr>
+      <tr><td>Visual Prompt Tuning（VPT）</td><td>在輸入 token 前加上可訓練的 prompt 向量 <span class="tag add">補充</span></td><td>給模型多看幾個可學的提示</td></tr>
+      <tr><td>L2-SP（L2 Starting Point）</td><td>\(\Omega(w)=\frac{\alpha}{2}\lVert w-w^0\rVert^2\)</td><td>用橡皮筋把權重綁在預訓練值附近</td></tr>
+      <tr><td>權重衰減（Weight Decay）</td><td>\(\frac{\alpha}{2}\lVert w\rVert^2\)，把權重拉向 0（C3 的 L2 正則化）</td><td>橡皮筋綁在原點</td></tr>
+      <tr><td>Vision Transformer（ViT）</td><td>把影像切成 patch、用 Transformer 處理的模型 <span class="tag add">補充</span></td><td>LoRA 最常套用的對象</td></tr>
+    </table>
   </div>
 
-  <h3>4.6 多任務儲存 <span class="tag add">補充</span></h3>
-  <ul>
-    <li>\(N\) 個任務、backbone \(P\) 個參數、每個任務的小模組 \(p\) 個參數：Full FT 每個任務存一整份 → \(N\times P\)；PEFT 共用 backbone → \(P+N\times p\)</li>
-    <li>例：ViT-Base 約 86M、\(r=8\) 的 LoRA（Q／K／V／O）約 0.59M、10 個任務：Full FT 約 860M vs LoRA 約 86M + 5.9M ≈ 92M（<a href="#w-lora">LoRA 元件</a>下半部）</li>
-  </ul>
-
-  <h2 id="compare">5. 方法比較</h2>
-  <h3>5.1 特徵提取 vs 微調</h3>
+  <h2 id="compare">4. 方法比較</h2>
+  <h3>4.1 特徵提取 vs 微調</h3>
   <div class="table-wrap">
     <table>
       <tr><th></th><th>特徵提取</th><th>微調</th></tr>
@@ -471,7 +496,7 @@
     </table>
   </div>
 
-  <h3>5.2 四種微調方式</h3>
+  <h3>4.2 四種微調方式</h3>
   <div class="table-wrap">
     <table>
       <tr><th>方式</th><th>可訓練參數</th><th>代表做法</th><th>優點</th><th>缺點</th><th>常用於</th></tr>
@@ -482,7 +507,7 @@
     </table>
   </div>
 
-  <h3>5.3 LoRA vs Adapter vs VPT 推論成本</h3>
+  <h3>4.3 LoRA vs Adapter vs VPT 推論成本</h3>
   <div class="table-wrap">
     <table>
       <tr><th>方法</th><th>加在哪</th><th>推論成本</th></tr>
@@ -492,7 +517,7 @@
     </table>
   </div>
 
-  <h3>5.4 L2-SP vs Weight Decay</h3>
+  <h3>4.4 L2-SP vs Weight Decay</h3>
   <div class="table-wrap">
     <table>
       <tr><th></th><th>Weight Decay（C3 L2）</th><th>L2-SP</th></tr>
@@ -503,7 +528,7 @@
     </table>
   </div>
 
-  <h2 id="figures">6. 圖表說明</h2>
+  <h2 id="figures">5. 圖表說明</h2>
   <ul>
     <li><strong>卷積基底／分類層圖</strong>：預訓練網路左半是卷積與池化（卷積基底），右半是全連接與輸出（分類層）。</li>
     <li><strong>特徵提取器圖</strong>：卷積基底上鎖（凍結），原分類層被移除、換成新的分類層。</li>
@@ -517,7 +542,7 @@
     <li><strong>LoRA 矩陣圖</strong>：標題是 \(h=W_0x+BAx\)。左邊是 \(d\times k\) 的大方塊 \(W_0\)，畫了一個鎖，標「預訓練權重 \(W_0\)，凍結不更新」；右邊是 \(d\times r\) 的細長 \(B\) 乘上 \(r\times k\) 的扁平 \(A\)，下方標「\(BA=\Delta W\)：權重的變化量（可訓練）」。\(BA\) 大小與 \(W_0\) 相同，但秩 ≤ \(r\)，只需少量參數（<a href="#w-lora">2.11 的元件</a>依比例重畫）。</li>
   </ul>
 
-  <h2 id="traps">7. 常見觀念陷阱</h2>
+  <h2 id="traps">6. 常見觀念陷阱</h2>
   <ul>
     <li><strong>微調要先訓練 head 再解凍</strong>：隨機初始化的 head 一開始梯度很大，會破壞預訓練權重。</li>
     <li><strong>微調通常解凍「深層」</strong>：淺層是通用特徵（邊緣、紋理），深層才和原資料集相關。</li>
@@ -534,7 +559,7 @@
     <li><strong>新的分類 head 沒有預訓練值</strong>，所以 L2-SP 對 head 改用一般 L2。</li>
   </ul>
 
-  <h2 id="quiz">8. 自我測驗</h2>
+  <h2 id="quiz">7. 自我測驗</h2>
   <div class="quiz" data-answer="B">
     <p class="q">1.（選擇）微調時建議先只訓練新的分類層，再解凍預訓練層，主要原因是？</p>
     <div class="opts">
