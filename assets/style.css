@@ -14,6 +14,7 @@
   --pos: #1f8a4c;
   --neg: #c9372c;
   --hl: #fff1b8;
+  --mk-y: #ffe98a; --mk-g: #c8f0d2; --mk-p: #ffd3e4; --mk-r: #d1242f; --mk-b: #1f5fd1;
   --hl-strong: #ffd54a;
   --tag-add-bg: #e3f4ea; --tag-add-fg: #1f7a45;
   --tag-chk-bg: #fdeccd; --tag-chk-fg: #9a5b00;
@@ -30,6 +31,7 @@
     --c-a: #ff7b72; --c-b: #6ea0ff; --c-c: #f2c14e;
     --pos: #4cc27f; --neg: #ff7b72;
     --hl: #4a4220; --hl-strong: #8a7420;
+    --mk-y: #6b5a12; --mk-g: #1f4d30; --mk-p: #5e2741; --mk-r: #ff8a80; --mk-b: #8ab4ff;
     --tag-add-bg: #1d3a2a; --tag-add-fg: #7ddba4;
     --tag-chk-bg: #3d2f14; --tag-chk-fg: #f2c14e;
     --shadow: none;
@@ -43,6 +45,7 @@
   --c-a: #ff7b72; --c-b: #6ea0ff; --c-c: #f2c14e;
   --pos: #4cc27f; --neg: #ff7b72;
   --hl: #4a4220; --hl-strong: #8a7420;
+  --mk-y: #6b5a12; --mk-g: #1f4d30; --mk-p: #5e2741; --mk-r: #ff8a80; --mk-b: #8ab4ff;
   --tag-add-bg: #1d3a2a; --tag-add-fg: #7ddba4;
   --tag-chk-bg: #3d2f14; --tag-chk-fg: #f2c14e;
   --shadow: none;
@@ -269,3 +272,29 @@ details.answer > div { margin-top: 8px; padding: 10px 14px; background: var(--su
 
 .katex-display { overflow-x: auto; overflow-y: hidden; padding: 4px 0; }
 footer { color: var(--text-2); font-size: .85rem; margin-top: 60px; }
+
+/* ===== 螢光筆 ===== */
+mark.cv-mark { color: inherit; background: none; border-radius: 2px; cursor: pointer; }
+mark.cv-mark[data-c="y"] { background: var(--mk-y); }
+mark.cv-mark[data-c="g"] { background: var(--mk-g); }
+mark.cv-mark[data-c="p"] { background: var(--mk-p); }
+mark.cv-mark[data-c="r"] { color: var(--mk-r); font-weight: 600; }
+mark.cv-mark[data-c="b"] { color: var(--mk-b); font-weight: 600; }
+.hl-tool {
+  position: absolute; z-index: 50; display: flex; flex-wrap: wrap; gap: 6px; align-items: center;
+  max-width: calc(100vw - 16px); padding: 6px 8px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+  box-shadow: 0 4px 16px rgba(0,0,0,.18);
+}
+.hl-tool[hidden] { display: none; }
+.hl-sw {
+  width: 28px; height: 28px; padding: 0; border-radius: 50%; cursor: pointer;
+  border: 2px solid var(--border); background: var(--surface); font-weight: 700; font-size: .95rem;
+}
+.hl-sw.on { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
+.hl-sw[data-c="y"] { background: var(--mk-y); }
+.hl-sw[data-c="g"] { background: var(--mk-g); }
+.hl-sw[data-c="p"] { background: var(--mk-p); }
+.hl-sw[data-c="r"] { color: var(--mk-r); }
+.hl-sw[data-c="b"] { color: var(--mk-b); }
+.hl-tool .btn { padding: 3px 10px; font-size: .85rem; }

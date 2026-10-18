@@ -283,6 +283,154 @@
     upd();
   }
 
+  /* ---------- 螢光筆 ---------- */
+  // 選取 <main> 裡的文字 → 跳出色票；點已標記的文字可換色或移除。
+  // 標記以「純文字位置＋原文」存在 localStorage（cv-hl:<chapter>），只留在這個瀏覽器。
+  // 互動元件、公式、按鈕裡的文字會變動，不能標記，也不算進位置。
+  const MARKS = [
+    { c: 'y', label: '黃底' }, { c: 'g', label: '綠底' }, { c: 'p', label: '粉底' },
+    { c: 'r', label: '紅字' }, { c: 'b', label: '藍字' },
+  ];
+  const HL_SKIP = '.widget, .katex, script, style, button, .steps-ctrl, .hl-tool';
+
+  function initHighlighter() {
+    const chapter = document.body.dataset.chapter;
+    const main = $('main');
+    if (!chapter || !main) return;
+    const key = 'cv-hl:' + chapter;
+    let list = [];
+    try { list = JSON.parse(store(key) || '[]'); } catch (e) { list = []; }
+    const save = () => store(key, JSON.stringify(list));
+
+    // 可標記的文字節點與其在全文中的起點
+    function textNodes() {
+      const out = [];
+      const walker = document.createTreeWalker(main, NodeFilter.SHOW_TEXT, {
+        acceptNode: (n) => (n.parentElement.closest(HL_SKIP) ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT),
+      });
+      let base = 0;
+      for (let n = walker.nextNode(); n; n = walker.nextNode()) { out.push({ n, base }); base += n.length; }
+      return out;
+    }
+
+    function rangeToOffsets(range) {
+      let s = Infinity, e = -Infinity;
+      for (const { n, base } of textNodes()) {
+        if (!range.intersectsNode(n)) continue;
+        const st = n === range.startContainer ? range.startOffset : 0;
+        const en = n === range.endContainer ? range.endOffset : n.length;
+        if (en > st) { s = Math.min(s, base + st); e = Math.max(e, base + en); }
+      }
+      return s < e ? { s, e } : null;
+    }
+
+    function wrap(h) {
+      const nodes = textNodes();
+      const full = nodes.map((x) => x.n.data).join('');
+      let { s, e } = h;
+      if (full.slice(s, e) !== h.text) {       // 內容改過：改用原文找
+        s = full.indexOf(h.text);
+        if (s < 0) return false;
+        e = s + h.text.length;
+      }
+      const segs = [];
+      for (const { n, base } of nodes) {
+        const a = Math.max(s, base) - base, b = Math.min(e, base + n.length) - base;
+        if (b > a && n.data.slice(a, b).trim()) segs.push([n, a, b]);
+      }
+      for (let [n, a, b] of segs) {
+        if (b < n.length) n.splitText(b);
+        if (a > 0) n = n.splitText(a);
+        const m = el('mark', { class: 'cv-mark', 'data-c': h.c, 'data-id': h.id });
+        n.replaceWith(m);
+        m.append(n);
+      }
+      return segs.length > 0;
+    }
+
+    function unwrap(id) {
+      for (const m of $$(`mark.cv-mark[data-id="${id}"]`, main)) {
+        const p = m.parentNode;
+        m.replaceWith(...m.childNodes);
+        p.normalize();
+      }
+    }
+
+    // 浮動工具列
+    const tool = el('div', { class: 'hl-tool', hidden: '' });
+    document.body.append(tool);
+    tool.addEventListener('mousedown', (ev) => ev.preventDefault());   // 不要讓點按鈕清掉選取
+    const hide = () => { tool.hidden = true; };
+
+    function show(rect, buttons) {
+      tool.replaceChildren(...buttons);
+      tool.hidden = false;
+      const vw = document.documentElement.clientWidth;
+      const w = tool.offsetWidth;
+      const x = Math.max(8, Math.min(vw - w - 8, rect.left + rect.width / 2 - w / 2));
+      tool.style.left = x + window.scrollX + 'px';
+      tool.style.top = rect.bottom + window.scrollY + 8 + 'px';
+    }
+
+    const swatch = (c, label, current, onPick) => el('button', {
+      type: 'button', class: 'hl-sw' + (c === current ? ' on' : ''), 'data-c': c, title: label, 'aria-label': label,
+      text: c === 'r' || c === 'b' ? 'A' : '', onclick: onPick,
+    });
+
+    function onSelect() {
+      const sel = window.getSelection();
+      if (!sel.rangeCount || sel.isCollapsed) return;
+      const range = sel.getRangeAt(0);
+      const inMain = (node) => main.contains(node) && !(node.nodeType === 1 ? node : node.parentElement).closest('.widget');
+      if (!inMain(range.startContainer) || !inMain(range.endContainer)) return;
+      const off = rangeToOffsets(range);
+      if (!off) return;
+      show(range.getBoundingClientRect(), MARKS.map((m) => swatch(m.c, m.label, null, () => {
+        const full = textNodes().map((x) => x.n.data).join('');
+        const h = { id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), c: m.c, ...off, text: full.slice(off.s, off.e) };
+        sel.removeAllRanges();
+        if (wrap(h)) { list.push(h); save(); }
+        hide();
+      })));
+    }
+
+    function onMarkClick(mark) {
+      const h = list.find((x) => x.id === mark.dataset.id);
+      if (!h) return;
+      const recolor = (c) => () => {
+        h.c = c; save();
+        $$(`mark.cv-mark[data-id="${h.id}"]`, main).forEach((m) => { m.dataset.c = c; });
+        hide();
+      };
+      const del = el('button', { type: 'button', class: 'btn', text: '移除', onclick: () => {
+        unwrap(h.id); list = list.filter((x) => x !== h); save(); hide();
+      } });
+      const clearAll = el('button', { type: 'button', class: 'btn', text: '清除本頁全部' });
+      clearAll.addEventListener('click', () => {
+        if (clearAll.dataset.armed) {
+          list.forEach((x) => unwrap(x.id)); list = []; save(); hide();
+        } else {
+          clearAll.dataset.armed = '1';
+          clearAll.textContent = `再按一次清除 ${list.length} 個`;
+        }
+      });
+      show(mark.getBoundingClientRect(), [...MARKS.map((m) => swatch(m.c, m.label, h.c, recolor(m.c))), del, clearAll]);
+    }
+
+    document.addEventListener('mouseup', (ev) => { if (!tool.contains(ev.target)) setTimeout(onSelect, 0); });
+    document.addEventListener('keyup', (ev) => { if (ev.shiftKey) onSelect(); });
+    document.addEventListener('touchend', () => setTimeout(onSelect, 300));
+    document.addEventListener('mousedown', (ev) => { if (!tool.contains(ev.target)) hide(); });
+    document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape') hide(); });
+    main.addEventListener('click', (ev) => {
+      const mark = ev.target.closest('mark.cv-mark');
+      if (mark && window.getSelection().isCollapsed) onMarkClick(mark);
+    });
+
+    // 公式渲染後才還原，位置才會跟選取時一致；找不到的先保留，不刪
+    list.forEach(wrap);
+  }
+
   /* ---------- 首頁 ---------- */
   function buildHome() {
     const cards = $('#chapter-cards');
@@ -322,5 +470,5 @@
     buildToc();
   });
   // KaTeX 以 defer 載入，等全部載完再渲染
-  window.addEventListener('load', () => renderMath());
+  window.addEventListener('load', () => { renderMath(); initHighlighter(); });
 })();
