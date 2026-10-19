@@ -85,6 +85,16 @@
   </ul>
   <p><strong>垂直邊緣偵測例子</strong>：輸入每列都是 1 1 0 0 0（左亮右暗），濾波器每列都是 1 0 −1 → 輸出每列都是 3 3 0，在亮暗交界處出現大值 3。（在 <a href="#w-conv">卷積元件</a>選「左亮右暗」＋「垂直邊緣偵測器」驗證。）</p>
 
+  <div class="callout use">
+    <p><strong>🎯 目的</strong>：用一個小濾波器在圖上滑動，每個位置算一次加權總和，偵測局部的特徵（例如邊緣、紋理）。</p>
+    <p><strong>🔁 後續用途</strong> <span class="tag add">補充</span></p>
+    <ul>
+      <li>輸出的特徵圖接著交給 ReLU、Pooling，再送進下一層卷積；層數越多，偵測到的特徵從邊緣、紋理逐漸變成物件的部件。</li>
+      <li>濾波器裡的數字不是人設定的，而是用 C1 的反向傳播與梯度下降學出來的。</li>
+      <li>C4 的 1×1 卷積、Depthwise Separable Convolution 都是這個運算的變形。</li>
+    </ul>
+  </div>
+
   <div class="steps">
     <p class="steps-title">逐步展開：一個輸出格子怎麼算（以講義例子第 2 列第 3 格 = 3 為例）</p>
     <ol>
@@ -161,6 +171,16 @@
   <p>一般式（含 padding 與 stride）<span class="tag add">補充</span>：</p>
   $$m=\left\lfloor\frac{n+2p-f}{s}\right\rfloor+1$$
   <p>\(p\)：padding 圈數；\(s\)：stride。池化也適用這個公式。</p>
+
+  <div class="callout use">
+    <p><strong>🎯 目的</strong>：事先算出卷積之後輸出有多大（長、寬、通道數）。</p>
+    <p><strong>🔁 後續用途</strong> <span class="tag add">補充</span></p>
+    <ul>
+      <li>設計網路時決定 padding、stride，讓前後層的尺寸對得上。</li>
+      <li>推算 Flatten 之後的向量長度，才能算全連接層的參數量（下面的參數量公式）。</li>
+      <li>C4 每個架構（VGG、Inception、ResNet、DenseNet）的尺寸表都是用它一層一層推出來的。</li>
+    </ul>
+  </div>
 
   <div class="steps">
     <p class="steps-title">逐步展開：自我測驗第 4 題（64×64×3 → 16 個 3×3，s1、p1 → 2×2 Max Pool，stride 2）</p>
@@ -245,6 +265,16 @@
   $$y=W_1x,\quad z=W_2y=W_2(W_1x)=(W_2W_1)x=W_{new}\,x$$
   <p>加上激活函數 \(f\) 後：\(z=W_2\,f(W_1x)\)，\(W_2\) 與 \(f\) 無法合併。</p>
 
+  <div class="callout use">
+    <p><strong>🎯 目的</strong>：把負值歸零，替卷積後的線性結果加入非線性；並說明沒有激活函數時，多層網路會塌成一層。</p>
+    <p><strong>🔁 後續用途</strong> <span class="tag add">補充</span></p>
+    <ul>
+      <li>接在每一個卷積層後面，是 CNN 最常用的激活函數。</li>
+      <li>正值區斜率固定是 1，不像 Sigmoid／Tanh 會梯度消失，深層 CNN 才訓練得動。</li>
+      <li>C1 2.8 的 Leaky ReLU、ELU 是它的改良，補上負值區的斜率。</li>
+    </ul>
+  </div>
+
   <div class="steps">
     <p class="steps-title">逐步展開：用數字看「為什麼需要非線性」<span class="tag add">補充</span></p>
     <ol>
@@ -294,6 +324,16 @@
   <h4 class="formula-head">公式：參數量</h4>
   $$\text{Conv 層}=\big((f_h\times f_w\times d)+1\big)\times N_f,\qquad \text{FC 層}=(L+1)\times N_{nodes}$$
   <p>\(f_h, f_w\)：濾波器高、寬；\(d\)：輸入深度（頻道數）；\(+1\)：每個濾波器一個 bias（純量）；\(N_f\)：濾波器數；\(L\)：輸入向量長度；\(N_{nodes}\)：該層節點數。</p>
+
+  <div class="callout use">
+    <p><strong>🎯 目的</strong>：算出每一層有多少個要學習的權重。</p>
+    <p><strong>🔁 後續用途</strong> <span class="tag add">補充</span></p>
+    <ul>
+      <li>估計模型大小與記憶體：每個參數用 4 bytes（FP32）儲存。</li>
+      <li>找出參數集中在哪裡：MNIST 例子中全連接層就佔了約 98%。</li>
+      <li>C4 的 GAP、瓶頸層、Depthwise 都是在減少這個數字；C5 決定凍結哪幾層時，看的也是可訓練參數量。</li>
+    </ul>
+  </div>
 
   <div class="steps">
     <p class="steps-title">逐步展開：講義的 MNIST CNN，合計 1,199,882 怎麼來</p>

@@ -62,6 +62,15 @@
     </table>
   </div>
 
+  <div class="callout use">
+    <p><strong>🎯 目的</strong>：用最早的 CNN 練習一層一層推算輸出尺寸與參數量。</p>
+    <p><strong>🔁 後續用途</strong> <span class="tag add">補充</span></p>
+    <ul>
+      <li>熟悉「卷積 → 池化 → 全連接」的計算流程，後面 VGG、ResNet 都用同樣的方法推算。</li>
+      <li>可以看出參數主要集中在全連接層，這也是後來 GAP 要取代全連接層的原因。</li>
+    </ul>
+  </div>
+
   <div class="steps">
     <p class="steps-title">逐步展開：LeNet 的尺寸一路怎麼變（不考，但是很好的尺寸練習）</p>
     <ol>
@@ -104,6 +113,15 @@
     <li><strong>乘法次數和 \(N\) 有關</strong>：圖越大，filter 要停的位置越多，每個位置都要算一次。</li>
     <li>所以「參數少」和「運算少」是兩回事，這是 SqueezeNet 和 MobileNet 差別的關鍵。</li>
   </ul>
+
+  <div class="callout use">
+    <p><strong>🎯 目的</strong>：一次掌握一層卷積的輸出尺寸、參數量、乘法次數。</p>
+    <p><strong>🔁 後續用途</strong> <span class="tag add">補充</span></p>
+    <ul>
+      <li>本章所有「省運算」的設計（1×1 瓶頸層、Fire module、Depthwise Separable、GAP），都是用這三個數字比較改前改後差多少。</li>
+      <li>判斷模型能不能放上手機、能不能即時執行：參數量決定佔多少記憶體，乘法次數決定跑多快。</li>
+    </ul>
+  </div>
 
   <div class="steps">
     <p class="steps-title">逐步展開：講義例子 12×12×3 輸入、128 個 5×5 filter、padding 0、stride 1</p>
@@ -201,6 +219,16 @@
 
   <h4 class="formula-head">公式：1×1 卷積到底在算什麼 <span class="tag add">補充</span></h4>
   <p>1×1 卷積的 filter 只有 1×1 大小，看起來好像「什麼都沒做」，但它的深度是 \(C_{in}\)：它在<strong>每一個像素位置</strong>，把該位置的所有通道做加權相加。所以它不看鄰居（不改變寬高），只負責<strong>混合、增減通道數</strong>。</p>
+  <div class="callout use">
+    <p><strong>🎯 目的</strong>：在每一個像素位置，把所有通道加權組合，改變通道數但不改變長寬。</p>
+    <p><strong>🔁 後續用途</strong> <span class="tag add">補充</span></p>
+    <ul>
+      <li>降維：在昂貴的 3×3、5×5 卷積前先壓少通道，就是 Inception 與 ResNet-50 的瓶頸層，以及 C4-2 的 DenseNet-B。</li>
+      <li>Depthwise Separable Convolution 的第二步（pointwise）就是 1×1 卷積，負責混合通道。</li>
+      <li>後面再接 ReLU，還能多加一層非線性。</li>
+    </ul>
+  </div>
+
   <div class="steps">
     <p class="steps-title">逐步展開：某個像素有 3 個通道 \((2,\ 1,\ 3)\)，用 2 個 1×1 filter</p>
     <ol>
@@ -222,6 +250,15 @@
     <li>再 5×5 輸出 32 通道：\(28\times28\times32\times(5\times5\times16)=10{,}035{,}200\approx10\text{M}\)</li>
     <li>合計約 12.4M，約為原本的 1/10</li>
   </ul>
+
+  <div class="callout use">
+    <p><strong>🎯 目的</strong>：在大卷積之前先用 1×1 把通道壓少，算出能省下多少乘法。</p>
+    <p><strong>🔁 後續用途</strong> <span class="tag add">補充</span></p>
+    <ul>
+      <li>讓 Inception module 能平行放 1×1、3×3、5×5 等多種卷積，運算量卻不會爆炸。</li>
+      <li>同樣的想法出現在 ResNet-50 的 bottleneck block 與 C4-2 的 DenseNet-B。</li>
+    </ul>
+  </div>
 
   <div class="steps">
     <p class="steps-title">逐步展開：28×28×192 → 32 通道，直接用 5×5 vs 先用 1×1 壓到 16</p>
@@ -305,6 +342,16 @@
     <li><span class="tag add">補充</span>梯度消失／爆炸的數值感：20 層每層導數 0.5 → \(0.5^{20}\approx9.5\times10^{-7}\)；每層 1.5 → \(1.5^{20}\approx3{,}325\)（在 <a href="#w-res">2.5 的元件</a>下半部可以驗證）</li>
   </ul>
 
+  <div class="callout use">
+    <p><strong>🎯 目的</strong>：讓每一層只學「殘差」\(F(x)=H(x)-x\)，並保留一條直接把 \(x\) 加回來的捷徑。</p>
+    <p><strong>🔁 後續用途</strong> <span class="tag add">補充</span></p>
+    <ul>
+      <li>反向傳播時梯度可以經由那個「+1」直接傳回前面的層，解決深層網路的梯度消失與退化問題，網路才能疊到上百層。</li>
+      <li>C4-2 的 DenseNet 把「相加」換成「串接」，是同一個想法的延伸。</li>
+      <li>C5 遷移學習最常用的骨幹就是 ResNet-50。</li>
+    </ul>
+  </div>
+
   <div class="steps">
     <p class="steps-title">逐步展開：梯度為什麼會消失，「+1」為什麼有用 <span class="tag add">補充</span></p>
     <ol>
@@ -364,6 +411,16 @@
     <li>可以在 <a href="#w-gap">2.6 的元件</a>改特徵圖大小比較</li>
   </ul>
 
+  <div class="callout use">
+    <p><strong>🎯 目的</strong>：把每個通道的特徵圖平均成一個數，取代「展平 ＋ 大型全連接層」，算出能省多少參數。</p>
+    <p><strong>🔁 後續用途</strong> <span class="tag add">補充</span></p>
+    <ul>
+      <li>大幅減少參數、降低過擬合；而且不再受固定的 Flatten 長度限制，輸入圖片的尺寸可以改變。</li>
+      <li>GoogLeNet、ResNet、MobileNet 都用 GAP 接分類層。</li>
+      <li>C5 遷移學習換成新任務時，只要換掉 GAP 後面那一層（例如 2048 → 10）。</li>
+    </ul>
+  </div>
+
   <div class="steps">
     <p class="steps-title">逐步展開：7×7×512 接到分類器，Flatten＋FC vs GAP</p>
     <ol>
@@ -392,6 +449,15 @@
   <p>\(H, W\)：輸出特徵圖高寬；\(C_{in}, C_{out}\)：輸入／輸出通道數；\(k\)：kernel 大小。寬度（通道數）或解析度加倍 → FLOPS × 4；深度（層數）加倍 → FLOPS × 2。</p>
   <p>參數量則和 \(H, W\) 無關：\((k^2C_{in}+1)\times C_{out}\)。這就是「解析度只影響運算、不影響參數」的原因（見 <a href="#w-mob">2.9</a>）<span class="tag add">補充</span>。</p>
   <p>公式裡的 \(\propto\) 讀作「正比於」：不在乎確切的數字，只在乎「某個東西變成 2 倍，運算量變幾倍」。</p>
+
+  <div class="callout use">
+    <p><strong>🎯 目的</strong>：估計一層卷積的計算成本，並看出各個因素放大時運算量會變幾倍。</p>
+    <p><strong>🔁 後續用途</strong> <span class="tag add">補充</span></p>
+    <ul>
+      <li>判斷模型在手機、嵌入式裝置或即時應用上跑不跑得動。</li>
+      <li>解釋 MobileNet 的 \(\alpha\)、\(\rho\) 為什麼是平方關係，以及 EfficientNet compound scaling 的係數條件 \(\alpha\beta^2\gamma^2\approx2\)。</li>
+    </ul>
+  </div>
 
   <div class="steps">
     <p class="steps-title">逐步展開：一層 28×28、64 → 64 通道的 3×3 卷積，分別把寬度、解析度、深度加倍 <span class="tag add">補充</span></p>
@@ -468,6 +534,15 @@
     <li>可以在 <a href="#w-fire">2.8 的計算器</a>驗算</li>
   </ul>
 
+  <div class="callout use">
+    <p><strong>🎯 目的</strong>：用 squeeze（1×1 壓通道）＋ expand（1×1 與 3×3 並行）組成一個模組，算出它比一般 3×3 卷積省多少參數。</p>
+    <p><strong>🔁 後續用途</strong> <span class="tag add">補充</span></p>
+    <ul>
+      <li>SqueezeNet 由多個 Fire module 疊成，讓模型小到可以放進記憶體有限的裝置。</li>
+      <li>和 Inception 瓶頸層一樣，都是「先壓通道、再做昂貴卷積」的思路。</li>
+    </ul>
+  </div>
+
   <div class="steps">
     <p class="steps-title">逐步展開：fire2（輸入 96 通道、\(s_{1\times1}=16\)、\(e_{1\times1}=64\)、\(e_{3\times3}=64\)）</p>
     <ol>
@@ -511,6 +586,15 @@
   <p><span class="tag add">補充</span>一般式：</p>
   $$\frac{\text{Depthwise Separable}}{\text{一般卷積}}=\frac{HWC_{in}k^2+HWC_{in}C_{out}}{HWC_{in}C_{out}k^2}=\frac{1}{C_{out}}+\frac{1}{k^2}$$
   <p>驗證：\(1/128+1/25\approx0.0478\approx1/20.9\)；3×3 kernel 時約省 8～9 倍。</p>
+
+  <div class="callout use">
+    <p><strong>🎯 目的</strong>：把一般卷積拆成「每個通道各自做空間卷積」＋「1×1 混合通道」兩步，大幅減少乘法次數。</p>
+    <p><strong>🔁 後續用途</strong> <span class="tag add">補充</span></p>
+    <ul>
+      <li>是 MobileNet 的核心，讓 CNN 能在手機上即時執行。</li>
+      <li>同樣的拆法也用在後來的 EfficientNet 等輕量模型。</li>
+    </ul>
+  </div>
 
   <div class="steps">
     <p class="steps-title">逐步展開：講義例子（12×12×3、5×5、輸出 8×8×128）</p>
@@ -557,6 +641,15 @@
     <li>例：64 → 128 通道的層，α = 0.5 → 32 → 64；運算量與參數量約變 \(0.5^2=0.25\) 倍</li>
     <li>例：解析度 224 → 160，\(\rho\approx0.714\)，運算量約變 \(0.714^2\approx0.51\) 倍，參數量不變</li>
   </ul>
+
+  <div class="callout use">
+    <p><strong>🎯 目的</strong>：用兩個旋鈕按比例縮小模型：\(\alpha\) 縮通道寬度、\(\rho\) 縮輸入解析度。</p>
+    <p><strong>🔁 後續用途</strong> <span class="tag add">補充</span></p>
+    <ul>
+      <li>依裝置效能在準確率與速度之間取捨，不必重新設計架構。</li>
+      <li>\(\alpha\) 同時省運算與參數；\(\rho\) 只省運算（參數量和解析度無關），要省記憶體就要調 \(\alpha\)。</li>
+    </ul>
+  </div>
 
   <div class="steps">
     <p class="steps-title">逐步展開：為什麼 α 是平方、ρ 不影響參數？（以一般 3×3 卷積 64 → 128、特徵圖 112×112 為例）<span class="tag add">補充</span></p>
@@ -617,6 +710,14 @@
     <li>φ 每增加 1，總運算量約加倍；寬度與解析度平方是因為 FLOPS 與它們成平方關係（見 2.7）</li>
     <li>驗證 B0 係數：\(1.2\times1.1^2\times1.15^2=1.2\times1.21\times1.3225\approx1.92\approx2\)</li>
   </ul>
+
+  <div class="callout use">
+    <p><strong>🎯 目的</strong>：用一個係數 \(\phi\) 同時按比例放大深度、寬度、解析度，而且 \(\phi\) 每加 1 運算量約加倍。</p>
+    <p><strong>🔁 後續用途</strong> <span class="tag add">補充</span></p>
+    <ul>
+      <li>有更多運算資源時，知道該怎麼平衡地放大模型（B0 → B7），而不是只加深或只加寬。</li>
+    </ul>
+  </div>
 
   <div class="steps">
     <p class="steps-title">逐步展開：φ = 1 和 φ = 2 時各放大幾倍</p>

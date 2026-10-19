@@ -63,6 +63,15 @@
   </ul>
 
   <h4 class="formula-head">公式：相加 vs 串接的數字例子 <span class="tag add">補充</span></h4>
+  <div class="callout use">
+    <p><strong>🎯 目的</strong>：用數字看出 ResNet 的「相加」會把舊特徵和新特徵混在一起，DenseNet 的「串接」則全部保留。</p>
+    <p><strong>🔁 後續用途</strong> <span class="tag add">補充</span></p>
+    <ul>
+      <li>理解 DenseNet 的通道數為什麼一層一層增加（下一個公式）。</li>
+      <li>解釋 DenseNet 每層可以很窄、前面的特徵能被後面每一層重複使用的原因。</li>
+    </ul>
+  </div>
+
   <div class="steps">
     <p class="steps-title">逐步展開：某個像素位置，\(x_0=(1,\ 2)\)、新算出的特徵 \(F=(3,\ -1)\)</p>
     <ol>
@@ -112,6 +121,16 @@
     <li>ResNet 對照：相加不改通道數，區塊輸入、輸出都一樣</li>
   </ul>
 
+  <div class="callout use">
+    <p><strong>🎯 目的</strong>：算出 Dense Block 裡每一層的輸入通道數，以及整個區塊的輸出通道數。</p>
+    <p><strong>🔁 後續用途</strong> <span class="tag add">補充</span></p>
+    <ul>
+      <li>決定過渡層要把多少通道壓下來。</li>
+      <li>計算每一層的參數量：越後面的層輸入通道越多，參數也越多。</li>
+      <li>增長率 \(k\) 是控制模型大小的超參數。</li>
+    </ul>
+  </div>
+
   <div class="steps">
     <p class="steps-title">逐步展開：\(k_0=64\)、\(k=32\)，第 1～6 層各拿到幾個通道？</p>
     <ol>
@@ -153,6 +172,15 @@
     <li>比值 \(&lt;1\iff C&gt;7.2k\)；\(C\) 很大時趨近 \(4/9\approx0.44\)</li>
     <li>同一層的長寬固定，乘法次數和參數量等比例，所以計算量的比值相同</li>
   </ul>
+
+  <div class="callout use">
+    <p><strong>🎯 目的</strong>：比較在 3×3 卷積前先用 1×1 壓到 \(4k\) 通道，權重能省多少，並看出什麼時候划算。</p>
+    <p><strong>🔁 後續用途</strong> <span class="tag add">補充</span></p>
+    <ul>
+      <li>從 \(\frac{4}{9}+\frac{4k}{C}\) 可以看出：輸入通道 \(C\) 比 \(k\) 大很多時（Dense Block 的後段）最省；\(C\) 很小時反而更多。</li>
+      <li>這就是 DenseNet-B 加上 bottleneck 的依據。</li>
+    </ul>
+  </div>
 
   <div class="steps">
     <p class="steps-title">逐步展開：\(k=32\)，DenseNet-121 第 3 區塊最後一層（\(C=992\)）</p>
@@ -205,6 +233,15 @@
     <li>例：DenseNet-121 第一區塊輸出 56×56×256 → 過渡層（\(\theta=0.5\)）→ 28×28×128</li>
   </ul>
 
+  <div class="callout use">
+    <p><strong>🎯 目的</strong>：在兩個 Dense Block 之間，把通道數乘上 \(\theta\) 壓縮、長寬減半。</p>
+    <p><strong>🔁 後續用途</strong> <span class="tag add">補充</span></p>
+    <ul>
+      <li>控制通道數不要無限增長，網路才能接好幾個 Dense Block。</li>
+      <li>\(\theta&lt;1\) 就是 DenseNet-C；配合 bottleneck 就是 DenseNet-BC（DenseNet-121 用的版本）。</li>
+    </ul>
+  </div>
+
   <div class="steps">
     <p class="steps-title">逐步展開：56×56×256 經過過渡層（\(\theta=0.5\)）</p>
     <ol>
@@ -250,6 +287,16 @@
     <li>參數量：逐層加總（卷積無 bias、BN 含 \(\gamma,\beta\)）＝ <strong>7,978,856 ≈ 8.0M</strong>；同等級的 ResNet-50 約 25.6M</li>
   </ul>
 
+  <div class="callout use">
+    <p><strong>🎯 目的</strong>：把前面幾個公式串起來，從輸入一路推到最後的輸出尺寸。</p>
+    <p><strong>🔁 後續用途</strong> <span class="tag add">補充</span></p>
+    <ul>
+      <li>驗算自己對 Dense Block、過渡層的理解是否正確。</li>
+      <li>推算整個網路的參數量（本章「整個網路」元件）。</li>
+      <li>C5 遷移學習換分類層時，要知道最後輸出是 1024 個通道。</li>
+    </ul>
+  </div>
+
   <div class="steps">
     <p class="steps-title">逐步展開：224×224×3 一路算到 DenseNet-121 的輸出</p>
     <ol>
@@ -285,6 +332,14 @@
     <li>DenseNet 一層 3×3、輸入 256、只輸出 \(k=32\)：\(9\times256\times32=73{,}728\)，約 1/8</li>
     <li>ResNet 每層要「承載」所有累積的資訊，所以必須寬；DenseNet 舊資訊都還在，每層只要補上 32 個新特徵</li>
   </ul>
+
+  <div class="callout use">
+    <p><strong>🎯 目的</strong>：比較 ResNet 與 DenseNet 單一層的權重數，說明 DenseNet 為什麼可以很窄。</p>
+    <p><strong>🔁 後續用途</strong> <span class="tag add">補充</span></p>
+    <ul>
+      <li>解釋 DenseNet-121 只有約 8M 參數，卻能和參數多好幾倍的 ResNet 有相近的準確率。</li>
+    </ul>
+  </div>
 
   <div class="steps">
     <p class="steps-title">逐步展開：同樣輸入 256 通道的 3×3 卷積，ResNet 和 DenseNet 各要多少權重</p>

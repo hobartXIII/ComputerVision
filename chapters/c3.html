@@ -70,6 +70,16 @@
   <p>TP：有病且判有病；FN：有病卻判沒病；FP：沒病卻判有病；TN：沒病且判沒病。<span class="tag add">補充</span>F1 公式（講義只寫「調和平均數」）。</p>
   <p><strong>講義 COVID 例子</strong>（由講義數字反推：TP = 90、FN = 10、FP = 5、TN = 40、共 145 人）：</p>
 
+  <div class="callout use">
+    <p><strong>🎯 目的</strong>：從混淆矩陣的不同角度衡量分類器：整體對多少、正類抓到多少、誤報多少。</p>
+    <p><strong>🔁 後續用途</strong> <span class="tag add">補充</span></p>
+    <ul>
+      <li>依應用選指標：疾病篩檢重 Recall（不能漏）、垃圾郵件過濾重 Precision（不能誤殺），F1 兩者兼顧。</li>
+      <li>搭配判斷門檻：門檻往下調 → TPR 上升但 FPR 也上升，要在兩者間取捨（本章的門檻元件）。</li>
+      <li>比較不同模型、或同一模型改進前後的效果，都要用同一組指標。</li>
+    </ul>
+  </div>
+
   <div class="steps">
     <p class="steps-title">逐步展開：講義 COVID 例子（TP 90、FN 10、FP 5、TN 40）</p>
     <ol>
@@ -175,6 +185,16 @@
   <p>\(\beta_j\)：模型參數（weights and biases，共 \(p\) 個）；\(\lambda\)：控制 Penalty 強度，越大越重。符號與講義相同。</p>
   <p>例：權重 \((3,-0.1,0)\)、\(\lambda=0.01\)：L1 penalty \(=0.01\times(3+0.1+0)=0.031\)；L2 penalty \(=0.01\times(9+0.01+0)=0.0901\)。L2 裡大權重 3 貢獻了 0.09、小權重 0.1 幾乎沒影響 → L2 主要壓大權重；L1 對每個權重的「每單位懲罰」一樣，小權重也會被推到 0 <span class="tag add">補充</span>。</p>
 
+  <div class="callout use">
+    <p><strong>🎯 目的</strong>：在損失裡加上「權重大小」的懲罰，不讓模型靠很大的權重硬背訓練資料，藉此降低過擬合。</p>
+    <p><strong>🔁 後續用途</strong> <span class="tag add">補充</span></p>
+    <ul>
+      <li>L2（又稱 weight decay）讓權重整體變小、模型比較平滑，是訓練 CNN 的常見設定。</li>
+      <li>L1 會把不重要的權重推到剛好 0，等於自動挑出重要的特徵。</li>
+      <li>\(\lambda\) 是要調的超參數：太大會欠擬合，太小沒效果。C5 的 L2-SP 把「拉向 0」改成「拉向預訓練權重」。</li>
+    </ul>
+  </div>
+
   <div class="steps">
     <p class="steps-title">逐步展開：為什麼 L1 會把權重推到 0、L2 不會？<span class="tag add">補充</span></p>
     <ol>
@@ -243,6 +263,16 @@
   <h4 class="formula-head">公式：Early Stopping 的例子 <span class="tag add">補充</span></h4>
   <p>若 patience P = 3，Val Loss 依序為 0.50、0.40、0.35、0.36、0.37、0.38 → 第 3 個 epoch 之後連續 3 個 epoch 沒有進步，在第 6 個 epoch 停止，取回第 3 個 epoch 的權重。</p>
 
+  <div class="callout use">
+    <p><strong>🎯 目的</strong>：用驗證集損失決定什麼時候該停止訓練，在開始過擬合之前停下來。</p>
+    <p><strong>🔁 後續用途</strong> <span class="tag add">補充</span></p>
+    <ul>
+      <li>不必事先猜要訓練幾個 epoch，訓練到驗證損失不再進步就自動停。</li>
+      <li>最後取回驗證損失最低那一輪的權重當作模型，而不是最後一輪。</li>
+      <li>patience P 是超參數：太小容易被一兩次波動誤判而太早停，太大則浪費訓練時間。</li>
+    </ul>
+  </div>
+
   <div class="steps">
     <p class="steps-title">逐步展開：P = 3，Val Loss 0.50、0.40、0.35、0.36、0.37、0.38</p>
     <ol>
@@ -309,6 +339,16 @@
   $$\mu_B=\frac{1}{m}\sum_{i=1}^{m}x_i,\quad \sigma_B^2=\frac{1}{m}\sum_{i=1}^{m}(x_i-\mu_B)^2,\quad \hat{x}_i=\frac{x_i-\mu_B}{\sqrt{\sigma_B^2+\epsilon}},\quad y_i=\gamma\hat{x}_i+\beta$$
   $$\text{running\_mean}\leftarrow \text{momentum}\times\text{running\_mean}+(1-\text{momentum})\times\text{batch\_mean}$$
   <p>\(m\)：mini-batch 大小；\(\epsilon\)：避免除以 0 的極小值；\(\gamma,\beta\)：可學習參數。STD 的更新方式相同。</p>
+
+  <div class="callout use">
+    <p><strong>🎯 目的</strong>：把每一層的輸入在 mini-batch 內標準化成平均 0、變異數 1，再用可學習的 \(\gamma\)、\(\beta\) 調回適合的尺度。</p>
+    <p><strong>🔁 後續用途</strong> <span class="tag add">補充</span></p>
+    <ul>
+      <li>訓練更穩定、可以用比較大的學習率、收斂較快，也有輕微的正則化效果。</li>
+      <li>running mean／std 在推論時取代 batch 的統計量（推論時一次可能只有一張圖，算不出 batch 平均）。</li>
+      <li>C5 微調小資料集時，讓 BN 沿用預訓練的統計量，避免小 batch 估得不準。</li>
+    </ul>
+  </div>
 
   <div class="steps">
     <p class="steps-title">逐步展開：batch \((2,4,6,8)\)、γ = 2、β = 1（ε 很小，先忽略）</p>
@@ -419,6 +459,16 @@
     <li>MixUp：例如 \(\lambda=0.7\)，狗圖與貓圖以 7:3 疊在一起，標籤變成「狗 0.7、貓 0.3」</li>
     <li>CutMix：標籤依面積比例混合。例如在 32×32 的 A 圖上貼一塊 16×16 的 B 圖，面積比例 \(256/1024=0.25\) → 標籤為「A 0.75、B 0.25」</li>
   </ul>
+  <div class="callout use">
+    <p><strong>🎯 目的</strong>：把兩張圖和它們的標籤按比例混合，產生新的訓練樣本。</p>
+    <p><strong>🔁 後續用途</strong> <span class="tag add">補充</span></p>
+    <ul>
+      <li>增加資料多樣性、降低過擬合，屬於資料擴增的一種。</li>
+      <li>標籤變成「狗 0.7、貓 0.3」這種軟標籤，用 C1 的交叉熵訓練時，真實分布 \(p\) 不再是 one-hot，模型比較不會過度自信。</li>
+      <li>CutMix 保留了貼上區塊的真實紋理，讓模型學會從物體的不同部位辨認，不只盯著最明顯的地方。</li>
+    </ul>
+  </div>
+
   <div class="steps">
     <p class="steps-title">逐步展開：MixUp（λ = 0.7）與 CutMix</p>
     <ol>

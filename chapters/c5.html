@@ -89,6 +89,15 @@
     <li>學習率小一到兩個數量級：初始訓練 0.01 → 微調 0.001～0.0001</li>
     <li>BN running mean（<a href="c3.html">C3</a>）：\(\mu_{run}\leftarrow(1-m)\,\mu_{run}+m\,\mu_{batch}\)</li>
   </ul>
+  <div class="callout use">
+    <p><strong>🎯 目的</strong>：說明微調時學習率為什麼要小一到兩個數量級，以及 BN 的 running statistics 怎麼更新。</p>
+    <p><strong>🔁 後續用途</strong> <span class="tag add">補充</span></p>
+    <ul>
+      <li>小學習率避免一開始就把預訓練好的權重改壞，只做小幅調整。</li>
+      <li>小資料集時讓 BN 沿用預訓練的統計量，避免用很小的 batch 估出不準的平均與變異數。</li>
+    </ul>
+  </div>
+
   <div class="steps">
     <p class="steps-title">逐步展開：為什麼小資料要讓 BN 沿用預訓練統計量</p>
     <ol>
@@ -139,6 +148,16 @@
     <li>不含激活值（activations）：PEFT 仍要保存各層激活值做反向傳播</li>
     <li>例：ResNet-50 ＋ 10 類 head、Adam：Full FT ≈ 23.53M × 4 × 4 B ≈ 376 MB；特徵提取 ≈ 94.1 MB ＋ 20,490 × 3 × 4 B ≈ 94.4 MB（在 <a href="#w-strat">2.6 的元件</a>切換比較）</li>
   </ul>
+
+  <div class="callout use">
+    <p><strong>🎯 目的</strong>：估算訓練時 GPU 要放多少東西：權重、梯度、優化器狀態。</p>
+    <p><strong>🔁 後續用途</strong> <span class="tag add">補充</span></p>
+    <ul>
+      <li>判斷顯示卡記憶體夠不夠，以及該選哪一種微調策略。</li>
+      <li>看出凍結層與 PEFT 為什麼省記憶體：梯度和優化器狀態只需要給可訓練的參數。</li>
+      <li>Adam 每個參數多存 2 個狀態（C1 的 \(m\)、\(s\)），比 SGD 吃記憶體。</li>
+    </ul>
+  </div>
 
   <div class="steps">
     <p class="steps-title">逐步展開：ResNet-50 ＋ 10 類、Adam，Full FT 與特徵提取各要多少記憶體</p>
@@ -224,6 +243,15 @@
       <tr><td>Full FT</td><td>全部</td><td class="num">23,528,522</td><td class="num">100%</td></tr>
     </table>
   </div>
+  <div class="callout use">
+    <p><strong>🎯 目的</strong>：算出各種微調策略實際要更新多少參數。</p>
+    <p><strong>🔁 後續用途</strong> <span class="tag add">補充</span></p>
+    <ul>
+      <li>依資料量選策略：資料少只訓練新 head，資料多才解凍更多層。</li>
+      <li>估計訓練時間與過擬合的風險：可訓練參數越多，需要的資料越多。</li>
+    </ul>
+  </div>
+
   <div class="steps">
     <p class="steps-title">逐步展開：Last-k（k = 1）要訓練多少參數？</p>
     <ol>
@@ -264,6 +292,14 @@
     <li>\(N\) 個任務、backbone \(P\) 個參數、每個任務的小模組 \(p\) 個參數：Full FT 每個任務存一整份 → \(N\times P\)；PEFT 共用 backbone → \(P+N\times p\)</li>
     <li>例：ViT-Base 約 86M、\(r=8\) 的 LoRA（Q／K／V／O）約 0.59M、10 個任務：Full FT 約 860M vs LoRA 約 86M + 5.9M ≈ 92M（<a href="#w-lora">LoRA 元件</a>下半部）</li>
   </ul>
+
+  <div class="callout use">
+    <p><strong>🎯 目的</strong>：比較 N 個任務各自全量微調、和共用 backbone 加小模組，總共要存多少參數。</p>
+    <p><strong>🔁 後續用途</strong> <span class="tag add">補充</span></p>
+    <ul>
+      <li>說明 PEFT（LoRA、Adapter）在服務很多任務時的優勢：每多一個任務只多存一個小模組。</li>
+    </ul>
+  </div>
 
   <div class="steps">
     <p class="steps-title">逐步展開：ViT-Base、10 個任務，Full FT 和 LoRA 各要存多少參數</p>
@@ -360,6 +396,16 @@
     <li>合併：訓練完 \(W=W_0+BA\)，推論只算一次 \(Wx\)</li>
     <li><span class="tag add">補充</span>ViT-Base：12 層、每層 Q、K、V、O 四個 768 × 768 → 28,311,552；\(r=8\) 的 LoRA 只要 \(12\times4\times12{,}288=589{,}824\)</li>
   </ul>
+  <div class="callout use">
+    <p><strong>🎯 目的</strong>：凍結原本的權重 \(W_0\)，只學一個低秩的更新 \(BA\)，用很少的參數微調大型的層。</p>
+    <p><strong>🔁 後續用途</strong> <span class="tag add">補充</span></p>
+    <ul>
+      <li>大幅減少可訓練參數與記憶體，讓一般顯示卡也能微調大模型。</li>
+      <li>\(B=0\) 的初始化讓訓練從預訓練模型原本的行為出發。</li>
+      <li>訓練完合併成 \(W=W_0+BA\)，推論時不增加任何計算；多任務時每個任務只要存自己的 \(A\)、\(B\)。</li>
+    </ul>
+  </div>
+
   <div class="steps">
     <p class="steps-title">逐步展開：768 × 768、\(r=8\)，LoRA 為什麼只要 2%？</p>
     <ol>
@@ -443,6 +489,16 @@
     <li>對照 weight decay：\(\frac{\alpha}{2}\lVert w\rVert^2\)，梯度 \(\alpha w\)（拉向 0）</li>
     <li><span class="tag add">補充</span>一維直覺：若 \(L_{task}=\frac12(w-w^*)^2\)（\(w^*\) 是只看新資料的最佳解），加上 L2-SP 後最佳解 \(w=\dfrac{w^*+\alpha w^0}{1+\alpha}\)，落在 \(w^*\) 與 \(w^0\) 之間；\(\alpha\) 越大越靠近 \(w^0\)。Weight decay 則是 \(w=\dfrac{w^*}{1+\alpha}\)，往原點縮。</li>
   </ul>
+  <div class="callout use">
+    <p><strong>🎯 目的</strong>：在損失上加一項，把權重拉向預訓練權重 \(w^0\)，而不是拉向 0。</p>
+    <p><strong>🔁 後續用途</strong> <span class="tag add">補充</span></p>
+    <ul>
+      <li>微調時保留預訓練學到的知識，在小資料集上減少過擬合。</li>
+      <li>\(\alpha\) 調整「聽新資料」與「保留舊知識」的比例。</li>
+      <li>和 C3 的 L2 正則化是同一個形式，只是中心點從 0 換成 \(w^0\)。</li>
+    </ul>
+  </div>
+
   <div class="steps">
     <p class="steps-title">逐步展開：\(w^0=(1.0,\ -2.0,\ 0.5)\)、\(w=(1.2,\ -1.5,\ 0.5)\)、\(\alpha=0.1\) <span class="tag add">補充</span></p>
     <ol>
