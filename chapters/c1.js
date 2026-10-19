@@ -476,6 +476,11 @@
       const f = frame(canvas, 0.6, [-4.5, 4.5]);
       const { ctx } = f;
       const t = ang * Math.PI / 180, ux = Math.cos(t), uy = Math.sin(t);
+      line(ctx, f.X(-4.5), f.Y(0), f.X(4.5), f.Y(0), col.border, 1);
+      line(ctx, f.X(0), f.Y(f.y0), f.X(0), f.Y(f.y1), col.border, 1);
+      ctx.font = '12px system-ui, sans-serif'; ctx.fillStyle = col.text2;
+      ctx.textAlign = 'right'; ctx.fillText('x₁ (cm)', f.X(4.5) - 2, f.Y(0) - 6);
+      ctx.textAlign = 'left'; ctx.fillText('x₂ (inches)', f.X(0) + 6, f.Y(f.y1) + 12);
       line(ctx, f.X(-ux * 10), f.Y(-uy * 10), f.X(ux * 10), f.Y(uy * 10), col.accent, 2.5);
       pts.forEach((p) => {
         const k = p.x * ux + p.y * uy;
@@ -603,6 +608,115 @@
     onRedraw(draw);
   })();
 
+  /* ===== 激活函數 ===== */
+  (function activation() {
+    const canvas = $('#act-canvas'), fnIn = $('#act-fn'), xIn = $('#act-x'), out = $('#act-out');
+    const sg = (x) => 1 / (1 + Math.exp(-x));
+    const n = (v) => (v < 0 ? `(${fmt(v, 1)})` : fmt(v, 1));
+    // f：函數；y：縱軸範圍；t(x, y)：代入的算式
+    const FNS = {
+      sigmoid: { f: sg, y: [-0.2, 1.2], t: (x, y) => `\\sigma(${fmt(x, 1)})=\\frac{1}{1+e^{${fmt(-x, 1)}}}=${fmt(y, 3)}` },
+      tanh: { f: Math.tanh, y: [-1.2, 1.2], t: (x, y) => `\\tanh(${fmt(x, 1)})=${fmt(y, 3)}` },
+      relu: { f: (x) => Math.max(0, x), y: [-2.5, 5.2], t: (x, y) => `\\max(0,\\,${fmt(x, 1)})=${fmt(y, 3)}` },
+      leaky: { f: (x) => Math.max(0.1 * x, x), y: [-2.5, 5.2], t: (x, y) => `\\max(0.1\\times${n(x)},\\,${fmt(x, 1)})=\\max(${fmt(0.1 * x, 2)},\\,${fmt(x, 1)})=${fmt(y, 3)}` },
+      maxout: { f: (x) => Math.max(x, -x), y: [-2.5, 5.2], t: (x, y) => `\\max(1\\times${n(x)}+0,\\,-1\\times${n(x)}+0)=${fmt(y, 3)}` },
+      elu: { f: (x) => (x >= 0 ? x : Math.exp(x) - 1), y: [-2.5, 5.2], t: (x, y) => (x >= 0 ? `x\\ge0\\Rightarrow ${fmt(y, 3)}` : `x<0\\Rightarrow 1\\times(e^{${fmt(x, 1)}}-1)=${fmt(y, 3)}`) },
+    };
+    let x = -2;
+    function draw() {
+      const col = colors(), F = FNS[fnIn.value];
+      const f = frame(canvas, 0.42, [-5, 5], F.y, 20);
+      const { ctx } = f;
+      line(ctx, f.X(-5), f.Y(0), f.X(5), f.Y(0), col.border, 1);
+      line(ctx, f.X(0), f.Y(F.y[0]), f.X(0), f.Y(F.y[1]), col.border, 1);
+      ctx.strokeStyle = col.accent; ctx.lineWidth = 2.5; ctx.beginPath();
+      for (let i = 0; i <= 400; i++) { const u = -5 + i * 0.025, v = F.f(u); i ? ctx.lineTo(f.X(u), f.Y(v)) : ctx.moveTo(f.X(u), f.Y(v)); }
+      ctx.stroke();
+      const y = F.f(x);
+      line(ctx, f.X(x), f.Y(0), f.X(x), f.Y(y), col.c, 1, [3, 3]);
+      dot(ctx, f.X(x), f.Y(y), 6, col.c);
+      out.innerHTML = '';
+      const d = el('div'); out.append(d);
+      tex(d, F.t(x, y));
+      const note = fnIn.value === 'relu' && x < 0 ? '負數一律變 0，這一段的斜率也是 0，梯度傳不回去。'
+        : fnIn.value === 'leaky' && x < 0 ? '負數區保留 0.1 的斜率，梯度還能往回傳。'
+          : fnIn.value === 'elu' && x < 0 ? '負數區是平滑曲線，最低趨近 −α = −1。'
+            : fnIn.value === 'maxout' ? '取兩條直線中較大的；這組參數剛好是 |x|。若第二條改成 0·x + 0，就變成 ReLU。'
+              : '';
+      if (note) out.append(el('div', { class: 'muted', text: note }));
+    }
+    fnIn.addEventListener('change', draw);
+    bindRange(xIn, (v) => { x = v; draw(); }, (v) => fmt(v, 1));
+    onRedraw(draw);
+  })();
+
+  /* ===== 前向＋反向傳播（體重、身高 → 性別） ===== */
+  (function network() {
+    const svg = $('#nn-svg'), out = $('#nn-out');
+    const x1In = $('#nn-x1'), x2In = $('#nn-x2'), yIn = $('#nn-y'), lrIn = $('#nn-lr');
+    const sg = (z) => 1 / (1 + Math.exp(-z));
+    // h1 = σ(w1·x1 + w2·x2 + b1)、h2 = σ(w3·x1 + w4·x2 + b2)、o1 = σ(w5·h1 + w6·h2 + b3)
+    const W0 = [0, 1, 0, 1, 0, 1], B0 = [0, 0, 0];
+    let w = W0.slice(), b = B0.slice(), steps = 0, L0 = null;
+    function run() {
+      const x = [+x1In.value, +x2In.value], y = +yIn.value;
+      const zh = [w[0] * x[0] + w[1] * x[1] + b[0], w[2] * x[0] + w[3] * x[1] + b[1]], h = zh.map(sg);
+      const zo = w[4] * h[0] + w[5] * h[1] + b[2], o = sg(zo);
+      const L = 0.5 * (o - y) ** 2;
+      const d = (o - y) * o * (1 - o);                       // ∂L/∂z_o
+      const dh = [d * w[4] * h[0] * (1 - h[0]), d * w[5] * h[1] * (1 - h[1])];   // ∂L/∂z_h
+      const gw = [dh[0] * x[0], dh[0] * x[1], dh[1] * x[0], dh[1] * x[1], d * h[0], d * h[1]], gb = [dh[0], dh[1], d];
+      return { x, y, zh, h, zo, o, L, d, gw, gb };
+    }
+    const P = { x1: [50, 60], x2: [50, 170], h1: [220, 60], h2: [220, 170], o: [390, 115] };
+    function draw() {
+      const r = run(), R = 27;
+      if (L0 === null) L0 = r.L;
+      const edges = [['x1', 'h1', 0, 0.3], ['x2', 'h1', 1, 0.65], ['x1', 'h2', 2, 0.65], ['x2', 'h2', 3, 0.3], ['h1', 'o', 4, 0.45], ['h2', 'o', 5, 0.45]];
+      let s = '';
+      for (const [a, c, i, t] of edges) {
+        const [ax, ay] = P[a], [cx, cy] = P[c];
+        const lx = ax + (cx - ax) * t, ly = ay + (cy - ay) * t;
+        s += `<line x1="${ax}" y1="${ay}" x2="${cx}" y2="${cy}" style="stroke:var(--border);stroke-width:2"/>`;
+        s += `<text x="${lx}" y="${ly - 6}" text-anchor="middle" style="fill:var(--text-2);font-size:12px">w${i + 1}=${fmt(w[i], 3)}</text>`;
+      }
+      const node = (k, label, val, sub, cls) => {
+        const [cx, cy] = P[k];
+        s += `<circle cx="${cx}" cy="${cy}" r="${R}" style="fill:var(--surface);stroke:var(${cls});stroke-width:2.5"/>`;
+        s += `<text x="${cx}" y="${cy + 5}" text-anchor="middle" style="fill:var(--text);font-size:13px;font-weight:600">${val}</text>`;
+        s += `<text x="${cx}" y="${cy - R - 8}" text-anchor="middle" style="fill:var(--text-2);font-size:12px">${label}</text>`;
+        if (sub) s += `<text x="${cx}" y="${cy + R + 16}" text-anchor="middle" style="fill:var(--text-2);font-size:11px">${sub}</text>`;
+      };
+      node('x1', '體重 x₁', fmt(r.x[0], 1), '', '--c-a');
+      node('x2', '身高 x₂', fmt(r.x[1], 1), '', '--c-a');
+      node('h1', 'h₁', fmt(r.h[0], 3), `b₁=${fmt(b[0], 3)}`, '--accent');
+      node('h2', 'h₂', fmt(r.h[1], 3), `b₂=${fmt(b[1], 3)}`, '--accent');
+      node('o', 'o₁（性別）', fmt(r.o, 3), `b₃=${fmt(b[2], 3)}`, '--c-c');
+      svg.innerHTML = s;
+
+      out.innerHTML = '<div id="nn-f1"></div><div id="nn-f2"></div><div id="nn-f3"></div><div id="nn-l"></div>';
+      tex($('#nn-f1'), `h_1=\\sigma(${fmt(w[0], 3)}\\times${fmt(r.x[0], 1)}+${fmt(w[1], 3)}\\times${fmt(r.x[1], 1)}+${fmt(b[0], 3)})=\\sigma(${fmt(r.zh[0], 3)})=${fmt(r.h[0], 4)}`);
+      tex($('#nn-f2'), `h_2=\\sigma(${fmt(r.zh[1], 3)})=${fmt(r.h[1], 4)},\\quad \\hat{y}=o_1=\\sigma(${fmt(w[4], 3)}\\times${fmt(r.h[0], 4)}+${fmt(w[5], 3)}\\times${fmt(r.h[1], 4)}+${fmt(b[2], 3)})=${fmt(r.o, 4)}`);
+      tex($('#nn-f3'), `L=\\tfrac{1}{2}(\\hat{y}-y)^2=\\tfrac{1}{2}(${fmt(r.o, 4)}-${r.y})^2=${fmt(r.L, 4)}`);
+      $('#nn-l').innerHTML = `<span class="muted">已更新 ${steps} 次${steps ? `，損失從 ${fmt(L0, 4)} 變成 ${fmt(r.L, 4)}` : ''}</span>`;
+      let t = '<div class="table-wrap" style="margin:8px 0 0"><table><tr><th>參數</th><th>值</th><th>梯度 ∂L/∂參數</th></tr>';
+      w.forEach((v, i) => { t += `<tr><td>w${i + 1}</td><td class="mono">${fmt(v, 4)}</td><td class="mono">${fmt(r.gw[i], 5)}</td></tr>`; });
+      b.forEach((v, i) => { t += `<tr><td>b${i + 1}</td><td class="mono">${fmt(v, 4)}</td><td class="mono">${fmt(r.gb[i], 5)}</td></tr>`; });
+      out.insertAdjacentHTML('beforeend', t + '</table></div><div class="muted" style="margin-top:6px">梯度為負 → 參數往上調；梯度為 0（例如 w₅ = 0 時的 w₁、w₂）→ 這次不會動。</div>');
+    }
+    function reset() { w = W0.slice(); b = B0.slice(); steps = 0; L0 = null; draw(); }
+    $('#nn-step').addEventListener('click', () => {
+      const r = run(), lr = +lrIn.value;
+      w = w.map((v, i) => v - lr * r.gw[i]); b = b.map((v, i) => v - lr * r.gb[i]);
+      steps++; draw();
+    });
+    $('#nn-reset').addEventListener('click', reset);
+    bindRange(x1In, () => { L0 = null; steps = 0; draw(); }, (v) => fmt(v, 1));
+    bindRange(x2In, () => { L0 = null; steps = 0; draw(); }, (v) => fmt(v, 1));
+    bindRange(lrIn, () => {}, (v) => fmt(v, 1));
+    yIn.addEventListener('change', () => { L0 = null; steps = 0; draw(); });
+  })();
+
   /* ===== 梯度下降 ===== */
   (function gd() {
     const canvas = $('#gd-canvas'), out = $('#gd-out');
@@ -695,11 +809,11 @@
       let html = '<table><tr><th>類別</th><th>Label Encoding</th><th>One-Hot Encoding</th></tr>';
       cls.slice(0, show).forEach((c, i) => {
         const oh = n <= 12 ? '(' + cls.map((_, j) => (j === i ? '<strong>1</strong>' : '0')).join(', ') + ')' : `長度 ${n} 的向量，第 ${i + 1} 個是 1，其他 ${n - 1} 個是 0`;
-        html += `<tr><td>${c.replace(/</g, '&lt;')}</td><td class="mono">${i}</td><td class="mono">${oh}</td></tr>`;
+        html += `<tr><td>${c.replace(/</g, '&lt;')}</td><td class="mono">${i + 1}</td><td class="mono">${oh}</td></tr>`;
       });
       if (n > show) html += `<tr><td colspan="3" class="muted">…還有 ${n - show} 個類別</td></tr>`;
       out.innerHTML = html + '</table>';
-      note.innerHTML = `Label Encoding：每個標籤 1 個數字，但暗示了 ${cls.slice(0, 3).map((c, i) => `${c}(${i})`).join(' &lt; ')} 的<strong>虛假順序</strong>。` +
+      note.innerHTML = `Label Encoding：每個標籤 1 個數字，但暗示了 ${cls.slice(0, 3).map((c, i) => `${c}(${i + 1})`).join(' &lt; ')} 的<strong>虛假順序</strong>。` +
         `One-Hot：每個標籤是 <strong>${n} 維</strong>向量，類別越多越長（ImageNet 有 1000 類 → 1000 維），這就是<strong>維度爆炸</strong>。`;
     }
     inp.addEventListener('input', upd);
@@ -718,7 +832,7 @@
       tex($('#m-p'), `\\text{Precision}=\\frac{TP}{TP+FP}=${frac(v.tp, v.tp + v.fp)}`);
       tex($('#m-r'), `\\text{Recall}=\\frac{TP}{TP+FN}=${frac(v.tp, v.tp + v.fn)}`);
       tex($('#m-a'), `\\text{Accuracy}=\\frac{TP+TN}{\\text{全部}}=${frac(v.tp + v.tn, v.tp + v.tn + v.fp + v.fn)}`);
-      out.insertAdjacentHTML('beforeend', '<div class="muted" style="margin-top:6px">Precision 看「預測為正」那一欄；Recall 看「實際為正」那一列。</div>');
+      out.insertAdjacentHTML('beforeend', '<div class="muted" style="margin-top:6px">Precision 看「預測為正」那一列；Recall 看「真實為正」那一欄。</div>');
     }
     upd();
   })();

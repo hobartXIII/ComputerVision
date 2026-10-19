@@ -98,6 +98,16 @@
   <h4 class="formula-head">公式：影像資料量</h4>
   <p>28×28 灰階圖 → 784 個數值；224×224 RGB 圖 → 224×224×3 = 150,528 個數值 <span class="tag add">補充</span>。這就是為什麼高維的影像資料對 KNN、SVM 來說很吃力（可以用上方「一個像素」元件自己換算）。</p>
 
+  <div class="callout use">
+    <p><strong>🎯 目的</strong>：算出一張圖在模型眼中是多少個數值，也就是輸入資料的<strong>維度</strong>。</p>
+    <p><strong>🔁 後續用途</strong> <span class="tag add">補充</span></p>
+    <ul>
+      <li>估算輸入層大小與記憶體：一批 32 張 224×224 彩色圖就是 32 × 150,528 ≈ 480 萬個數值。</li>
+      <li>解釋傳統方法的瓶頸：KNN、SVM 直接吃原始像素時維度太高，距離失去意義、計算又慢（見 2.4、2.5 的缺點）。</li>
+      <li>C2 計算 CNN 每一層的輸出尺寸與參數量，都從「高 × 寬 × 頻道數」出發；Flatten 之後的向量長度也是用它算的。</li>
+    </ul>
+  </div>
+
   <div class="steps">
     <p class="steps-title">逐步展開：一張 224×224 的彩色圖有幾個數值</p>
     <ol>
@@ -236,6 +246,17 @@
   </div>
   <p class="muted" style="font-size:.9rem">同樣三個點，換一個 \(p\) 結論就反過來：\(p\) 小時每一維都算得一樣重，\(p\) 大時只看差距最大的那一維。</p>
 
+  <div class="callout use">
+    <p><strong>🎯 目的</strong>：把「兩張圖（兩筆資料）有多像」變成一個數字，距離越小越相似。</p>
+    <p><strong>🔁 後續用途</strong> <span class="tag add">補充</span></p>
+    <ul>
+      <li>KNN 用它找出最近的 K 個鄰居再投票（2.5）。</li>
+      <li>選 \(p\) 決定對「單一維度大差異」的敏感程度：高維資料用曼哈頓（\(p=1\)）通常比較穩健。</li>
+      <li>C3 的 L1／L2 正則化用的就是同樣的 L1、L2 norm，只是量的對象換成模型權重，用來懲罰太大的權重、減少過擬合。</li>
+      <li>影像檢索、人臉辨識也是比較兩個特徵向量的距離，距離夠小就判定是同一個人。</li>
+    </ul>
+  </div>
+
   <div class="steps">
     <p class="steps-title">逐步展開：講義例子 A(0,0)、B(10,1)、C(7,7)，B 和 C 誰離 A 比較遠？</p>
     <ol>
@@ -284,25 +305,17 @@
 
   <h3>2.6 主成分分析（Principal Component Analysis, PCA）</h3>
   <ul>
-    <li><strong>降維</strong>技術：在保留主要資訊的同時減少特徵數量</li>
-    <li>核心：把高維資料投影到低維空間，新的軸（主成分）是資料<strong>變異性最大的方向</strong></li>
-    <li>在 CV 的應用：
-      <ul>
-        <li>圖像降維：某些任務不需要色彩（如邊緣偵測），直接用灰階圖可減少計算量、加快訓練</li>
-        <li>圖像去噪：夜間視野不佳或畫質差的畫面，可透過降噪得到較清晰的圖像</li>
-      </ul>
-    </li>
-    <li>缺點：
-      <ul>
-        <li>對非線性資料處理有限：PCA 是<strong>線性</strong>降維，假設變異沿直線方向分佈</li>
-        <li>訊息遺失：只保留變異最大的方向，可能損失重要細節，在需要細節判斷的任務表現不佳</li>
-      </ul>
-    </li>
+    <li>是一種<strong>降維</strong>技術</li>
+    <li>主要用於在保持資料主要資訊的同時，<strong>減少特徵數量</strong></li>
+    <li>核心思想：把高維資料投影到較低維度的空間，這些新的軸（稱為<strong>主成分</strong>）是資料中<strong>變異性最大的方向</strong></li>
   </ul>
+
+  <h4>將二維資料降成一維</h4>
+  <p>講義的圖：橫軸 \(x_1\) 是以公分（cm）量的長度、縱軸 \(x_2\) 是以英寸（inches）量的長度。兩個特徵其實在描述同一件事，所以點幾乎排成一條斜線；把每個點投影到這條斜線上，就變成一條數線 \(z_1\) 上的點，從二維降成一維，幾乎沒有損失資訊。</p>
 
   <div class="widget" id="w-pca">
     <p class="w-title">PCA：把二維資料降成一維</p>
-    <p class="w-desc">轉動投影軸，所有點會垂直投影到這條線上（變成一維）。投影後的「變異量」越大，保留的資訊越多；按「找主成分」看 PCA 選的方向。</p>
+    <p class="w-desc">轉動投影軸，所有點會垂直投影到這條線上（變成一維 \(z_1\)）。投影後的「變異量」越大，保留的資訊越多；按「找主成分」看 PCA 選的方向。</p>
     <div class="controls">
       <label>投影軸角度 <input type="range" id="pca-ang" min="0" max="179" value="100"> <span class="val" data-for="pca-ang"></span>°</label>
       <button class="btn primary" id="pca-best" type="button">找主成分</button>
@@ -312,32 +325,160 @@
     <div class="readout" id="pca-out"></div>
   </div>
 
-  <h3>2.7 深度學習 × 電腦視覺：神經網路基礎</h3>
+  <h4>PCA × 電腦視覺</h4>
+  <p>兩個用途：① 圖像降維　② 圖像去噪。</p>
   <ul>
-    <li>簡單神經網路：輸入層 → 隱藏層 → 輸出層</li>
-    <li>每個節點（node）：輸入乘上權重、加上偏差（bias），再經過激活函數</li>
-    <li><strong>激活函數（Activation Function）</strong>：引入<strong>非線性（non-linearity）</strong></li>
-    <li>輸出層（分類任務）：二元分類 → <strong>Sigmoid</strong>；多類別分類 → <strong>Softmax</strong></li>
-    <li>前向傳播（Forward Propagation）：資料從輸入一層層算到輸出，得到預測</li>
+    <li><strong>圖像降維</strong>：某些任務不需要考慮圖像色彩，例如邊緣偵測；直接用灰階圖像可以減少計算量、加快訓練速度。講義的圖是同一張 Lenna：RGB 3 個頻道 vs 灰階 1 個頻道，資料量剩三分之一。</li>
+    <li><strong>圖像去噪</strong>：夜間視野不佳或畫質不好的畫面，可以透過圖像降噪得到清晰的圖像。講義的圖左邊是佈滿雜訊的無尾熊（noisy input），右邊是去噪結果（denoised result）。</li>
+  </ul>
+
+  <h4>PCA 的缺點</h4>
+  <ul>
+    <li><strong>對非線性資料的處理有限</strong>
+      <ul>
+        <li>PCA 是<strong>線性</strong>降維技術，假設資料中的變異性主要沿著直線方向分佈</li>
+        <li>因此對具有非線性結構的資料，PCA 可能無法有效捕捉資料的關鍵特徵</li>
+      </ul>
+    </li>
+    <li><strong>訊息遺失</strong>
+      <ul>
+        <li>PCA 只保留了資料中變異性最大的方向</li>
+        <li>雖然降低了資料的維度，但可能會損失一些重要的細節與特徵</li>
+        <li>可能在某些需要細節判斷的任務表現不佳</li>
+      </ul>
+    </li>
+  </ul>
+
+  <h3>2.7 深度學習 × 電腦視覺：神經網路的結構</h3>
+  <ul>
+    <li><strong>簡單神經網路（A Simple Neural Network）</strong>：講義的例子用體重（weight）與身高（height）兩個輸入判斷性別（gender）。輸入層 2 個節點 → 隱藏層 2 個節點 \(h_1, h_2\) → 輸出層 1 個節點 \(o_1\)；連線上的 \(w_1\)～\(w_6\) 是權重，\(b_1, b_2, b_3\) 是各節點的偏差（bias）。</li>
+    <li><strong>每個節點（For each node）</strong>做兩件事：先把輸入乘上權重再加總、加上偏差，得到 \(z\)；再把 \(z\) 送進激活函數 \(f\)，得到這個節點的輸出 \(a\)。</li>
+  </ul>
+
+  <h4 class="formula-head">公式：單一節點</h4>
+  $$z=\sum_{i} w_i x_i+b,\qquad a=f(z)$$
+  <p>\(x_i\)：輸入；\(w_i\)：對應的權重；\(b\)：偏差；\(f\)：激活函數；\(a\)：節點的輸出（講義圖中的 Output）。</p>
+
+  <div class="callout use">
+    <p><strong>🎯 目的</strong>：定義神經網路最小的計算單元：先把輸入<strong>加權組合</strong>，再用激活函數決定要輸出多少。</p>
+    <p><strong>🔁 後續用途</strong> <span class="tag add">補充</span></p>
+    <ul>
+      <li>整個神經網路就是很多個節點一層一層疊起來，資料照這個式子一路算到輸出，就是前向傳播（2.10）。</li>
+      <li>\(w\)、\(b\) 是訓練要學的參數；反向傳播（2.12）算的就是損失對它們的梯度，再用梯度下降（2.13）更新。</li>
+      <li>C2 的卷積也是同一個式子：\(w\) 換成小小的卷積核、在圖上滑動，每個位置算一次 \(\sum wx+b\)。</li>
+    </ul>
+  </div>
+
+  <div class="steps">
+    <p class="steps-title">逐步展開：\(x=(2,3)\)、\(w=(0,1)\)、\(b=4\)、\(f\) 用 Sigmoid <span class="tag add">補充</span>（數字取自講義圖片來源 victorzhou.com 的例子）</p>
+    <ol>
+      <li><strong>乘上權重</strong>：\(w_1x_1=0\times2=0\)，\(w_2x_2=1\times3=3\)</li>
+      <li><strong>加總再加偏差</strong>：\(z=0+3+4=7\)</li>
+      <li><strong>套激活函數</strong>：\(a=\sigma(7)=\dfrac{1}{1+e^{-7}}=\dfrac{1}{1+0.000912}\approx0.999\)
+        <span class="why">\(z\) 很大，Sigmoid 幾乎輸出 1。換成別的激活函數（見 2.8），同一個 \(z\) 會得到不同的 \(a\)。</span></li>
+    </ol>
+  </div>
+
+  <h3>2.8 激活函數（Activation Function）</h3>
+  <ul>
+    <li>目的：<strong>引入非線性（Introduce non-linearity）</strong>。如果每個節點只做 \(\sum w_ix_i+b\)，疊再多層也還是一個線性函數，無法學出彎曲的決策邊界 <span class="tag add">補充</span>。</li>
+    <li>講義列出的 6 種激活函數：</li>
+  </ul>
+
+  <h4 class="formula-head">公式：常見激活函數</h4>
+  <div class="table-wrap">
+    <table>
+      <tr><th>名稱</th><th>公式</th><th>輸出範圍 <span class="tag add">補充</span></th></tr>
+      <tr><td>Sigmoid</td><td>\(\sigma(x)=\dfrac{1}{1+e^{-x}}\)</td><td>0～1</td></tr>
+      <tr><td>tanh</td><td>\(\tanh(x)\)</td><td>−1～1</td></tr>
+      <tr><td>ReLU</td><td>\(\max(0,x)\)</td><td>0～∞</td></tr>
+      <tr><td>Leaky ReLU</td><td>\(\max(0.1x,\,x)\)</td><td>−∞～∞（負的那邊斜率 0.1）</td></tr>
+      <tr><td>Maxout</td><td>\(\max(w_1^{T}x+b_1,\;w_2^{T}x+b_2)\)</td><td>取兩條（或多條）直線中較大的</td></tr>
+      <tr><td>ELU</td><td>\(\begin{cases}x & x\ge0\\ \alpha(e^{x}-1) & x&lt;0\end{cases}\)</td><td>\(-\alpha\)～∞</td></tr>
+    </table>
+  </div>
+
+  <div class="callout use">
+    <p><strong>🎯 目的</strong>：在每個節點加入<strong>非線性</strong>，讓網路能學出彎曲的決策邊界；沒有它，疊再多層都只等於一層線性模型。</p>
+    <p><strong>🔁 後續用途</strong> <span class="tag add">補充</span></p>
+    <ul>
+      <li>隱藏層通常用 ReLU：計算快，正數區斜率固定是 1，梯度不會越乘越小；Leaky ReLU、ELU 再補上負數區的斜率。</li>
+      <li>輸出層依任務選 Sigmoid（二元）或 Softmax（多類別），見 2.9。</li>
+      <li>它的導數會出現在反向傳播的連鎖律裡（2.12 的 \(\sigma'\)）；斜率太小會造成梯度消失，C2、C3 改用 ReLU 的原因就在這裡。</li>
+      <li>激活函數本身是需要設定的超參數之一（2.18）。</li>
+    </ul>
+  </div>
+
+  <div class="steps">
+    <p class="steps-title">逐步展開：同一個輸入 \(x=-2\) 經過 6 種激活函數（ELU 取 \(\alpha=1\)）<span class="tag add">補充</span></p>
+    <ol>
+      <li><strong>Sigmoid</strong>：\(\dfrac{1}{1+e^{2}}=\dfrac{1}{1+7.389}\approx0.119\)</li>
+      <li><strong>tanh</strong>：\(\tanh(-2)=\dfrac{e^{-2}-e^{2}}{e^{-2}+e^{2}}=\dfrac{0.135-7.389}{0.135+7.389}\approx-0.964\)</li>
+      <li><strong>ReLU</strong>：\(\max(0,-2)=0\)。負數一律變 0。</li>
+      <li><strong>Leaky ReLU</strong>：\(\max(0.1\times(-2),\,-2)=\max(-0.2,\,-2)=-0.2\)。負數保留一點點，不會整個變 0。
+        <span class="why">ReLU 在負數區的斜率是 0，梯度傳不回去；Leaky ReLU 留下 0.1 的斜率，讓梯度還能流動。</span></li>
+      <li><strong>Maxout</strong>（以 \(w_1=1,b_1=0,w_2=-1,b_2=0\) 為例）：\(\max(-2,\,2)=2\)，這組參數剛好是 \(|x|\)。若 \(w_2=0,b_2=0\)，Maxout 就變成 ReLU。</li>
+      <li><strong>ELU</strong>：\(x&lt;0\)，用下面那條：\(1\times(e^{-2}-1)=0.135-1\approx-0.865\)。負數區是平滑曲線，最低到 \(-\alpha\)。</li>
+      <li><strong>對照 \(x=2\)</strong>：Sigmoid 0.881、tanh 0.964，其餘 4 個都等於 2（正數區都是 \(y=x\)）。</li>
+    </ol>
+  </div>
+
+  <div class="widget" id="w-act">
+    <p class="w-title">激活函數比較</p>
+    <p class="w-desc">切換講義列出的 6 種激活函數，拖動 \(x\) 看輸出。預設 ReLU、\(x=-2\) → 0；切到 Leaky ReLU 變 −0.2、ELU 變 −0.865。</p>
+    <div class="controls">
+      <label>函數 <select id="act-fn">
+        <option value="sigmoid">Sigmoid</option>
+        <option value="tanh">tanh</option>
+        <option value="relu" selected>ReLU</option>
+        <option value="leaky">Leaky ReLU</option>
+        <option value="maxout">Maxout（\(w_1=1,w_2=-1\)）</option>
+        <option value="elu">ELU（\(\alpha=1\)）</option>
+      </select></label>
+      <label>\(x\) <input type="range" id="act-x" min="-5" max="5" step="0.1" value="-2"> <span class="val" data-for="act-x"></span></label>
+    </div>
+    <div class="canvas-wrap"><canvas id="act-canvas" aria-label="激活函數曲線"></canvas></div>
+    <div class="readout" id="act-out"></div>
+  </div>
+
+  <h3>2.9 輸出層的輸出：Sigmoid 與 Softmax</h3>
+  <ul>
+    <li>分類任務（For classification task）的輸出層：
+      <ul>
+        <li><strong>二元分類 → Sigmoid</strong>：輸出一個 0～1 的數，代表「是正類」的機率</li>
+        <li><strong>多類別分類 → Softmax</strong>：把每個類別的分數轉成加總為 1 的機率分布</li>
+      </ul>
+    </li>
+    <li>講義的 Softmax 例子：三個類別的分數 \((2.4,\ 0,\ -1.5)\) 經過 Softmax 變成 \((0.90,\ 0.08,\ 0.02)\)。</li>
   </ul>
 
   <h4 class="formula-head">公式：Sigmoid 與 Softmax</h4>
-  <p>講義以圖呈現，以下為標準寫法 <span class="tag add">補充</span></p>
+  <p>Sigmoid 的公式在講義 2.8 的激活函數圖；Softmax 講義只畫例子，公式為 <span class="tag add">補充</span></p>
   $$\sigma(z)=\frac{1}{1+e^{-z}},\qquad \text{softmax}(z_i)=\frac{e^{z_i}}{\sum_{j=1}^{K}e^{z_j}}$$
   <p>\(z\)：輸出層節點的原始分數（logit）；\(K\)：類別數。</p>
 
+  <div class="callout use">
+    <p><strong>🎯 目的</strong>：把輸出層的原始分數轉成<strong>機率</strong>：Sigmoid 給一個 0～1 的機率（二元分類），Softmax 給一組加總為 1 的機率分布（多類別分類）。</p>
+    <p><strong>🔁 後續用途</strong> <span class="tag add">補充</span></p>
+    <ul>
+      <li>預測時取機率最大的類別當答案；機率本身也代表模型有多有把握。</li>
+      <li>這組機率就是交叉熵裡的預測分布 \(q\)（2.11），用來算損失。</li>
+      <li>C3 調整判斷門檻（例如機率 ≥ 0.5 才判為正），就是在 Sigmoid 輸出的機率上操作。</li>
+    </ul>
+  </div>
+
   <div class="steps">
-    <p class="steps-title">逐步展開：Sigmoid 與 Softmax 怎麼把分數變成機率</p>
+    <p class="steps-title">逐步展開：Sigmoid 與講義的 Softmax 例子 \(z=(2.4,\ 0,\ -1.5)\)</p>
     <ol>
       <li><strong>先認識 \(e^{z}\)</strong>：\(e\approx2.718\)。\(e^{z}\) 永遠是正數，\(z\) 越大它越大：\(e^0=1\)、\(e^1\approx2.718\)、\(e^2\approx7.389\)、\(e^{-2}\approx0.135\)。
         <span class="why">機率不能是負的，所以先用 \(e^z\) 把任何分數（可正可負）變成正數。</span></li>
       <li><strong>Sigmoid，\(z=0\)</strong>：\(\sigma(0)=\dfrac{1}{1+e^{0}}=\dfrac{1}{1+1}=0.5\)，一半一半。</li>
       <li><strong>Sigmoid，\(z=2\)</strong>：\(\sigma(2)=\dfrac{1}{1+e^{-2}}=\dfrac{1}{1+0.135}\approx0.881\)。\(z\) 越大越接近 1，越小越接近 0。</li>
-      <li><strong>Softmax，\(z=(2,1,0)\)，第一步取 \(e^z\)</strong>：\((e^2,e^1,e^0)=(7.389,\ 2.718,\ 1)\)</li>
-      <li><strong>第二步加總</strong>：\(7.389+2.718+1=11.107\)</li>
-      <li><strong>第三步各自除以總和</strong>：\(7.389\div11.107\approx0.665\)、\(2.718\div11.107\approx0.245\)、\(1\div11.107\approx0.090\)。
+      <li><strong>Softmax 第一步，取 \(e^z\)</strong>：\((e^{2.4},\ e^{0},\ e^{-1.5})=(11.023,\ 1,\ 0.223)\)</li>
+      <li><strong>第二步加總</strong>：\(11.023+1+0.223=12.246\)</li>
+      <li><strong>第三步各自除以總和</strong>：\(11.023\div12.246\approx0.900\)、\(1\div12.246\approx0.082\)、\(0.223\div12.246\approx0.018\)，四捨五入就是講義的 \((0.90,\ 0.08,\ 0.02)\)。
         <span class="why">除以總和之後三個數加起來剛好是 1，就變成機率分布了。</span></li>
-      <li><strong>觀察</strong>：分數差 1（2 和 1），機率差了快 3 倍（0.665 vs 0.245），因為 \(e^1\approx2.7\)。Softmax 會放大分數之間的差距。</li>
+      <li><strong>觀察</strong>：分數只差 2.4（2.4 和 0），機率卻差了 11 倍（0.900 vs 0.082），因為 \(e^{2.4}\approx11\)。Softmax 會放大分數之間的差距。</li>
     </ol>
   </div>
 
@@ -349,40 +490,79 @@
     <div class="readout" id="sig-out"></div>
   </div>
 
-  <h3>2.8 訓練損失（Training Loss）</h3>
+  <h3>2.10 前向傳播（Forward Propagation）</h3>
   <ul>
-    <li>衡量預測與真實值的差距，並據以調整權重</li>
-    <li>分類任務：交叉熵（Cross-Entropy），比較「真實機率分布」與「預測機率分布」</li>
-    <li>迴歸任務：均方誤差（Mean Squared Error, MSE）或平均絕對誤差（Mean Absolute Error, MAE）</li>
+    <li>資料從輸入層一層一層往輸出層算，得到預測值</li>
+    <li>講義的圖把每個節點分成兩步：<strong>Step 1 轉換函數（Transfer Function）</strong>：\(\sum_{i=1}^{n}w_ix_i\) 加上偏差（Bias）；<strong>Step 2 激活函數（Activation Function）</strong>：把結果送進激活函數，得到輸出 \(Y\)</li>
   </ul>
 
-  <h4 class="formula-head">公式：損失函數</h4>
-  <p>講義以圖呈現，以下為標準寫法 <span class="tag add">補充</span></p>
-  $$L_{CE}=-\sum_{i=1}^{K}y_i\log\hat{y}_i,\qquad \text{MSE}=\frac{1}{N}\sum_{j=1}^{N}(y_j-\hat{y}_j)^2,\qquad \text{MAE}=\frac{1}{N}\sum_{j=1}^{N}\lvert y_j-\hat{y}_j\rvert$$
-  <p>\(y_i\)：真實機率分布（one-hot）；\(\hat{y}_i\)：預測機率分布；\(N\)：樣本數。</p>
+  <div class="steps">
+    <p class="steps-title">逐步展開：講義 2.7 的網路，輸入 \(x=(2,3)\)，所有節點 \(w=(0,1)\)、\(b=0\)，激活函數都用 Sigmoid <span class="tag add">補充</span>（victorzhou.com 的例子）</p>
+    <ol>
+      <li><strong>隱藏層 \(h_1\)</strong>：Step 1 \(z_{h1}=w_1x_1+w_2x_2+b_1=0\times2+1\times3+0=3\)；Step 2 \(h_1=\sigma(3)=\dfrac{1}{1+e^{-3}}=\dfrac{1}{1.0498}\approx0.9526\)</li>
+      <li><strong>隱藏層 \(h_2\)</strong>：權重一樣，\(z_{h2}=w_3x_1+w_4x_2+b_2=3\)，\(h_2\approx0.9526\)</li>
+      <li><strong>輸出層 \(o_1\)</strong>：輸入換成 \(h_1,h_2\)：\(z_{o1}=w_5h_1+w_6h_2+b_3=0\times0.9526+1\times0.9526+0=0.9526\)；\(o_1=\sigma(0.9526)\approx0.7216\)
+        <span class="why">上一層的輸出就是下一層的輸入，一層接一層算到最後，這就是「前向」。</span></li>
+      <li><strong>結果</strong>：預測值 \(\hat{y}=0.7216\)。接下來用損失函數（2.11）比較它和真實答案差多少。</li>
+    </ol>
+  </div>
+
+  <h3>2.11 訓練損失（Training Loss）</h3>
+  <ul>
+    <li>衡量神經網路預測結果與真實值之間的差距，並根據結果來調整神經網路的權重</li>
+    <li>分類任務：<strong>交叉熵（Cross-Entropy）</strong></li>
+    <li>迴歸任務：<strong>均方誤差（Mean Squared Error, MSE）</strong>或<strong>平均絕對誤差（Mean Absolute Error, MAE）</strong></li>
+  </ul>
+
+  <h4 class="formula-head">公式：交叉熵（Cross-Entropy）</h4>
+  $$H(p,q)=-\sum_{x}p(x)\log q(x)$$
+  <p>\(p(x)\)：<strong>真實機率分布</strong>（正確答案那一類是 1，其他是 0，即 one-hot）；\(q(x)\)：<strong>預測機率分布</strong>（Softmax 的輸出）。</p>
+
+  <div class="callout use">
+    <p><strong>🎯 目的</strong>：衡量預測分布 \(q\) 和真實分布 \(p\) 差多遠；實際上只看模型給<strong>正確答案</strong>多少機率，給得越低罰得越重。</p>
+    <p><strong>🔁 後續用途</strong> <span class="tag add">補充</span></p>
+    <ul>
+      <li>分類任務的訓練損失：訓練的目標就是把它降到最小。</li>
+      <li>它是反向傳播的起點：2.12 的連鎖律第一項就是對損失微分。Softmax＋交叉熵合起來的梯度剛好是 \(q-p\)（預測減真實），形式很簡單。</li>
+      <li>訓練時畫出的 loss 曲線、C3 判斷過擬合與 Early Stopping 何時停，看的都是這個數字。</li>
+    </ul>
+  </div>
 
   <div class="widget" id="w-soft">
     <p class="w-title">Softmax ＋ 交叉熵</p>
-    <p class="w-desc">調整三個類別的分數 \(z\)，看 Softmax 機率與交叉熵損失。預設 \(z=(2,1,0)\)、正確答案是第 1 類 → 機率約 (0.665, 0.245, 0.090)，損失約 0.408。把正確答案改成第 3 類，損失會跳到約 2.41。</p>
+    <p class="w-desc">調整三個類別的分數 \(z\)，看 Softmax 機率與交叉熵損失。預設是講義的 \(z=(2.4,0,-1.5)\)、正確答案是第 1 類 → 機率約 (0.900, 0.082, 0.018)，損失約 0.105。把正確答案改成第 3 類，損失會跳到約 4.01。</p>
     <div class="controls">
-      <label>\(z_1\) <input type="range" id="s-z1" min="-5" max="5" step="0.1" value="2"> <span class="val" data-for="s-z1"></span></label>
-      <label>\(z_2\) <input type="range" id="s-z2" min="-5" max="5" step="0.1" value="1"> <span class="val" data-for="s-z2"></span></label>
-      <label>\(z_3\) <input type="range" id="s-z3" min="-5" max="5" step="0.1" value="0"> <span class="val" data-for="s-z3"></span></label>
+      <label>\(z_1\) <input type="range" id="s-z1" min="-5" max="5" step="0.1" value="2.4"> <span class="val" data-for="s-z1"></span></label>
+      <label>\(z_2\) <input type="range" id="s-z2" min="-5" max="5" step="0.1" value="0"> <span class="val" data-for="s-z2"></span></label>
+      <label>\(z_3\) <input type="range" id="s-z3" min="-5" max="5" step="0.1" value="-1.5"> <span class="val" data-for="s-z3"></span></label>
       <label>正確答案 <select id="s-y"><option value="0">第 1 類</option><option value="1">第 2 類</option><option value="2">第 3 類</option></select></label>
     </div>
     <div class="bars" id="s-bars"></div>
     <div class="readout" id="s-out"></div>
   </div>
 
+  <h4 class="formula-head">公式：MAE 與 MSE</h4>
+  $$\text{MAE}=\frac{1}{n}\sum\lvert y-\hat{y}\rvert,\qquad \text{MSE}=\frac{1}{n}\sum(y-\hat{y})^2$$
+  <p>講義的 MAE 圖：\(\frac{1}{n}\) 是除以資料點總數（Divide by the total number of data points），\(y\) 是實際值（Actual output value），\(\hat{y}\) 是預測值（Predicted output value），\(\lvert y-\hat{y}\rvert\) 是殘差的絕對值（The absolute value of the residual）。MSE 講義只列名稱，公式為 <span class="tag add">補充</span>。</p>
   <p>迴歸損失的例子：真實值 (3, 5)、預測 (2, 7) → MAE = (1+2)/2 = 1.5；MSE = (1+4)/2 = 2.5。</p>
 
+  <div class="callout use">
+    <p><strong>🎯 目的</strong>：<strong>迴歸任務</strong>的損失：預測值是一個連續數字時，衡量平均差了多少。</p>
+    <p><strong>🔁 後續用途</strong> <span class="tag add">補充</span></p>
+    <ul>
+      <li>MSE 有平方，大誤差罰得特別重，而且處處可微、梯度好算；2.12 的反向傳播例子就是用 \(\frac{1}{2}\)MSE。</li>
+      <li>MAE 對離群值比較不敏感，資料裡有少數極端值時比較穩。</li>
+      <li>電腦視覺裡的迴歸：物件偵測預測框的座標與寬高、人體關鍵點位置、年齡估計，都會用到這類損失。</li>
+    </ul>
+  </div>
+
   <div class="steps">
-    <p class="steps-title">逐步展開：交叉熵、MSE、MAE</p>
+    <p class="steps-title">逐步展開：交叉熵、MAE、MSE</p>
     <ol>
-      <li><strong>交叉熵的 one-hot</strong>：正確答案是第 1 類 → \(y=(1,0,0)\)。代入 \(-\sum y_i\log\hat{y}_i\)，乘到 0 的項都消失，只剩 \(-1\times\log\hat{y}_1\)。
+      <li><strong>交叉熵的 one-hot</strong>：正確答案是第 1 類 → \(p=(1,0,0)\)。代入 \(-\sum p(x)\log q(x)\)，乘到 0 的項都消失，只剩 \(-1\times\log q_1\)。
         <span class="why">所以交叉熵其實只看一件事：模型給「正確答案」多少機率。</span></li>
-      <li><strong>代入 Softmax 的結果</strong>：\(\hat{y}=(0.665,0.245,0.090)\)，\(L=-\log0.665\approx0.408\)（log 是自然對數 ln）。</li>
-      <li><strong>如果正確答案是第 3 類</strong>：\(L=-\log0.090\approx2.41\)。模型給正確答案的機率越低，損失越大。
+      <li><strong>代入講義的 Softmax 結果</strong>：\(q=(0.900,0.082,0.018)\)，\(H=-\log0.900\approx0.105\)（log 是自然對數 ln）。</li>
+      <li><strong>如果正確答案是第 3 類</strong>：\(H=-\log0.018\approx4.01\)。模型給正確答案的機率越低，損失越大。
         <span class="why">\(-\log\) 的特性：機率 1 → 損失 0；機率趨近 0 → 損失趨近無限大。</span></li>
       <li><strong>迴歸：先算誤差</strong>：真實 (3, 5)、預測 (2, 7)，誤差 \(3-2=1\)、\(5-7=-2\)。</li>
       <li><strong>MAE（平均絕對誤差）</strong>：取絕對值再平均：\((|1|+|-2|)\div2=3\div2=1.5\)</li>
@@ -391,34 +571,235 @@
     </ol>
   </div>
 
-  <h3>2.9 反向傳播與梯度下降</h3>
+  <h3>2.12 反向傳播（Backward Propagation）</h3>
+  <p>講義用三張圖說明反向傳播：</p>
   <ul>
-    <li>反向傳播（Backward Propagation）：從輸出端往回計算損失對每個權重的<strong>梯度（Gradient）</strong></li>
-    <li>梯度下降（Gradient Descent）：優化演算法，依損失的梯度更新權重，使損失最小化</li>
-    <li>學習率（Learning Rate）：決定每次更新的步伐大小
-      <ul>
-        <li>太大 → 更新過快，可能跳過最佳解</li>
-        <li>太小 → 更新太慢，可能到不了最佳解</li>
-        <li>是需要調整的<strong>超參數（Hyperparameter）</strong></li>
-      </ul>
-    </li>
+    <li><strong>整體流程</strong>（第一張圖的三個步驟）：① 算出誤差（Error）＝預測輸出與實際輸出的差；② 把誤差往回傳給每個神經元（反方向）；③ 對每個權重計算誤差的<strong>梯度（Gradient）</strong>。</li>
+    <li><strong>用梯度更新權重</strong>（第二張圖）：網路 \(x_1,x_2\) → 兩層 Sigmoid（\(\sigma\)）→ 輸出 \(\hat{y}\)，和 \(y\) 比較得到損失 \(L\)。以第一層的權重 \(w_{11}^{1}\) 為例，更新方式是 \(\hat{w}_{11}^{1}:=w_{11}^{1}-\eta\dfrac{\partial L}{\partial w_{11}^{1}}\)，其中 \(\dfrac{\partial L}{\partial w_{11}^{1}}\) 就是梯度。</li>
+    <li><strong>梯度怎麼算</strong>（第三張圖）：用<strong>連鎖律（Chain Rule）</strong>從輸出端一路乘回來。</li>
+  </ul>
+  <p>符號：上標是第幾層，\(z\) 是加權總和、\(a=\sigma(z)\) 是激活後的輸出；最後一層 \(z_1^3=\hat{y}\)（輸出層不套激活函數），損失用 \(L=\frac{1}{2n}(\hat{y}-y)^2\)。</p>
+
+  <h4 class="formula-head">公式：用連鎖律求 \(w_{11}^{1}\) 的梯度</h4>
+  $$\frac{\partial L}{\partial w_{11}^{1}}=\frac{\partial L}{\partial z_{1}^{3}}\Big[\sum_{i=1}^{2}\frac{\partial z_{1}^{3}}{\partial a_{i}^{2}}\frac{\partial a_{i}^{2}}{\partial z_{i}^{2}}\frac{\partial z_{i}^{2}}{\partial a_{1}^{1}}\Big]\frac{\partial a_{1}^{1}}{\partial z_{1}^{1}}\frac{\partial z_{1}^{1}}{\partial w_{11}^{1}}=\frac{1}{n}(\hat{y}-y)\Big[\sum_{i}w_{1i}^{3}\,\sigma'(z_i^2)\,w_{i1}^{2}\Big]\sigma'(z_1^1)\,x_1$$
+  <p>講義把其中三種偏微分分開算：</p>
+  $$\begin{aligned}
+  &\text{1. }\frac{\partial L}{\partial z_1^3}=\frac{\partial}{\partial\hat{y}}\frac{1}{2n}(\hat{y}-y)^2=\frac{1}{n}(\hat{y}-y),\quad (z_1^3=\hat{y})\\
+  &\text{2. }\frac{\partial z_1^3}{\partial a_1^2}=\frac{\partial}{\partial a_1^2}\big(a_1^2w_{11}^3+a_2^2w_{12}^3\big)=w_{11}^3,\quad (z_1^3=a_1^2w_{11}^3+a_2^2w_{12}^3)\\
+  &\text{3. }\frac{\partial a_1^2}{\partial z_1^2}=\sigma'(z_1^2)=\sigma(z_1^2)\big(1-\sigma(z_1^2)\big),\quad (a_1^2=\sigma(z_1^2))
+  \end{aligned}$$
+  <p>白話：梯度 ＝（輸出錯多少）×（沿路每一條連線的權重）×（沿路每個節點激活函數的斜率）×（這個權重的輸入）。中括號裡的 \(\sum\) 是因為 \(a_1^1\) 會經過第二層的兩個節點影響輸出，兩條路的影響要加起來。</p>
+
+  <div class="callout use">
+    <p><strong>🎯 目的</strong>：算出損失對網路中<strong>任何一個權重</strong>的梯度，知道每個權重該往哪個方向調、調多少。</p>
+    <p><strong>🔁 後續用途</strong> <span class="tag add">補充</span></p>
+    <ul>
+      <li>算出來的梯度直接交給梯度下降與各種優化器更新權重（2.13、2.14）。</li>
+      <li>從式子可以看出：越前面的層要乘越多個「權重 × 激活函數斜率」。Sigmoid 的斜率最大只有 0.25，乘多了梯度就趨近 0（梯度消失），前面的層幾乎學不動。</li>
+      <li>C2 改用 ReLU、C4 ResNet 的捷徑連接，都是為了讓梯度能順利傳回前面的層；C3 的 Batch Normalization 讓每層輸入的分布穩定，也有助於訓練深層網路。</li>
+    </ul>
+  </div>
+
+  <div class="steps">
+    <p class="steps-title">逐步展開：接續 2.10 的例子（\(\hat{y}=0.7216\)），真實答案 \(y=1\)，\(L=\frac{1}{2}(\hat{y}-y)^2\)，求 \(w_6\) 與 \(w_3\) 的梯度 <span class="tag add">補充</span></p>
+    <ol>
+      <li><strong>損失</strong>：\(L=\frac{1}{2}(0.7216-1)^2=\frac{1}{2}\times0.0775\approx0.0387\)</li>
+      <li><strong>① 輸出錯多少</strong>：\(\dfrac{\partial L}{\partial\hat{y}}=\hat{y}-y=0.7216-1=-0.2784\)（負的：預測太小，應該往上調）</li>
+      <li><strong>輸出節點 Sigmoid 的斜率</strong>：\(\sigma'(z_{o1})=\hat{y}(1-\hat{y})=0.7216\times0.2784\approx0.2009\)。
+        <span class="why">這個例子的輸出層有套 Sigmoid，所以比講義的公式多乘這一項。</span></li>
+      <li><strong>\(w_6\) 的梯度</strong>（\(w_6\) 連到輸出，輸入是 \(h_2\)）：\(\dfrac{\partial L}{\partial w_6}=-0.2784\times0.2009\times h_2=-0.0559\times0.9526\approx-0.0533\)</li>
+      <li><strong>\(w_3\) 的梯度</strong>（第一層，要再往回走一段）：沿路乘上 \(w_6=1\)、\(h_2\) 的斜率 \(h_2(1-h_2)=0.9526\times0.0474\approx0.0452\)、輸入 \(x_1=2\)：\(\dfrac{\partial L}{\partial w_3}=-0.0559\times1\times0.0452\times2\approx-0.00505\)
+        <span class="why">越前面的權重，梯度要乘越多個斜率；Sigmoid 的斜率最大才 0.25，乘越多次就越小，這就是梯度消失。</span></li>
+      <li><strong>\(w_1\) 的梯度是 0</strong>：\(w_1\) 要經過 \(h_1\) 再經過 \(w_5\) 才影響輸出，而 \(w_5=0\)，乘到 0 就是 0。</li>
+      <li><strong>更新（η = 0.1）</strong>：\(w_6\leftarrow1-0.1\times(-0.0533)=1.00533\)。梯度是負的，權重往上調，預測值會變大、更接近 1。</li>
+    </ol>
+  </div>
+
+  <div class="widget" id="w-nn">
+    <p class="w-title">前向傳播 ＋ 反向傳播：講義的體重、身高 → 性別網路</p>
+    <p class="w-desc">連線上是權重，節點裡是輸出。預設 \(x=(2,3)\)、所有節點 \(w=(0,1)\)、\(b=0\) → \(\hat{y}\approx0.7216\)；真實答案 \(y=1\) 時 \(L\approx0.0387\)、\(\partial L/\partial w_6\approx-0.0533\)。按「更新一次」用梯度下降改所有權重，看損失變小。<span class="tag add">補充</span>損失用 \(\frac{1}{2}(\hat{y}-y)^2\)，輸出層也套 Sigmoid。</p>
+    <div class="controls">
+      <label>體重 \(x_1\) <input type="range" id="nn-x1" min="-5" max="5" step="0.5" value="2"> <span class="val" data-for="nn-x1"></span></label>
+      <label>身高 \(x_2\) <input type="range" id="nn-x2" min="-5" max="5" step="0.5" value="3"> <span class="val" data-for="nn-x2"></span></label>
+      <label>真實答案 \(y\) <select id="nn-y"><option value="1">1</option><option value="0">0</option></select></label>
+      <label>學習率 η <input type="range" id="nn-lr" min="0.1" max="5" step="0.1" value="0.1"> <span class="val" data-for="nn-lr"></span></label>
+    </div>
+    <div class="controls">
+      <button class="btn primary" id="nn-step" type="button">更新一次</button>
+      <button class="btn" id="nn-reset" type="button">重設權重</button>
+    </div>
+    <svg id="nn-svg" viewBox="0 0 440 230" style="width:100%;max-width:560px;display:block;margin:0 auto" role="img" aria-label="兩個輸入、兩個隱藏節點、一個輸出的神經網路"></svg>
+    <div class="readout" id="nn-out"></div>
+  </div>
+
+  <h3>2.13 梯度下降（Gradient Descent）與學習率</h3>
+  <ul>
+    <li>梯度下降是一種<strong>優化演算法</strong>，用來根據 Loss 的梯度更新神經網路的權重，目的是讓 Loss 最小化</li>
+    <li>講義的圖：損失 \(J\) 對權重 \(w\) 是一條山谷形的曲線，從初始權重 \(w_{old}\) 出發，每一步沿斜率的反方向走，步伐大小是學習率 \(\alpha\)，得到新權重 \(w_{new}\)，一步步走到谷底（Minimum point of cost function）</li>
   </ul>
 
   <h4 class="formula-head">公式：梯度下降</h4>
-  $$w \leftarrow w-\eta\,\frac{\partial L}{\partial w}$$
-  <p>\(w\)：權重；\(\eta\)：學習率；\(\partial L/\partial w\)：損失對權重的梯度。例：\(w=2\)、梯度 \(=4\)、\(\eta=0.1\) → \(w=2-0.1\times4=1.6\)；若 \(\eta=1\) → \(w=-2\)（步伐太大，可能跳過最佳解）。</p>
+  $$w_{new}=w_{old}-\alpha\,\frac{\partial J}{\partial w}$$
+  <p>\(w\)：權重；\(\alpha\)：學習率（2.12 寫成 \(\eta\)，是同一個東西）；\(J\)：損失（cost，2.12 寫成 \(L\)）；\(\partial J/\partial w\)：損失對權重的梯度。例：\(w=2\)、梯度 \(=4\)、\(\alpha=0.1\) → \(w=2-0.1\times4=1.6\)；若 \(\alpha=1\) → \(w=-2\)（步伐太大，可能跳過最佳解）。</p>
+
+  <div class="callout use">
+    <p><strong>🎯 目的</strong>：沿著梯度的<strong>反方向</strong>移動權重，讓損失一步一步變小。</p>
+    <p><strong>🔁 後續用途</strong> <span class="tag add">補充</span></p>
+    <ul>
+      <li>整個訓練迴圈的「更新權重」這一步（2.15），每個 batch 都做一次。</li>
+      <li>學習率 \(\alpha\) 是最重要的超參數之一：太大會震盪或發散，太小會學得很慢（2.13 的元件可以試）。</li>
+      <li>SGD、Momentum、RMSProp、Adam 都是在這個式子上改良（2.14）；C5 微調預訓練模型時常把學習率調小，避免一下子破壞已經學好的權重。</li>
+    </ul>
+  </div>
 
   <div class="steps">
-    <p class="steps-title">逐步展開：用 \(L(w)=w^2\) 走梯度下降（最低點在 \(w=0\)）<span class="tag add">補充</span></p>
+    <p class="steps-title">逐步展開：用 \(J(w)=w^2\) 走梯度下降（最低點在 \(w=0\)）<span class="tag add">補充</span></p>
     <ol>
-      <li><strong>梯度是什麼</strong>：\(\partial L/\partial w\) 就是損失曲線在 \(w\) 這點的斜率。\(L=w^2\) 的斜率是 \(2w\)；在 \(w=2\)，斜率 \(=4\)（正的 → 往右是上坡）。
+      <li><strong>梯度是什麼</strong>：\(\partial J/\partial w\) 就是損失曲線在 \(w\) 這點的斜率。\(J=w^2\) 的斜率是 \(2w\)；在 \(w=2\)，斜率 \(=4\)（正的 → 往右是上坡）。
         <span class="why">這剛好就是上面例子的「梯度 = 4」。</span></li>
       <li><strong>為什麼是減號</strong>：斜率為正代表往右會變高，所以要往左走 → \(w\) 減去梯度。斜率為負時減負數等於往右走，一樣是下坡方向。</li>
-      <li><strong>第 1 步（η = 0.1）</strong>：\(w=2-0.1\times4=2-0.4=1.6\)</li>
+      <li><strong>第 1 步（α = 0.1）</strong>：\(w=2-0.1\times4=2-0.4=1.6\)</li>
       <li><strong>第 2 步</strong>：新的斜率 \(2\times1.6=3.2\)；\(w=1.6-0.1\times3.2=1.28\)。越靠近谷底斜率越小，步伐自動變小。</li>
-      <li><strong>η = 1 會怎樣</strong>：\(w=2-1\times4=-2\)；下一步斜率 \(-4\)，\(w=-2-1\times(-4)=2\)。在 2 和 −2 之間來回跳，永遠到不了 0。
-        <span class="why">學習率太大 → 一步跨過谷底跳到對面。再大一點（例如 η = 1.5）每次會跳得更遠，就是「發散」。</span></li>
-      <li><strong>η = 0.01 會怎樣</strong>：第 1 步只到 \(2-0.04=1.96\)，方向對但很慢，要走非常多步。學習率要「剛剛好」。</li>
+      <li><strong>α = 1 會怎樣</strong>：\(w=2-1\times4=-2\)；下一步斜率 \(-4\)，\(w=-2-1\times(-4)=2\)。在 2 和 −2 之間來回跳，永遠到不了 0。
+        <span class="why">學習率太大 → 一步跨過谷底跳到對面。再大一點（例如 α = 1.5）每次會跳得更遠，就是「發散」。</span></li>
+      <li><strong>α = 0.01 會怎樣</strong>：第 1 步只到 \(2-0.04=1.96\)，方向對但很慢，要走非常多步。學習率要「剛剛好」。</li>
+    </ol>
+  </div>
+
+  <h4>學習率（Learning Rate）</h4>
+  <ul>
+    <li>學習率決定每次梯度下降時，模型的權重應該更新多少</li>
+    <li>太大的學習率可能導致模型更新過快，可能會<strong>跳過最佳解</strong></li>
+    <li>太小的學習率則可能導致模型更新過慢，<strong>無法到達最佳解</strong></li>
+    <li>是一個需要調整的<strong>超參數（Hyperparameter）</strong></li>
+  </ul>
+  <p>👉 學習率太大、太小的實際效果，可以在 <a href="#w-gd">2.14 的梯度下降元件</a>選「梯度下降（GD）」調 η 試試看。</p>
+
+  <h3>2.14 優化器（Optimizer）</h3>
+  <ul>
+    <li>優化器：根據訓練損失調整模型參數。講義介紹兩種：
+      <ul>
+        <li><strong>隨機梯度下降（Stochastic Gradient Descent, SGD）</strong></li>
+        <li><strong>自適應梯度（Adam）</strong></li>
+      </ul>
+    </li>
+    <li>講義的圖：交叉熵損失對兩個權重 \(W_1, W_2\) 畫成一個起伏的曲面（紅色高、藍色低），黑色路徑是優化器從高處一步步走到低谷的過程；從不同起點出發，可能走到不同的谷。</li>
+  </ul>
+
+  <h4>隨機梯度下降（SGD）</h4>
+  <ul>
+    <li>每次更新權重時，選擇<strong>一筆資料或一個 batch</strong> 的資料來計算梯度</li>
+    <li>這樣可以加快訓練速度，但可能導致更新過程中的波動和收斂不穩定</li>
+    <li>但這個不穩定性<strong>可能會幫助模型脫離 local minima</strong></li>
+  </ul>
+
+  <h4>局部最小值（Local Minima）</h4>
+  <p>講義的圖：成本（cost）隨訓練回合（epochs）變化的曲線上有好幾個凹處。藍色箭頭指的兩個凹處是<strong>局部最小值（local minima）</strong>，紅色箭頭指的最低點是<strong>全域最小值（global minimum，最佳解）</strong>。綠色的「Bad move」表示從一個局部最小值移到另一個局部最小值，並沒有比較好。梯度在局部最小值是 0，單純的梯度下降會停在那裡。</p>
+
+  <h4>自適應梯度（Adam）</h4>
+  <ul>
+    <li>結合了<strong>動量（Momentum）</strong>和 <strong>RMSProp</strong> 的優點</li>
+    <li>考慮動量來調整梯度更新方向的同時，也自適應地調整學習率</li>
+  </ul>
+
+  <h4>動量（Momentum）</h4>
+  <ul>
+    <li>講義的圖（出自李宏毅老師的課程）：一顆球沿著損失曲線往下滾。每一步的實際移動（Real Movement，藍色）＝負梯度（Negative of \(\partial L/\partial w\)，紅色）＋動量（Momentum，綠色虛線，也就是上一步的移動）</li>
+    <li>重點：在平坦處或局部最小值，\(\partial L/\partial w=0\)，負梯度是 0，但動量還在，球會<strong>靠慣性繼續往前</strong>，有機會衝過小山丘</li>
+  </ul>
+
+  <h4 class="formula-head">公式：Momentum</h4>
+  <p>講義以圖說明「Movement = Negative of \(\partial L/\partial w\) + Momentum」，寫成公式為 <span class="tag add">補充</span></p>
+  $$m^{t}=\lambda\,m^{t-1}-\eta\,\frac{\partial L}{\partial w},\qquad w^{t}=w^{t-1}+m^{t}$$
+  <p>\(m\)：這一步的移動量（一開始 \(m^0=0\)）；\(\lambda\)：保留多少上一步的移動（常用 0.9）；\(\eta\)：學習率。</p>
+
+  <div class="callout use">
+    <p><strong>🎯 目的</strong>：讓更新帶有<strong>慣性</strong>：累積過去的移動方向，方向一致時越走越快，來回震盪時正負抵消。</p>
+    <p><strong>🔁 後續用途</strong> <span class="tag add">補充</span></p>
+    <ul>
+      <li>在平坦區或梯度為 0 的地方仍會繼續前進，有機會衝過小的局部最小值（2.14 的元件選 Momentum 可以看到）。</li>
+      <li>減少 SGD 用小批次資料造成的抖動，讓收斂更穩。</li>
+      <li>是 Adam 的第一個組成部分（Adam 的 \(m\)）。</li>
+    </ul>
+  </div>
+
+  <div class="steps">
+    <p class="steps-title">逐步展開：\(L(w)=w^2\)，從 \(w=2\) 出發，\(\eta=0.1\)、\(\lambda=0.9\) <span class="tag add">補充</span></p>
+    <ol>
+      <li><strong>第 1 步</strong>：梯度 \(2\times2=4\)；\(m^1=0.9\times0-0.1\times4=-0.4\)；\(w^1=2-0.4=1.6\)（第一步沒有動量，和梯度下降一樣）</li>
+      <li><strong>第 2 步</strong>：梯度 \(2\times1.6=3.2\)；\(m^2=0.9\times(-0.4)-0.1\times3.2=-0.36-0.32=-0.68\)；\(w^2=1.6-0.68=0.92\)</li>
+      <li><strong>和梯度下降比</strong>：一般梯度下降第 2 步只到 1.28（見 2.13）；Momentum 多了上一步的 −0.36，走到 0.92，衝得比較快。
+        <span class="why">方向一致時動量會累積、越走越快；方向來回改變時，正負互相抵消，抖動會變小。</span></li>
+    </ol>
+  </div>
+
+  <h4>RMSProp</h4>
+  <ul>
+    <li>RMSProp 根據每個參數<strong>最近幾次更新的平方梯度均值</strong>來調整學習率</li>
+    <li>如果參數的梯度變化較大，會<strong>減少</strong>學習率，防止步伐過大跳過最佳解</li>
+    <li>如果梯度變化較小，則會相對<strong>增大</strong>學習率，加速收斂</li>
+  </ul>
+
+  <h4 class="formula-head">公式：RMSProp</h4>
+  <p>講義只有文字說明，公式為 <span class="tag add">補充</span></p>
+  $$s\leftarrow\rho\,s+(1-\rho)\Big(\frac{\partial L}{\partial w}\Big)^2,\qquad w\leftarrow w-\frac{\eta}{\sqrt{s}+\epsilon}\,\frac{\partial L}{\partial w}$$
+  <p>\(s\)：平方梯度的指數平均（「最近幾次」的平方梯度均值，一開始為 0）；\(\rho\)：衰減率（常用 0.9）；\(\epsilon\)：避免除以 0 的極小數。</p>
+
+  <div class="callout use">
+    <p><strong>🎯 目的</strong>：依每個參數<strong>最近的梯度大小</strong>自動調整步伐：梯度大就走小步，梯度小就走大步。</p>
+    <p><strong>🔁 後續用途</strong> <span class="tag add">補充</span></p>
+    <ul>
+      <li>每個參數有各自的有效學習率，不必手動替不同參數調學習率。</li>
+      <li>梯度很陡的方向不會一步跨太遠，平緩的方向也不會走得太慢，收斂比較快。</li>
+      <li>是 Adam 的第二個組成部分（Adam 的 \(s\)）。</li>
+    </ul>
+  </div>
+
+  <div class="steps">
+    <p class="steps-title">逐步展開：\(L(w)=w^2\)，從 \(w=2\) 出發，\(\eta=0.1\)、\(\rho=0.9\) <span class="tag add">補充</span></p>
+    <ol>
+      <li><strong>第 1 步，更新 \(s\)</strong>：梯度 4，平方 16；\(s=0.9\times0+0.1\times16=1.6\)</li>
+      <li><strong>算實際學習率</strong>：\(\eta/\sqrt{s}=0.1/\sqrt{1.6}=0.1/1.265\approx0.079\)</li>
+      <li><strong>更新權重</strong>：\(w=2-0.079\times4=2-0.316=1.684\)
+        <span class="why">梯度很大（4）→ \(s\) 變大 → 實際學習率從 0.1 降到 0.079，步伐變小。這就是講義說的「梯度變化較大，會減少學習率」。</span></li>
+      <li><strong>第 2 步</strong>：梯度 \(2\times1.684=3.368\)；\(s=0.9\times1.6+0.1\times3.368^2=1.44+1.134=2.574\)；\(w=1.684-\dfrac{0.1}{\sqrt{2.574}}\times3.368=1.684-0.210=1.474\)</li>
+    </ol>
+  </div>
+
+  <h4 class="formula-head">公式：Adam</h4>
+  $$\begin{aligned}
+  &m\leftarrow\beta_1 m-(1-\beta_1)\nabla_\theta J(\theta)\\
+  &s\leftarrow\beta_2 s+(1-\beta_2)\nabla_\theta J(\theta)\otimes\nabla_\theta J(\theta)\\
+  &\hat{m}\leftarrow\frac{m}{1-\beta_1^{T}},\qquad \hat{s}\leftarrow\frac{s}{1-\beta_2^{T}}\\
+  &\theta_{next\,step}\leftarrow\theta+\frac{\eta\,\hat{m}}{\sqrt{\hat{s}}+\epsilon}
+  \end{aligned}$$
+  <p>\(\eta\)：學習率（learning rate）；\(m\)：動量向量（momentum vector），負梯度的指數平均；\(s\)：平方梯度的指數平均（exponential average square of gradients）；\(\beta_1\)：動量衰減（momentum decay），通常設 0.9；\(\beta_2\)：縮放衰減（scaling decay），通常設 0.999；\(\epsilon\)：平滑項（smoothing term），避免除以 0；\(T\)：第幾步；\(\otimes\)：逐元素相乘（也就是梯度平方）。</p>
+  <ul>
+    <li>第 1 行是 Momentum 的部分（決定方向），第 2 行是 RMSProp 的部分（決定步伐大小）。\(m\) 存的是「負梯度」，所以最後一行用加號。</li>
+    <li>第 3 行是偏差修正 <span class="tag add">補充</span>：\(m\)、\(s\) 從 0 開始，前幾步會偏小，除以 \(1-\beta^{T}\) 把它放大回來；\(T\) 越大，\(\beta^{T}\) 越接近 0，修正就消失了。</li>
+    <li><span class="tag chk">待確認</span>講義第 2 行寫成 \(s\leftarrow\beta_2 s-(1-\beta_2)\nabla_\theta J(\theta)\)，少了梯度的平方、符號也不對：\(s\) 是平方梯度的平均，必須是正的，正確為 \(+(1-\beta_2)\nabla_\theta J\otimes\nabla_\theta J\)。另外講義最後一行的 \(\epsilon\) 畫在根號裡（\(\sqrt{\hat{s}+\epsilon}\)），常見寫法在根號外，兩者只差一個極小數，結果幾乎相同。</li>
+  </ul>
+
+  <div class="callout use">
+    <p><strong>🎯 目的</strong>：同時用 \(m\)（動量）決定<strong>方向</strong>、用 \(s\)（平方梯度）決定<strong>步伐</strong>，並修正剛開始的偏差。</p>
+    <p><strong>🔁 後續用途</strong> <span class="tag add">補充</span></p>
+    <ul>
+      <li>最常用的預設優化器：每一步大約走 \(\eta\) 這麼遠，對學習率比較不敏感，通常用預設的 \(\beta_1=0.9\)、\(\beta_2=0.999\) 就能訓練。</li>
+      <li>後面各章訓練 CNN 時的常見選擇；C5 微調策略的元件就是用 Adam 訓練 ResNet-50。</li>
+      <li>「Adam 結合了哪兩者」是常考題：Momentum ＋ RMSProp。</li>
+    </ul>
+  </div>
+
+  <div class="steps">
+    <p class="steps-title">逐步展開：\(J(\theta)=\theta^2\)，從 \(\theta=2\) 出發，\(\eta=0.1\)、\(\beta_1=0.9\)、\(\beta_2=0.999\) <span class="tag add">補充</span></p>
+    <ol>
+      <li><strong>第 1 步，梯度</strong>：\(2\times2=4\)</li>
+      <li><strong>更新 \(m\)、\(s\)</strong>：\(m=0.9\times0-0.1\times4=-0.4\)；\(s=0.999\times0+0.001\times4^2=0.016\)</li>
+      <li><strong>偏差修正</strong>（\(T=1\)）：\(\hat{m}=-0.4\div(1-0.9)=-4\)；\(\hat{s}=0.016\div(1-0.999)=16\)
+        <span class="why">沒有修正的話 \(m\) 只有 −0.4、\(s\) 只有 0.016，第一步會被嚴重低估。</span></li>
+      <li><strong>更新參數</strong>：\(\theta=2+\dfrac{0.1\times(-4)}{\sqrt{16}}=2-\dfrac{0.4}{4}=1.9\)
+        <span class="why">第一步的步伐剛好等於 η = 0.1，跟梯度大小無關：\(\hat{m}/\sqrt{\hat{s}}=-4/4=-1\)。Adam 的步伐主要由 η 決定，所以很好調。</span></li>
+      <li><strong>第 2 步</strong>：梯度 \(2\times1.9=3.8\)；\(m=0.9\times(-0.4)-0.1\times3.8=-0.74\)；\(s=0.999\times0.016+0.001\times3.8^2=0.030424\)；\(\hat{m}=-0.74\div(1-0.9^2)=-3.895\)；\(\hat{s}=0.030424\div(1-0.999^2)=15.22\)；\(\theta=1.9+\dfrac{0.1\times(-3.895)}{\sqrt{15.22}}=1.9-0.0998\approx1.800\)</li>
     </ol>
   </div>
 
@@ -447,33 +828,84 @@
     <p class="muted" style="font-size:.88rem;margin:8px 0 0">試試看：① GD、η=0.05 從 w₀=3 出發 → 卡在右邊的局部最小值　② η 調到 0.01 → 要走很多步　③ η 調到 0.5 → 來回震盪、停不下來；0.8 → 發散　④ 換成 Momentum（η=0.05）→ 靠慣性衝過小山丘，到達全域最小值　⑤ 換成 SGD（雜訊 6）→ 多按幾次執行，大多數時候會被雜訊「震」出局部最小值</p>
   </div>
 
-  <h3>2.10 優化器（Optimizer）</h3>
-  <ul>
-    <li><strong>隨機梯度下降（Stochastic Gradient Descent, SGD）</strong>：每次只用一筆或一個 batch 的資料計算梯度；訓練較快，但更新會波動、收斂不穩；這種不穩定反而<strong>可能幫助模型跳出局部最小值（local minima）</strong></li>
-    <li><strong>自適應梯度（Adaptive Moment Estimation, Adam）</strong>：結合<strong>動量（Momentum）</strong>與 <strong>RMSProp</strong> 的優點；用動量調整更新方向，同時自適應地調整學習率</li>
-    <li><strong>RMSProp</strong>：依每個參數最近幾次「平方梯度均值」調整學習率。梯度變化大 → 降低學習率，避免步伐太大；梯度變化小 → 相對增大學習率，加速收斂</li>
-  </ul>
-  <p>👉 優化器的互動比較在 <a href="#w-gd">2.9 的梯度下降元件</a>。</p>
+  <h3>2.15 整體流程（Whole Picture）</h3>
+  <p>講義用一張圖把前面的內容串起來，整個過程<strong>反覆進行，直到損失函數最小化</strong>（Iterative process until loss function is minimized）：</p>
+  <ol>
+    <li><strong>前向傳播</strong>（圖的上方，由左往右）：輸入 \(x_1,x_2\)（加上偏差節點）經過兩個隱藏層，每個節點先算 \(z\)、再套激活函數，得到預測值 \(\hat{y}\)（Prediction）</li>
+    <li><strong>損失函數</strong>：預測值和真實值 \(y\)（True Values）一起送進損失函數（Loss Function），得到損失分數（Loss Score）</li>
+    <li><strong>反向傳播</strong>（圖的下方，由右往左）：優化器（Optimizer）依損失分數算出梯度，更新權重（Weight Update）</li>
+    <li>用更新後的權重回到第 1 步，再算一次</li>
+  </ol>
 
-  <h3>2.11 標籤編碼與評估指標</h3>
+  <h3>2.16 標籤編碼（Label Encoding）</h3>
   <ul>
-    <li>標籤編碼（Label Encoding，密集表示）：類別轉成 0, 1, 2…，<strong>需注意虛假順序問題</strong></li>
-    <li>獨熱編碼（One-Hot Encoding，稀疏表示）：每類一個維度，<strong>需注意維度爆炸問題</strong></li>
-    <li>評估指標（Metrics）：通常使用準確率（Accuracy），另有精確率（Precision）與召回率（Recall）</li>
+    <li><strong>Label Encoding</strong>（密集表示，dense representation）：每個類別給一個整數。<strong>需注意虛假順序問題</strong></li>
+    <li><strong>One-Hot Encoding</strong>（稀疏表示，sparse representation）：每個類別一個欄位，是該類就填 1、其他填 0。<strong>需注意維度爆炸問題</strong></li>
   </ul>
+  <p>講義的例子：三種食物和熱量（Calories）。</p>
+  <div class="row">
+    <div class="col" style="flex:1 1 260px">
+      <div class="table-wrap" style="margin-top:0">
+        <table>
+          <tr><th colspan="3">Label Encoding</th></tr>
+          <tr><th>Food Name</th><th>Categorical #</th><th>Calories</th></tr>
+          <tr><td>Apple</td><td>1</td><td>95</td></tr>
+          <tr><td>Chicken</td><td>2</td><td>231</td></tr>
+          <tr><td>Broccoli</td><td>3</td><td>50</td></tr>
+        </table>
+      </div>
+    </div>
+    <div class="col" style="flex:1 1 300px">
+      <div class="table-wrap" style="margin-top:0">
+        <table>
+          <tr><th colspan="4">One-Hot Encoding</th></tr>
+          <tr><th>Apple</th><th>Chicken</th><th>Broccoli</th><th>Calories</th></tr>
+          <tr><td>1</td><td>0</td><td>0</td><td>95</td></tr>
+          <tr><td>0</td><td>1</td><td>0</td><td>231</td></tr>
+          <tr><td>0</td><td>0</td><td>1</td><td>50</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+  <p>虛假順序：Label Encoding 讓 Broccoli（3）&gt; Chicken（2）&gt; Apple（1），模型可能誤以為「花椰菜比雞肉大」，或「蘋果和雞肉的平均是花椰菜」。One-Hot 沒有順序，但 3 種食物就要 3 個欄位，類別越多欄位越多（維度爆炸）。</p>
 
   <div class="widget" id="w-enc">
     <p class="w-title">Label Encoding vs One-Hot Encoding</p>
-    <p class="w-desc">輸入類別名稱（用逗號分隔），看兩種編碼的結果與向量長度。</p>
-    <div class="controls"><label style="flex:1 1 100%">類別 <input type="text" id="enc-in" value="貓, 狗, 鳥" style="flex:1;min-width:0;padding:3px 8px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);font:inherit"></label></div>
+    <p class="w-desc">輸入類別名稱（用逗號分隔），看兩種編碼的結果與向量長度。預設是講義的 Apple、Chicken、Broccoli，Label Encoding 跟講義一樣從 1 開始編號。</p>
+    <div class="controls"><label style="flex:1 1 100%">類別 <input type="text" id="enc-in" value="Apple, Chicken, Broccoli" style="flex:1;min-width:0;padding:3px 8px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);font:inherit"></label></div>
     <div class="table-wrap" id="enc-out"></div>
     <p class="muted" id="enc-note" style="font-size:.9rem;margin:0"></p>
   </div>
 
+  <h3>2.17 評估指標（Metrics）</h3>
+  <ul>
+    <li>分類任務<strong>通常使用 Accuracy</strong></li>
+    <li><strong>Precision（精確率）</strong>：模型預測為 positive 的結果中，有多少是 True Positive</li>
+    <li><strong>Recall（召回率）</strong>：評估模型能夠正確識別出多少實際為 positive 的結果</li>
+    <li><strong>Accuracy（準確率）</strong>：反映模型在所有測試資料中有多少預測是準確的</li>
+  </ul>
+  <p>講義的混淆矩陣：<strong>列是預測標籤（Predicted Label）、欄是真實標籤（Real Label）</strong>。</p>
+  <div class="table-wrap">
+    <table style="width:auto">
+      <tr><th></th><th>真實 Positive</th><th>真實 Negative</th></tr>
+      <tr><th>預測 Positive</th><td>True Positive（TP）</td><td>False Positive（FP）</td></tr>
+      <tr><th>預測 Negative</th><td>False Negative（FN）</td><td>True Negative（TN）</td></tr>
+    </table>
+  </div>
+
   <h4 class="formula-head">公式：評估指標</h4>
-  <p>講義以文字定義，公式為 <span class="tag add">補充</span></p>
-  $$\text{Precision}=\frac{TP}{TP+FP},\qquad \text{Recall}=\frac{TP}{TP+FN},\qquad \text{Accuracy}=\frac{TP+TN}{TP+TN+FP+FN}$$
-  <p>TP：正確判為正（True Positive）；FP：誤判為正（False Positive）；FN：漏判（False Negative）；TN：正確判為負（True Negative）。</p>
+  $$\text{Precision}=\frac{\sum TP}{\sum TP+FP},\qquad \text{Recall}=\frac{\sum TP}{\sum TP+FN},\qquad \text{Accuracy}=\frac{\sum TP+TN}{\sum TP+FP+FN+TN}$$
+  <p>TP：正確判為正（True Positive）；FP：誤判為正（False Positive）；FN：漏判（False Negative）；TN：正確判為負（True Negative）。\(\sum\) 表示整個測試集加總的個數。Precision 看矩陣的<strong>第一列</strong>（預測為 Positive），Recall 看<strong>第一欄</strong>（真實為 Positive）。</p>
+
+  <div class="callout use">
+    <p><strong>🎯 目的</strong>：訓練完後用測試資料衡量模型<strong>好不好</strong>；三個指標從不同角度看「對了多少」。</p>
+    <p><strong>🔁 後續用途</strong> <span class="tag add">補充</span></p>
+    <ul>
+      <li>Accuracy 看整體答對率；但類別不平衡時（例如 99% 都是負類）會失真，要搭配 Precision、Recall。</li>
+      <li>Precision 用在「誤報代價高」的情境（例如把正常郵件判成垃圾郵件）；Recall 用在「漏報代價高」的情境（例如疾病篩檢、瑕疵檢測）。</li>
+      <li>和損失不同，指標不拿來算梯度，而是給人看、用來比較模型；C3 會再加上 F1、特異度與門檻值的分析。</li>
+    </ul>
+  </div>
 
   <div class="steps">
     <p class="steps-title">逐步展開：TP = 40、FP = 10、FN = 20、TN = 30</p>
@@ -482,20 +914,20 @@
       <li><strong>Precision（判為正的裡面，幾個真的是正）</strong>：分母是所有「判為正」\(=TP+FP=40+10=50\)；\(40\div50=0.8\)</li>
       <li><strong>Recall（真的是正的裡面，抓到幾個）</strong>：分母是所有「實際為正」\(=TP+FN=40+20=60\)；\(40\div60\approx0.667\)</li>
       <li><strong>Accuracy（全部裡面答對幾個）</strong>：答對 \(=TP+TN=70\)；全部 \(=100\)；\(70\div100=0.7\)</li>
-      <li><strong>記法</strong>：三個分子都有 TP（或 TP＋TN），差在分母：Precision 看「預測那一欄」、Recall 看「實際那一列」。</li>
+      <li><strong>記法</strong>：三個分子都有 TP（或 TP＋TN），差在分母：照講義的矩陣排法，Precision 看「預測 Positive 那一列」、Recall 看「真實 Positive 那一欄」。</li>
     </ol>
   </div>
 
   <div class="widget" id="w-met">
     <p class="w-title">混淆矩陣計算器</p>
-    <p class="w-desc">預設值是筆記的例子：TP=40、FP=10、FN=20、TN=30 → Precision 0.8、Recall ≈ 0.667、Accuracy 0.7。</p>
+    <p class="w-desc">矩陣排法跟講義一樣（列是預測、欄是真實）。預設值是筆記的例子：TP=40、FP=10、FN=20、TN=30 → Precision 0.8、Recall ≈ 0.667、Accuracy 0.7。</p>
     <div class="row">
       <div class="col" style="flex:0 0 auto">
         <div class="table-wrap" style="margin:0">
           <table style="width:auto">
-            <tr><th></th><th>預測為正</th><th>預測為負</th></tr>
-            <tr><th>實際為正</th><td><label>TP <input type="number" id="m-tp" value="40" min="0" style="width:64px"></label></td><td><label>FN <input type="number" id="m-fn" value="20" min="0" style="width:64px"></label></td></tr>
-            <tr><th>實際為負</th><td><label>FP <input type="number" id="m-fp" value="10" min="0" style="width:64px"></label></td><td><label>TN <input type="number" id="m-tn" value="30" min="0" style="width:64px"></label></td></tr>
+            <tr><th></th><th>真實為正</th><th>真實為負</th></tr>
+            <tr><th>預測為正</th><td><label>TP <input type="number" id="m-tp" value="40" min="0" style="width:64px"></label></td><td><label>FP <input type="number" id="m-fp" value="10" min="0" style="width:64px"></label></td></tr>
+            <tr><th>預測為負</th><td><label>FN <input type="number" id="m-fn" value="20" min="0" style="width:64px"></label></td><td><label>TN <input type="number" id="m-tn" value="30" min="0" style="width:64px"></label></td></tr>
           </table>
         </div>
       </div>
@@ -503,11 +935,18 @@
     </div>
   </div>
 
-  <h3>2.12 需要設定的超參數</h3>
+  <h3>2.18 需要設定的超參數</h3>
   <ul>
-    <li>每一層的節點數（Number of nodes）與激活函數（Activation function）</li>
-    <li>優化器（Optimizer）、學習率（Learning rate）</li>
-    <li>訓練損失函數（Training loss）、評估指標（Metrics）</li>
+    <li>每一層：
+      <ul>
+        <li>節點數（Number of nodes）</li>
+        <li>激活函數（Activation function）</li>
+      </ul>
+    </li>
+    <li>優化器（Optimizer）</li>
+    <li>學習率（Learning rate）</li>
+    <li>訓練損失（Training loss）</li>
+    <li>評估指標（Metrics）</li>
   </ul>
 
   <h2 id="glossary">3. 關鍵名詞表</h2>
@@ -522,16 +961,23 @@
       <tr><td>明氏距離（Minkowski Distance）</td><td>\(\big(\sum|x_i-y_i|^p\big)^{1/p}\)，\(p=1\) 為曼哈頓、\(p=2\) 為歐幾里得</td><td>調一個旋鈕 \(p\)，就能在兩種距離之間切換</td></tr>
       <tr><td>K 最近鄰（KNN）</td><td>以最近的 K 個鄰居多數決決定類別</td><td>近朱者赤，看你身邊多數是誰</td></tr>
       <tr><td>主成分分析（PCA）</td><td>沿變異最大方向投影的線性降維法</td><td>從最能看出差異的角度拍一張「壓扁」的照片</td></tr>
+      <tr><td>節點（Node）</td><td>計算 \(z=\sum w_ix_i+b\)，再輸出 \(a=f(z)\) 的單元</td><td>把輸入加權投票，再決定要「多興奮」</td></tr>
       <tr><td>激活函數（Activation Function）</td><td>套在節點輸出上的非線性函數</td><td>讓網路能學「彎曲」的關係</td></tr>
+      <tr><td>ReLU（Rectified Linear Unit）</td><td>\(\max(0,x)\)：負數變 0、正數不變</td><td>負的一律不理</td></tr>
+      <tr><td>Leaky ReLU／ELU</td><td>ReLU 的變形，負數區保留一點斜率（\(0.1x\)）或平滑曲線（\(\alpha(e^x-1)\)）</td><td>負的也聽一點點，梯度才傳得回去</td></tr>
       <tr><td>Sigmoid</td><td>把實數壓到 0～1，用於二元分類輸出</td><td>輸出「是」的機率</td></tr>
       <tr><td>Softmax</td><td>把多個分數轉成加總為 1 的機率分布，用於多類別分類</td><td>把各類分數轉成「得票率」</td></tr>
       <tr><td>交叉熵（Cross-Entropy）</td><td>衡量真實分布與預測分布差異的分類損失</td><td>對正確答案越沒信心，罰得越重</td></tr>
       <tr><td>前向傳播（Forward Propagation）</td><td>資料從輸入層逐層計算到輸出層</td><td>模型「作答」</td></tr>
+      <tr><td>平均絕對誤差（MAE）</td><td>\(\frac{1}{n}\sum|y-\hat{y}|\)，迴歸任務的損失</td><td>平均每筆差多少</td></tr>
       <tr><td>反向傳播（Backward Propagation）</td><td>從損失往回用連鎖律算每個權重的梯度</td><td>模型「檢討是誰的錯」</td></tr>
+      <tr><td>連鎖律（Chain Rule）</td><td>複合函數的導數等於每一層導數相乘</td><td>沿路每一段的影響乘起來</td></tr>
       <tr><td>梯度下降（Gradient Descent）</td><td>沿著損失梯度的反方向更新權重</td><td>往山谷最低點一步步走</td></tr>
       <tr><td>學習率（Learning Rate）</td><td>每次更新權重的步伐大小，屬於超參數</td><td>下山時每步跨多大</td></tr>
       <tr><td>局部最小值（Local Minima）</td><td>附近最低但不是全域最低的點</td><td>小坑洞，不是真正的谷底</td></tr>
       <tr><td>動量（Momentum）</td><td>更新時參考過去的更新方向</td><td>球滾下山會有慣性</td></tr>
+      <tr><td>RMSProp</td><td>依最近平方梯度的平均調整每個參數的學習率</td><td>路越陡，步伐越小</td></tr>
+      <tr><td>Adam</td><td>結合 Momentum（方向）與 RMSProp（步伐）的優化器</td><td>有慣性又會自己調步伐</td></tr>
       <tr><td>精確率（Precision）</td><td>預測為正的結果中，真的是正的比例</td><td>「我說是的」有幾成對</td></tr>
       <tr><td>召回率（Recall）</td><td>實際為正的樣本中，被正確找出的比例</td><td>「該抓的」抓到幾成</td></tr>
       <tr><td>超參數（Hyperparameter）</td><td>訓練前由人設定、不會被學習的設定值</td><td>訓練的「遊戲規則」</td></tr>
@@ -562,9 +1008,9 @@
   <h3>4.3 標籤編碼比較</h3>
   <div class="table-wrap">
     <table>
-      <tr><th>編碼</th><th>表示方式</th><th>要注意的問題</th><th>例子（貓、狗、鳥）<span class="tag add">補充</span></th></tr>
-      <tr><td>Label Encoding</td><td>密集（dense）</td><td>虛假順序：模型可能誤以為「鳥 &gt; 狗 &gt; 貓」有大小關係</td><td>貓=0、狗=1、鳥=2</td></tr>
-      <tr><td>One-Hot Encoding</td><td>稀疏（sparse）</td><td>維度爆炸：類別越多向量越長</td><td>貓=(1,0,0)、狗=(0,1,0)、鳥=(0,0,1)</td></tr>
+      <tr><th>編碼</th><th>表示方式</th><th>要注意的問題</th><th>講義的例子</th></tr>
+      <tr><td>Label Encoding</td><td>密集（dense）</td><td>虛假順序：模型可能誤以為「Broccoli &gt; Chicken &gt; Apple」有大小關係</td><td>Apple=1、Chicken=2、Broccoli=3</td></tr>
+      <tr><td>One-Hot Encoding</td><td>稀疏（sparse）</td><td>維度爆炸：類別越多欄位越多</td><td>Apple=(1,0,0)、Chicken=(0,1,0)、Broccoli=(0,0,1)</td></tr>
     </table>
   </div>
 
@@ -575,11 +1021,25 @@
     <li><strong>Kernel Trick 圖</strong>：紅色方塊聚在中間、綠色圓點圍在外圈，用直線切不開；kernel 把資料投影到三維後，紅點被抬高成一座山丘、綠點留在底部，中間就能用一個平面（decision surface）切開。</li>
     <li><strong>SVM × 物件偵測圖</strong>：把圖切成網格或偵測框，對每個格子用 SVM 回答「是不是這個物體」。</li>
     <li><strong>KNN 三步驟圖</strong>：新點落在兩類點之間，畫圈找出最近的 K 個點，以多數決決定類別；圖中也示範 K 為偶數時可能平手。</li>
-    <li><strong>PCA 二維降一維圖</strong>：斜向分佈的點雲沿著最長的那個方向（主成分）投影到一條線上。</li>
-    <li><strong>Forward／Backward Propagation 圖</strong>：前向是由左往右算預測，反向是由右往左傳梯度，再用梯度下降更新權重。</li>
-    <li><strong>梯度下降圖</strong>：損失曲線像一個山谷，每次沿斜率反方向走一步，步伐大小由學習率決定。</li>
-    <li><strong>Local Minima 圖</strong>：曲線上有多個凹處，最低的是全域最小值（global minimum），其他是局部最小值。</li>
+    <li><strong>PCA 二維降一維圖</strong>：\(x_1\)（公分）與 \(x_2\)（英寸）量的是同一個長度，點排成一條斜線；沿這條線（主成分）投影，就變成一維的 \(z_1\)。</li>
+    <li><strong>PCA × 圖像降維圖</strong>：同一張 Lenna，RGB 3 個頻道 vs 灰階 1 個頻道。</li>
+    <li><strong>PCA × 圖像去噪圖</strong>：左邊是滿是雜訊的無尾熊（noisy input），右邊是去噪後的清晰結果（denoised result）。</li>
+    <li><strong>A Simple Neural Network 圖</strong>：體重、身高兩個輸入 → 隱藏層 \(h_1,h_2\)（偏差 \(b_1,b_2\)）→ 輸出 \(o_1\)（性別，偏差 \(b_3\)），權重 \(w_1\)～\(w_6\)。互動版見 <a href="#w-nn">2.12</a>。</li>
+    <li><strong>For each node 圖</strong>：輸入 \(x_1,x_2,x_3\) 乘上權重 \(w_1,w_2,w_3\) 加總、加偏差得到 \(z\)，再經過激活函數 \(f(z)\) 輸出 \(a\)。</li>
+    <li><strong>Activation function 圖</strong>：Sigmoid、tanh、ReLU、Leaky ReLU、Maxout、ELU 六條曲線與公式。互動版見 <a href="#w-act">2.8</a>。</li>
+    <li><strong>Output 層的輸出圖</strong>：左邊是 Sigmoid 的 S 形曲線（\(z=0\) 時 0.5）；右邊是 Softmax 把 (2.4, 0, −1.5) 轉成 (0.90, 0.08, 0.02)。</li>
+    <li><strong>Forward Propagation 圖</strong>：輸入 \(x_1\)…\(x_n\) 乘上 \(w_1\)…\(w_n\)，Step 1 轉換函數（加權總和＋Bias），Step 2 激活函數，得到輸出 \(Y\)。</li>
+    <li><strong>Cross-Entropy 圖</strong>：\(H(p,q)=-\sum p(x)\log q(x)\)，標出 \(p\) 是真實機率分布、\(q\) 是預測機率分布。</li>
+    <li><strong>MAE 圖</strong>：公式上標出除以資料點數、實際值 \(y\)、預測值 \(\hat{y}\)、殘差的絕對值。</li>
+    <li><strong>Backward Propagation 三張圖</strong>：① 算誤差 → ② 誤差往回傳給每個神經元 → ③ 對每個權重算梯度；兩層 Sigmoid 網路用 \(\hat{w}_{11}^1:=w_{11}^1-\eta\,\partial L/\partial w_{11}^1\) 更新；用連鎖律展開 \(\partial L/\partial w_{11}^1\)。</li>
+    <li><strong>梯度下降圖</strong>：損失 \(J\) 對權重 \(w\) 是山谷形曲線，從 \(w_{old}\) 沿斜率反方向走到 \(w_{new}\)，步伐是學習率 \(\alpha\)，最後到達谷底。</li>
+    <li><strong>優化器圖</strong>：交叉熵損失對 \(W_1,W_2\) 的 3D 曲面，黑色路徑從高處走到低谷。</li>
+    <li><strong>Local Minima 圖</strong>：成本對 epochs 的曲線上有多個凹處，最低的是全域最小值（最佳解），其他是局部最小值；從一個局部最小值跳到另一個是「Bad move」。</li>
+    <li><strong>Momentum 圖</strong>：球沿曲線滾下，實際移動 ＝ 負梯度 ＋ 動量；在 \(\partial L/\partial w=0\) 的地方仍靠動量前進。</li>
+    <li><strong>ADAM 圖</strong>：四行更新式與符號說明（η、s、m、β₁=0.9、β₂=0.999、ε），見 2.14。</li>
     <li><strong>Whole picture</strong>：上方是前向傳播：輸入 x₁、x₂（加上偏差節點）經過兩個隱藏層（每個節點先算 z、再套激活函數 f）得到預測值 y′；預測值和真實值 y 一起送進損失函數得到損失分數。下方是反向傳播：優化器依損失分數更新權重。整個過程反覆進行，直到損失函數最小化。</li>
+    <li><strong>標籤編碼圖</strong>：Apple、Chicken、Broccoli 的 Label Encoding（1、2、3）與 One-Hot Encoding（三個 0/1 欄位），熱量欄位不變。</li>
+    <li><strong>Metrics 圖</strong>：混淆矩陣（列是預測、欄是真實），旁邊標出 Precision、Recall、Accuracy 的公式。</li>
   </ul>
 
   <h2 id="traps">6. 常見觀念陷阱</h2>
@@ -621,11 +1081,31 @@
   </div>
   <div class="quiz">
     <p class="q">4.（計算）點 P(6, 2) 與 Q(4, 4) 到原點的歐幾里得距離與曼哈頓距離各是多少？</p>
-    <details class="answer"><summary>看解答</summary><div>歐幾里得：\(d(P)=\sqrt{36+4}=\sqrt{40}\approx6.32\)，\(d(Q)=\sqrt{16+16}=\sqrt{32}\approx5.66\)；曼哈頓：\(d(P)=6+2=8\)，\(d(Q)=4+4=8\)。歐幾里得認為 P 較遠（被 x 軸的 6 主導），曼哈頓認為兩者一樣遠。可以在 <a href="#w-dist">4.1 的元件</a>把 B、C 設成 P、Q 驗算。</div></details>
+    <details class="answer"><summary>看解答</summary><div>歐幾里得：\(d(P)=\sqrt{36+4}=\sqrt{40}\approx6.32\)，\(d(Q)=\sqrt{16+16}=\sqrt{32}\approx5.66\)；曼哈頓：\(d(P)=6+2=8\)，\(d(Q)=4+4=8\)。歐幾里得認為 P 較遠（被 x 軸的 6 主導），曼哈頓認為兩者一樣遠。可以在 <a href="#w-dist">2.5 的元件</a>把 B、C 設成 P、Q 驗算。</div></details>
   </div>
   <div class="quiz">
     <p class="q">5.（計算）某分類器 TP=30、FP=20、FN=10、TN=40，請計算 Precision、Recall、Accuracy。</p>
     <details class="answer"><summary>看解答</summary><div>Precision = 30/(30+20) = 0.6；Recall = 30/(30+10) = 0.75；Accuracy = (30+40)/100 = 0.7。</div></details>
+  </div>
+  <div class="quiz">
+    <p class="q">6.（計算）輸入 \(x=-3\)，ReLU、Leaky ReLU（\(\max(0.1x,x)\)）、ELU（\(\alpha=1\)）的輸出各是多少？</p>
+    <details class="answer"><summary>看解答</summary><div>ReLU：\(\max(0,-3)=0\)；Leaky ReLU：\(\max(-0.3,-3)=-0.3\)；ELU：\(e^{-3}-1=0.0498-1\approx-0.950\)。可以在 <a href="#w-act">2.8 的元件</a>把 \(x\) 拉到 −3 驗算。</div></details>
+  </div>
+  <div class="quiz">
+    <p class="q">7.（計算）Softmax 輸入 \(z=(1,0,-1)\)，輸出機率是多少？若正確答案是第 1 類，交叉熵是多少？</p>
+    <details class="answer"><summary>看解答</summary><div>\(e^z=(2.718,1,0.368)\)，總和 4.086 → 機率 \((0.665,0.245,0.090)\)；交叉熵 \(-\ln0.665\approx0.408\)。可以在 <a href="#w-soft">2.11 的元件</a>驗算。</div></details>
+  </div>
+  <div class="quiz">
+    <p class="q">8.（計算）\(L(w)=w^2\)、\(w=1\)、\(\eta=0.1\)、\(\lambda=0.9\)，用 Momentum 走兩步，\(w\) 各是多少？和一般梯度下降比較。</p>
+    <details class="answer"><summary>看解答</summary><div>第 1 步：梯度 2，\(m=-0.2\)，\(w=0.8\)；第 2 步：梯度 1.6，\(m=0.9\times(-0.2)-0.1\times1.6=-0.34\)，\(w=0.46\)。一般梯度下降兩步是 0.8、0.64，Momentum 因為累積了上一步的移動，走得比較快。</div></details>
+  </div>
+  <div class="quiz" data-answer="C">
+    <p class="q">9.（選擇）Adam 的 \(s\) 在記錄什麼？</p>
+    <div class="opts">
+      <button data-opt="A">(A) 梯度的指數平均，決定更新方向</button><button data-opt="B">(B) 損失的歷史最小值</button>
+      <button data-opt="C">(C) 平方梯度的指數平均，用來調整步伐大小</button><button data-opt="D">(D) 目前是第幾步</button>
+    </div>
+    <div class="explain" hidden><strong>(C)</strong>。\(s\) 來自 RMSProp，是平方梯度的指數平均（exponential average square of gradients），最後除以 \(\sqrt{\hat{s}}\)：梯度大 → 步伐小。(A) 是 \(m\)（動量向量）。</div>
   </div>
 
   <footer>講義來源：<a href="https://drive.google.com/file/d/1Byu62wFyyqYDv76hsLdzKPnkz0BdeA2H/view" target="_blank" rel="noopener">c1_computer_vision_models.pdf</a> · 文字筆記：<a href="https://app.notion.com/p/3eb75b0b5a13814d9ec3c865dc608f8e" target="_blank" rel="noopener">Notion C1</a></footer>
