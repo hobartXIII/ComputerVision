@@ -283,3 +283,28 @@ details.answer > div { margin-top: 8px; padding: 10px 14px; background: var(--su
 /* KaTeX 隱藏的 MathML 是 position: absolute；以公式本身為容器，才不會跑出可捲動的區塊、撐寬頁面 */
 .katex { position: relative; }
 footer { color: var(--text-2); font-size: .85rem; margin-top: 60px; }
+
+/* ===== 題庫（chapters/quiz.html） ===== */
+.qz-bar { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; margin: 12px 0; }
+.qz-bar .lbl { font-size: .9rem; color: var(--text-2); min-width: 4.5em; }
+.qz-meta { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; font-size: .85rem; color: var(--text-2); margin-bottom: 6px; }
+.qz-meta a { color: var(--accent); }
+.qz-progress { font-variant-numeric: tabular-nums; }
+.quiz .opts button[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); }
+.quiz .opts button .k { font-family: var(--mono); color: var(--text-2); margin-right: 6px; }
+.quiz textarea {
+  width: 100%; min-height: 6em; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px;
+  background: var(--surface-2); color: var(--text); font: inherit; font-size: .95rem; resize: vertical;
+}
+.qz-ans { margin-top: 10px; padding: 10px 14px; background: var(--surface-2); border-radius: 8px; font-size: .95rem; }
+.qz-ans > :first-child { margin-top: 0; }
+.qz-ans > :last-child { margin-bottom: 0; }
+.qz-ans ul, .qz-ans ol { padding-left: 1.3em; }
+.quiz.ok { border-left: 4px solid var(--pos); }
+.quiz.ng { border-left: 4px solid var(--neg); }
+.qz-nav { display: flex; flex-wrap: wrap; gap: 8px; justify-content: space-between; align-items: center; margin: 12px 0; }
+.qz-score { font-size: 1.6rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.qz-sticky {
+  position: sticky; bottom: 0; z-index: 5; background: var(--bg); border-top: 1px solid var(--border);
+  padding: 10px 0; display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; justify-content: space-between;
+}

@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>期中模擬題庫</title>
+  <meta name="description" content="電腦視覺期中模擬題：選擇 200 題、問答 80 題，可依章節練習、隨機模擬考、錯題本">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap">
+  <link rel="stylesheet" href="../assets/style.css">
+  <script defer src="../assets/common.js"></script>
+  <script defer src="quiz-data.js"></script>
+  <script defer src="quiz.js"></script>
+</head>
+<body data-chapter="quiz">
+<div class="layout" style="grid-template-columns:minmax(0,1fr)">
+<main>
+  <p class="eyebrow">期中考 2026-10-29 · 範圍 C1～C5</p>
+  <h1>📝 期中模擬題庫</h1>
+  <p class="lead">選擇題 200 題、問答題 80 題，依老師的提示加重 C2、C4，考基本概念與小計算。</p>
+  <div class="callout">
+    <p>這些是依網頁筆記<strong>自己出的練習題，不是老師的題目</strong>。錯題本與作答紀錄只存在這台裝置的瀏覽器裡。</p>
+  </div>
+
+  <div class="qz-bar" role="tablist" aria-label="模式">
+    <span class="seg" id="qz-tabs">
+      <button class="btn" type="button" data-mode="practice">練習</button>
+      <button class="btn" type="button" data-mode="exam">模擬考</button>
+      <button class="btn" type="button" data-mode="wrong">錯題本</button>
+    </span>
+  </div>
+
+  <section id="qz-panel" aria-live="polite"></section>
+
+  <footer>題目依各章網頁筆記整理；每題都附「看筆記」連到對應的章節。</footer>
+</main>
+</div>
+</body>
+</html>

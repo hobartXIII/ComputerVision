@@ -87,6 +87,9 @@
         text: c.no, title: c.title, class: current === c.id ? 'active' : '',
       }));
     }
+    nav.append(el('a', {
+      href: prefix + 'chapters/quiz.html', text: '題庫', title: '期中模擬題庫', class: current === 'quiz' ? 'active' : '',
+    }));
     const themeBtn = el('button', { class: 'icon-btn', type: 'button', title: '切換深色／淺色' });
     const label = () => { themeBtn.textContent = isDark() ? '☀ 淺色' : '☾ 深色'; };
     label();
