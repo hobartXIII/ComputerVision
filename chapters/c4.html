@@ -168,6 +168,7 @@
     <li>是「典型 CNN」的範本：多層 Conv 後接 Pooling，filter 數量逐漸增加，最後接 FC</li>
     <li>準確率高但訓練很慢，參數量龐大（VGG16 約 1.38 億）</li>
     <li>優點：「深度」網路設計、規範的結構；缺點：計算需求大、參數冗餘</li>
+    <li><span class="tag add">補充</span><strong>為什麼全部用 3×3</strong>：兩層 3×3 疊起來的感受野等於一個 5×5（三層等於 7×7），但參數比較少（每對輸入／輸出通道 \(2\times9=18\) 對 \(25\)；\(3\times9=27\) 對 \(49\)），而且每層後面都有 ReLU，多了幾次非線性。小 filter 和大 filter 怎麼選，見 <a href="c2.html">C2 2.4</a></li>
   </ul>
 
   <div class="widget" id="w-vgg">
@@ -781,6 +782,7 @@
       <tr><td>VGG16／19</td><td>2014</td><td>多層 3×3 Conv 堆疊，規整結構</td><td>深度設計、結構規範、準確率高</td><td>138M 參數、計算大、參數冗餘</td><td>特徵擷取、教學範例 <span class="tag add">補充</span></td></tr>
       <tr><td>Inception（GoogLeNet）</td><td>2014</td><td>多種 kernel 並行 ＋ 1×1 瓶頸</td><td>多尺度特徵、運算高效、輔助分類器幫助訓練</td><td>結構複雜、難移植</td><td>需要多尺度特徵的分類</td></tr>
       <tr><td>ResNet</td><td>2015 <span class="tag add">補充</span></td><td>殘差連接 \(H(x)=F(x)+x\)，＋ GAP</td><td>可訓練極深網路、常用 backbone</td><td>運算與記憶體大、部分 block 冗餘</td><td>幾乎所有視覺任務的 backbone</td></tr>
+      <tr><td>DenseNet（<a href="c4-2.html">C4-2</a>）</td><td>2016</td><td>Dense Block：每層與前面所有層<strong>串接</strong>，growth rate k、瓶頸層、過渡層</td><td>緩解梯度消失、特徵重用、參數比 ResNet 少</td><td>記憶體需求高、串接多，實際速度不一定快</td><td>參數有限但要高準確率 <span class="tag add">補充</span></td></tr>
       <tr><td>SqueezeNet</td><td>2016</td><td>Fire module、1×1 取代 3×3、延後下採樣</td><td>參數是 AlexNet 的 1/50</td><td>準確率只有 AlexNet 級；運算量不少</td><td>儲存／頻寬有限</td></tr>
       <tr><td>MobileNet</td><td>2017</td><td>Depthwise Separable Conv ＋ α、ρ</td><td>4.2M 參數、運算低、可調整</td><td>準確率低於 ResNet、GPU 上未必等比例變快</td><td>手機、嵌入式裝置</td></tr>
       <tr class="muted"><td>EfficientNet（不考）</td><td>2019</td><td>NAS 找 B0 ＋ compound scaling</td><td>準確率／效率比高、B0～B7 可選</td><td>NAS 成本高、大版本記憶體大</td><td>遷移學習、依資源選大小</td></tr>
@@ -891,6 +893,30 @@
       <button data-opt="C">(C) 參數量從 25,089,000 降到 513,000</button><button data-opt="D">(D) GAP 保留了特徵出現的位置，適合直接做物件偵測</button>
     </div>
     <div class="explain" hidden><strong>(C)</strong>。Flatten 後 25,088 維接 1,000 類：\((25{,}088+1)\times1{,}000=25{,}089{,}000\)；GAP 後 512 維：\((512+1)\times1{,}000=513{,}000\)。(A) GAP 沒有參數；(B) GAP 輸出長度只看通道數；(D) GAP 丟掉了位置資訊。</div>
+  </div>
+  <div class="quiz" data-answer="A">
+    <p class="q">7.（選擇）下列模型與其核心特點的配對，何者<strong>錯誤</strong>？</p>
+    <div class="opts">
+      <button data-opt="A">(A) VGG：多種大小的 kernel 並行再串接</button><button data-opt="B">(B) ResNet：殘差連接 \(H(x)=F(x)+x\)</button>
+      <button data-opt="C">(C) MobileNet：Depthwise Separable Convolution</button><button data-opt="D">(D) SqueezeNet：Fire module</button>
+    </div>
+    <div class="explain" hidden><strong>(A)</strong>。多種 kernel 並行再串接是 Inception；VGG 是全部用 3×3 卷積規整地堆疊（見 4.1 總表）。</div>
+  </div>
+  <div class="quiz" data-answer="C">
+    <p class="q">8.（選擇）ResNet 與 DenseNet 把前面的特徵傳到後面的方式，下列何者正確？</p>
+    <div class="opts">
+      <button data-opt="A">(A) 兩者都用相加</button><button data-opt="B">(B) 兩者都用串接</button>
+      <button data-opt="C">(C) ResNet 相加，DenseNet 串接</button><button data-opt="D">(D) ResNet 串接，DenseNet 相加</button>
+    </div>
+    <div class="explain" hidden><strong>(C)</strong>。ResNet 的捷徑是相加，形狀必須相同；DenseNet 把前面所有層的輸出在通道方向串接，通道數越來越多（見 <a href="c4-2.html">C4-2</a>）。</div>
+  </div>
+  <div class="quiz" data-answer="D">
+    <p class="q">9.（選擇）要把模型放到手機上，最主要考慮參數少、運算量低，下列哪個模型最適合？</p>
+    <div class="opts">
+      <button data-opt="A">(A) VGG16</button><button data-opt="B">(B) ResNet-152</button>
+      <button data-opt="C">(C) Inception</button><button data-opt="D">(D) MobileNet</button>
+    </div>
+    <div class="explain" hidden><strong>(D)</strong>。MobileNet 用 Depthwise Separable Conv 大幅降低運算量（約 4.2M 參數），還能用 α、ρ 再縮小；VGG16 有 138M 參數，ResNet-152、Inception 也都偏大。</div>
   </div>
 
   <footer>講義來源：<a href="https://drive.google.com/file/d/14t8M3OEaB_9AKFAyd_2slfhnyY5IqQdN/view" target="_blank" rel="noopener">c4_advanced_cnn_part1.pdf</a> · 文字筆記：<a href="https://app.notion.com/p/3f375b0b5a138127bbafdfcbf9bb3570" target="_blank" rel="noopener">Notion C4</a></footer>

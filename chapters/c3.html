@@ -35,6 +35,13 @@
     <li><strong>Validation data</strong>：訓練期間用來對模型做公正評估（每個 epoch 訓練完就評估一次）</li>
     <li><strong>Test data</strong>：最終測試模型效能的資料集，模型從未看過（例如 Kaggle 競賽的私有測試集）</li>
     <li>「Validation」與「Test」常常被混用</li>
+    <li><span class="tag add">補充</span>三者的分工：
+      <ul>
+        <li><strong>Training</strong>：唯一用來<strong>更新權重</strong>的資料</li>
+        <li><strong>Validation</strong>：<strong>不更新權重</strong>，用來<strong>調整超參數、挑選最佳模型、判斷是否 overfitting 或該不該 Early Stopping</strong>（見 2.8）</li>
+        <li><strong>Test</strong>：訓練全部結束後<strong>只用一次</strong>，評估最終的泛化能力；<strong>不能拿來調模型</strong>，否則評估結果會過度樂觀</li>
+      </ul>
+    </li>
     <li>流程：每個 epoch 先用梯度下降與反向傳播在 Train 上更新權重 → 在 Val 上算 loss 與 accuracy → 重複 n 個 epoch → 最後才在 Test 上算一次</li>
     <li>基本評估指標：Training Loss、Training Accuracy、Test／Validation Loss、Test／Validation Accuracy</li>
   </ul>
@@ -120,6 +127,7 @@
 
   <h3>2.4 Precision、Recall、F1 與分類報告</h3>
   <ul>
+    <li><span class="tag add">補充</span><strong>類別不平衡時 Accuracy 會失真</strong>：例如 100 人只有 5 人有病，模型全部猜「沒病」也有 95% 的 Accuracy，卻一個病人都沒抓到（Recall = 0），所以要搭配 Precision 與 Recall 一起看</li>
     <li><strong>Precision／Recall 取捨（tradeoff）</strong>：通常提升其中一個，另一個就會下降</li>
     <li>有時可以犧牲一些 Precision 來換 Recall：例如看診，寧可多抽幾個去複檢，也不要漏掉真的病人</li>
     <li><strong>F1</strong>：Precision 與 Recall 的調和平均數（harmonic mean）</li>
@@ -237,6 +245,7 @@
     </li>
     <li>用 <strong>Dropout Rate</strong> 控制關閉的比例</li>
     <li>迫使模型學更可靠的特徵（每次等於訓練不一樣的模型）</li>
+    <li><span class="tag add">補充</span>為什麼有效：模型不能依賴少數特定節點，被迫學到更具代表性的特徵，在沒看過的資料上泛化較好；效果類似把許多子網路做<strong>集成（ensemble）</strong>平均</li>
     <li>缺點：會增加模型收斂（converge）所需時間</li>
     <li><strong>測試時使用所有節點</strong>做預測</li>
   </ul>

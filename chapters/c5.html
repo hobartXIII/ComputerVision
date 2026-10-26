@@ -80,6 +80,14 @@
   <h3>2.5 微調的注意事項</h3>
   <ul>
     <li><strong>先訓練新分類層，再解凍預訓練層</strong>：新分類層是隨機初始化的，若一開始就一起訓練，大的梯度會破壞預訓練權重</li>
+    <li><span class="tag add">補充</span>兩階段的邏輯（期中模擬考選填題）：
+      <ol>
+        <li><strong>先凍結、只訓練新分類層</strong>（特徵提取，見 2.3）：新分類層一開始幾乎是亂猜，Loss 很大、梯度也很大；預訓練層不動，就不會被這些大梯度改壞。等新分類層學會「用現有特徵做分類」，Loss 降下來，梯度也穩定了</li>
+        <li><strong>再解凍後面幾層、用很小的學習率</strong>（微調，見 2.4）：這時梯度已經不大，再輕輕調整深層，讓特徵更貼近新資料</li>
+      </ol>
+    </li>
+    <li><span class="tag add">補充</span><strong>為什麼只解凍後面幾層</strong>：淺層學到的邊緣、色塊、紋理是通用特徵，換任務也用得上；深層才是和原資料集相關的細節。只動後面幾層，在小資料上也比較不容易 overfitting</li>
+    <li><span class="tag add">補充</span><strong>一開始全部一起訓練不一定比較快</strong>：前幾個 epoch 的大梯度會打亂預訓練權重，模型等於部分從頭學起，反而更花時間；新資料通常很少（幾百到幾千張），也容易 overfitting。新資料很多、又和 ImageNet 差很多時，Full Fine-tuning（見 2.7）可能效果最好，但講義仍建議先訓練新的分類 head 再解凍</li>
     <li><strong>使用很小的學習率</strong>：通常比初始訓練小一到兩個數量級</li>
     <li><strong>BatchNorm</strong>：新資料量小時，讓 BN 層沿用預訓練時的統計量（running mean 與 running std），避免小批次估計的雜訊打亂原本學到的特徵（數字例子見 <a href="#lr-bn">2.5</a>）</li>
   </ul>

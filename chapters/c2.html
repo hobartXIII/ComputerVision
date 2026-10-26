@@ -134,6 +134,20 @@
     <li><strong>Stride</strong>：濾波器每次移動的格數</li>
   </ul>
 
+  <p><span class="tag add">補充</span><strong>filter 什麼時候用小的、什麼時候用大的</strong>：</p>
+  <div class="table-wrap">
+    <table>
+      <tr><th></th><th>小 filter（1×1、3×3）</th><th>大 filter（5×5、7×7 以上）</th></tr>
+      <tr><td>一次看到的範圍（感受野）</td><td>小，擅長抓<strong>細節</strong>：邊緣、紋理</td><td>大，擅長抓<strong>大範圍</strong>的形狀與特徵</td></tr>
+      <tr><td>參數量與運算量</td><td>少（3×3 只有 9 個權重／通道）</td><td>多（5×5 是 25、7×7 是 49）</td></tr>
+      <tr><td>適合</td><td>大部分的層；要看大範圍時就多疊幾層</td><td>目標物在圖中很大、或想在第一層就快速看大範圍</td></tr>
+    </table>
+  </div>
+  <ul>
+    <li>現代 CNN 多半<strong>用多層 3×3 取代大 filter</strong>：兩層 3×3 的感受野等於一個 5×5，參數 18 比 25 少，還多一次非線性（C4 的 VGG）</li>
+    <li>不知道該選哪個時，可以<strong>同時用不同大小</strong>再把結果串接（C4 的 Inception）；1×1 則是用來調整通道數、降低運算量</li>
+  </ul>
+
   <h3>2.5 填充（Padding）</h3>
   <ul>
     <li>問題：隨著卷積次數增加，圖會越變越小</li>
@@ -215,6 +229,7 @@
       <button class="btn" type="button" data-sz="conv,28,1,3,0,1,32">MNIST Conv_1</button>
       <button class="btn" type="button" data-sz="pool,24,64,2,0,2,1">MNIST Max Pool</button>
       <button class="btn" type="button" data-sz="conv,32,3,5,0,1,10">32×32×3、10 個 5×5</button>
+      <button class="btn" type="button" data-sz="conv,28,1,5,0,1,1">模擬考 28×28、5×5</button>
     </div>
     <div class="readout" id="sz-out"></div>
   </div>
@@ -312,6 +327,8 @@
     <li>全連接層（Fully Connected Layer, FC）：整合前面卷積層與池化層抽出的特徵。FC 層的每個點都和下一層的每個點連接，又叫 Dense Layer</li>
     <li>進 FC 前要先把多維特徵圖「展平（Flatten）」成一維向量</li>
     <li>Softmax 層：根據抽出的特徵進行分類，輸出各類別機率（計算方式見 C1）</li>
+    <li><span class="tag add">補充</span>FC 層把影像各處偵測到的局部特徵組合起來做整體判斷；<strong>最後一層 FC 的節點數等於類別數</strong>（MNIST 是 10），再接 Softmax</li>
+    <li>FC 層通常是 CNN 中<strong>參數最多</strong>的部分：講義 MNIST 例子中約佔 98%（見 2.10）</li>
   </ul>
 
   <h3>2.10 整合：簡易 CNN（MNIST 的 4 層 CNN）</h3>
@@ -371,6 +388,8 @@
   <ul>
     <li>參數（Parameter）：訓練過程中由模型學習的變數，又叫可學習參數或權重（weights）；卷積層與全連接層有權重</li>
     <li>超參數（Hyperparameter）：訓練前手動設定，例如節點數、激活函數</li>
+    <li><span class="tag add">補充</span>參數由<strong>梯度下降與反向傳播</strong>自動更新（例如濾波器的權重與 bias、FC 層的權重與 bias）；超參數模型不會自己學，通常看 <strong>Validation</strong> 的結果手動調整（見 C3 2.1）</li>
+    <li><span class="tag add">補充</span>常見的超參數：濾波器大小、濾波器數量、stride、padding（見 2.4）、節點數、激活函數、learning rate、batch size、epoch 數、Dropout rate（見 C3）</li>
     <li><strong>沒有可訓練參數的層：ReLU、Max Pool、Flatten</strong></li>
   </ul>
 
@@ -378,7 +397,13 @@
   <ul>
     <li>若用一般神經網路處理 28×28 灰階圖（784 個像素），並讓下一層有與 Conv_1 一樣多的節點（26×26×32 = 21,632），這一層就需要 784 × 21,632 = <strong>16,959,488</strong> 個參數</li>
     <li>CNN 的 Conv_1 只需要 <strong>320</strong> 個參數</li>
-    <li><span class="tag add">補充</span>差距來自兩個特性：<strong>局部連接</strong>（每個輸出只看 3×3 小區域）與<strong>權重共享</strong>（同一個濾波器在整張圖上重複使用）</li>
+  </ul>
+  <p><span class="tag add">補充</span>CNN 比一般全連接網路更適合影像，考試作答要寫出下面這些名詞：</p>
+  <ul>
+    <li><strong>參數共享（Parameter Sharing）</strong>：同一個濾波器的參數在整張圖的不同位置重複使用，偵測相同的特徵，所以參數量和輸入圖片大小無關</li>
+    <li><strong>連接稀疏性（Sparsity of Connections）</strong>：輸出特徵圖的每個值只由輸入的一小塊像素（例如 3×3）算出來，不像全連接層要連到每個像素；上面 16,959,488 對 320 的差距就是這兩個特性造成的。參數少 → 訓練快、比較不容易 overfitting</li>
+    <li><strong>不變性（Invariance）</strong>：特徵不論出現在圖片的哪個位置都偵測得到；再搭配 Pooling，模型不容易受微小位移或細節差異影響</li>
+    <li><strong>保留空間結構、自動學習特徵</strong>：全連接網路要先把圖片攤平成一維，像素上下左右相鄰的關係就消失了；CNN 直接在二維（含頻道）上卷積，保留相鄰像素的關係。濾波器就是特徵偵測器（見 2.1），網路自己學會偵測邊緣、紋理，層數越深組合出越複雜的特徵，不需要人工設計特徵</li>
   </ul>
 
   <h2 id="glossary">3. 關鍵名詞表</h2>
@@ -402,6 +427,10 @@
       <tr><td>全連接層（Fully Connected／Dense Layer）</td><td>每個點與下一層每個點都相連</td><td>把各處找到的線索彙整起來下結論</td></tr>
       <tr><td>參數（Parameter）</td><td>訓練中由模型學習的變數（權重、bias）</td><td>模型自己調的旋鈕</td></tr>
       <tr><td>偏差（Bias）</td><td>每個濾波器／節點加上的一個純量</td><td>整體調高或調低的基準值</td></tr>
+      <tr><td>超參數（Hyperparameter）</td><td>訓練前手動設定、模型不會自己學的值（濾波器大小、stride、learning rate…）</td><td>訓練前由人決定的設定</td></tr>
+      <tr><td>參數共享（Parameter Sharing）<span class="tag add">補充</span></td><td>同一個濾波器在整張圖的不同位置重複使用</td><td>一個偵測器掃遍全圖</td></tr>
+      <tr><td>連接稀疏性（Sparsity of Connections）<span class="tag add">補充</span></td><td>每個輸出只連到輸入的一小塊區域</td><td>每個輸出只看一小塊</td></tr>
+      <tr><td>不變性（Invariance）<span class="tag add">補充</span></td><td>特徵出現在圖片任何位置都偵測得到</td><td>貓在左邊或右邊都認得出來</td></tr>
     </table>
   </div>
 
@@ -501,6 +530,34 @@
   <div class="quiz">
     <p class="q">5.（計算）對下列 4×4 特徵圖先做 ReLU，再做 2×2、stride 2 的 Max Pooling，結果為何？ \(\begin{bmatrix}1&-3&2&0\\-1&4&-2&5\\0&-1&-4&-2\\2&3&-1&-3\end{bmatrix}\)</p>
     <details class="answer"><summary>看解答</summary><div>ReLU 後：\(\begin{bmatrix}1&0&2&0\\0&4&0&5\\0&0&0&0\\2&3&0&0\end{bmatrix}\)；四個 2×2 區塊各取最大值 → \(\begin{bmatrix}4&5\\3&0\end{bmatrix}\)。</div></details>
+  </div>
+  <div class="quiz">
+    <p class="q">6.（計算，期中模擬考）輸入影像 28×28，使用 5×5 的濾波器，stride = 1、padding = 0，輸出特徵圖的大小為何？</p>
+    <details class="answer"><summary>看解答</summary><div>\(m=\dfrac{n+2p-f}{s}+1=\dfrac{28+2\times0-5}{1}+1=24\)（\(n=28\)、\(f=5\)、\(p=0\)、\(s=1\)；無 padding、stride 1 也可以用講義公式 \(28-5+1=24\)）→ <strong>24×24</strong>。只有 1 個濾波器是 24×24×1，用 \(N_f\) 個濾波器深度就是 \(N_f\)。計算題要寫出公式與過程，可以用 <a href="#w-size">2.6 的計算器</a>驗算。</div></details>
+  </div>
+  <div class="quiz" data-answer="C">
+    <p class="q">7.（選擇）關於 Pooling 層，下列何者<strong>錯誤</strong>？</p>
+    <div class="opts">
+      <button data-opt="A">(A) 可以縮小特徵圖、減少後續計算量</button><button data-opt="B">(B) 讓模型比較不受微小位移影響</button>
+      <button data-opt="C">(C) 會改變特徵圖的深度（通道數）</button><button data-opt="D">(D) 本身沒有可訓練的參數</button>
+    </div>
+    <div class="explain" hidden><strong>(C)</strong>。Pooling 對每個通道分開做，高、寬變小，深度不變（見 2.8）。</div>
+  </div>
+  <div class="quiz" data-answer="B">
+    <p class="q">8.（選擇）為什麼現代 CNN 常用兩層 3×3 取代一層 5×5？</p>
+    <div class="opts">
+      <button data-opt="A">(A) 3×3 的感受野比 5×5 大</button><button data-opt="B">(B) 感受野相同，但參數較少、多一次非線性</button>
+      <button data-opt="C">(C) 3×3 不需要 padding</button><button data-opt="D">(D) 兩層 3×3 的輸出尺寸一定比較大</button>
+    </div>
+    <div class="explain" hidden><strong>(B)</strong>。兩層 3×3 的感受野等於 5×5，參數 \(2\times9=18\) 比 25 少，每層後面還各有一次 ReLU（見 2.4）。</div>
+  </div>
+  <div class="quiz" data-answer="D">
+    <p class="q">9.（選擇）下列何者<strong>不是</strong> CNN 比全連接網路更適合處理影像的原因？</p>
+    <div class="opts">
+      <button data-opt="A">(A) 參數共享</button><button data-opt="B">(B) 連接稀疏性</button>
+      <button data-opt="C">(C) 保留像素之間的空間關係</button><button data-opt="D">(D) 每個輸出都連到輸入的所有像素</button>
+    </div>
+    <div class="explain" hidden><strong>(D)</strong>。每個輸出連到所有輸入是全連接層的特性；CNN 的每個輸出只看一小塊區域，這就是連接稀疏性（見 2.12）。</div>
   </div>
 
   <footer>講義來源：<a href="https://drive.google.com/file/d/19liNMn22hP25qEwNZfhAqL_2hmMDHh8x/view" target="_blank" rel="noopener">c2_cnn.pdf</a> · 文字筆記：<a href="https://app.notion.com/p/3eb75b0b5a1381b0ba65eed9bd1732f1" target="_blank" rel="noopener">Notion C2</a></footer>

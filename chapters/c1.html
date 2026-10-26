@@ -131,6 +131,19 @@
         <li>ML：輸入 → <strong>人工做特徵擷取</strong> → 分類模型 → 輸出「是車／不是車」</li>
         <li>DL：輸入 → <strong>同一個神經網路同時做特徵擷取＋分類</strong> → 輸出</li>
         <li>和 C0「傳統 vs 現代電腦視覺」是同一件事：差別在特徵是人設計的，還是模型自己學的</li>
+        <li><span class="tag add">補充</span>其他差異：
+          <div class="table-wrap">
+            <table>
+              <tr><th></th><th>機器學習（ML）</th><th>深度學習（DL）</th></tr>
+              <tr><td>特徵</td><td>人工設計、擷取</td><td>模型自動學習</td></tr>
+              <tr><td>資料量</td><td>較少資料就能訓練</td><td>需要大量資料</td></tr>
+              <tr><td>運算資源</td><td>CPU 就能訓練，訓練較快</td><td>通常需要 GPU，訓練較久</td></tr>
+              <tr><td>可解釋性</td><td>較好，知道用了哪些特徵</td><td>較差，像黑盒子</td></tr>
+              <tr><td>適合的資料</td><td>結構化、表格型資料</td><td>影像、語音、文字等非結構化資料</td></tr>
+              <tr><td>本章例子</td><td>SVM、KNN、PCA</td><td>神經網路（下一章的 CNN）</td></tr>
+            </table>
+          </div>
+        </li>
       </ul>
     </li>
     <li><strong>ML 的不同任務</strong>：依輸入資料分成監督式、非監督式、強化學習三種（見下表）</li>
@@ -691,6 +704,20 @@
     <li>每次更新權重時，選擇<strong>一筆資料或一個 batch</strong> 的資料來計算梯度</li>
     <li>這樣可以加快訓練速度，但可能導致更新過程中的波動和收斂不穩定</li>
     <li>但這個不穩定性<strong>可能會幫助模型脫離 local minima</strong></li>
+  </ul>
+  <p><span class="tag add">補充</span><strong>一次看一張 vs 一次看多張</strong>：依每次更新權重用多少筆資料，分成三種：</p>
+  <div class="table-wrap">
+    <table>
+      <tr><th></th><th>Batch GD</th><th>SGD</th><th>Mini-batch GD</th></tr>
+      <tr><td>每次更新看幾筆</td><td><strong>全部</strong>訓練資料</td><td><strong>一筆</strong>（一次看一張）</td><td><strong>一小批</strong>（例如 32、64 張）</td></tr>
+      <tr><td>一個 epoch 更新幾次</td><td>1 次</td><td>資料筆數次</td><td>資料筆數 ÷ batch size 次</td></tr>
+      <tr><td>更新的路徑</td><td>穩定、平滑</td><td>波動大，但可能跳出 local minima</td><td>介於兩者之間</td></tr>
+      <tr><td>缺點</td><td>每次都要算全部資料，慢、記憶體不夠</td><td>不穩定，無法利用 GPU 平行運算</td><td>要多調一個超參數 batch size</td></tr>
+    </table>
+  </div>
+  <ul>
+    <li>實務上最常用 Mini-batch，一般說的「SGD」很多時候指的就是 Mini-batch；講義寫的「一筆資料或一個 batch」就是把這兩種合在一起講</li>
+    <li>batch size 也是要手動設定的超參數（講義 2.18 的清單沒有列）；C3 的 BN、Dropout 都是以 mini-batch 為單位運作</li>
   </ul>
 
   <h4>局部最小值（Local Minima）</h4>
