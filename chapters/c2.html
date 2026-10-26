@@ -30,6 +30,10 @@
   <h2 id="outline">2. 章節大綱</h2>
 
   <h3>2.1 CNN 的直覺</h3>
+  <div class="callout aim">
+    <p><strong>🎯 目的</strong>：讓模型<strong>自己學會偵測</strong>分辨物體需要的特徵（鬍鬚、眼睛、邊緣…）。</p>
+    <p><strong>✅ 效果</strong>：不需要人工設計特徵，每個 Filter 就是一個特徵偵測器。</p>
+  </div>
   <ul>
     <li>人靠許多特徵分辨貓狗：鬍鬚、臉型、眼睛、毛、顏色…</li>
     <li>CNN 讓模型自己學會偵測這些特徵</li>
@@ -37,6 +41,10 @@
   </ul>
 
   <h3>2.2 卷積（Convolution）運算</h3>
+  <div class="callout aim">
+    <p><strong>🎯 目的</strong>：用 Filter 在圖上滑動，每個位置算一次加權總和，<strong>偵測局部特徵</strong>（例如邊緣）。</p>
+    <p><strong>✅ 效果</strong>：得到 Feature Map，標出「哪裡有這個特徵」；同一個 Filter 掃全圖（參數共享），參數少。</p>
+  </div>
   <ul>
     <li>圖片在電腦中是數字矩陣（講義展示一張手寫數字的像素值，多為 255 的白色背景）</li>
     <li>濾波器（Filter 或 Kernel）在輸入圖上滑動，每個位置做「<strong>對應元素相乘再相加</strong>」，得到一個輸出值</li>
@@ -111,6 +119,10 @@
   </div>
 
   <h3>2.3 彩色圖片的卷積</h3>
+  <div class="callout aim">
+    <p><strong>🎯 目的</strong>：處理多個 channel 的輸入（RGB）：Filter 的深度要等於輸入的 channel 數。</p>
+    <p><strong>✅ 效果</strong>：一個 Filter 把三個 channel 一起算完，得到一張 Feature Map；用幾個 Filter，輸出深度就是多少。</p>
+  </div>
   <ul>
     <li>彩色圖有 3 個頻道（R、G、B），濾波器也要有<strong>相同的頻道數</strong></li>
     <li>一個濾波器在三個頻道各自相乘後全部加總（dot product），得到<strong>一張</strong>單頻道的特徵圖</li>
@@ -127,6 +139,10 @@
   </div>
 
   <h3>2.4 卷積濾波器的超參數</h3>
+  <div class="callout aim">
+    <p><strong>🎯 目的</strong>：決定卷積層怎麼運作：Filter 大小、數量（Depth）、Padding、Stride。</p>
+    <p><strong>✅ 效果</strong>：控制輸出 Feature Map 的大小與深度，以及能抓到多大範圍的特徵（小 Filter 抓細節、大 Filter 抓大範圍）。</p>
+  </div>
   <ul>
     <li><strong>Kernel size（k×k）</strong>：濾波器大小</li>
     <li><strong>Depth</strong>：濾波器數量（Number of filters）</li>
@@ -149,6 +165,10 @@
   </ul>
 
   <h3>2.5 填充（Padding）</h3>
+  <div class="callout aim">
+    <p><strong>🎯 目的</strong>：<strong>避免 Feature Map 越卷越小</strong>，並<strong>增加邊緣、角落像素的貢獻</strong>。</p>
+    <p><strong>✅ 效果</strong>：3×3 Filter 搭配 padding=1 時輸出尺寸不變；角落像素不再只被卷積一次。</p>
+  </div>
   <ul>
     <li>問題：隨著卷積次數增加，圖會越變越小</li>
     <li>解法：在圖片外圍補一圈 0（如 5×5 補成 7×7），輸出就能維持 5×5</li>
@@ -169,6 +189,10 @@
   </div>
 
   <h3>2.6 步幅（Stride）</h3>
+  <div class="callout aim">
+    <p><strong>🎯 目的</strong>：控制 Filter 每次移動的格數。</p>
+    <p><strong>✅ 效果</strong>：stride 越大，輸出 Feature Map 越小；可以增加訓練效率、減少重複使用相同的像素。</p>
+  </div>
   <ul>
     <li>stride = 1：濾波器每次移一格；5×5 輸入、卷 3×3 → 3×3 輸出</li>
     <li>stride = 2：每次移兩格；5×5 輸入、卷 3×3 → 2×2 輸出（可以在上面的卷積元件把 stride 改成 2 試試）</li>
@@ -235,6 +259,10 @@
   </div>
 
   <h3>2.7 激活層 ReLU</h3>
+  <div class="callout aim">
+    <p><strong>🎯 目的</strong>：<strong>引入非線性</strong>：負數轉為 0、正數保留。</p>
+    <p><strong>✅ 效果</strong>：計算快、正值區梯度為 1，不容易梯度消失；缺點是可能出現 Dying ReLU。</p>
+  </div>
   <ul>
     <li>ReLU（Rectified Linear Unit）：<strong>負數轉為 0、正數保留</strong></li>
     <li>為什麼用 ReLU：
@@ -302,6 +330,10 @@
   </div>
 
   <h3>2.8 池化層（Pooling Layer）</h3>
+  <div class="callout aim">
+    <p><strong>🎯 目的</strong>：<strong>縮小 Feature Map 的尺寸，在不丟失重要資訊的情況下減少計算量與訓練參數</strong>。</p>
+    <p><strong>✅ 效果</strong>：高寬減半、深度不變；讓模型不受微小位移影響；Pooling 本身沒有參數。</p>
+  </div>
   <ul>
     <li>減少 feature map 大小，在不丟失重要資訊的情況下減少訓練參數；又叫 Subsampling 或 Downsampling</li>
     <li>最大池化（Max Pooling）：每個區塊取最大值</li>
@@ -323,6 +355,10 @@
   </div>
 
   <h3>2.9 全連接層與 Softmax 層</h3>
+  <div class="callout aim">
+    <p><strong>🎯 目的</strong>：<strong>整合前面卷積層與池化層抽出的特徵，並據此完成分類</strong>。</p>
+    <p><strong>✅ 效果</strong>：Flatten 後由 Fully Connected Layer 綜合判斷，最後一層接 Softmax 輸出各類別機率。</p>
+  </div>
   <ul>
     <li>全連接層（Fully Connected Layer, FC）：整合前面卷積層與池化層抽出的特徵。FC 層的每個點都和下一層的每個點連接，又叫 Dense Layer</li>
     <li>進 FC 前要先把多維特徵圖「展平（Flatten）」成一維向量</li>
@@ -332,6 +368,10 @@
   </ul>
 
   <h3>2.10 整合：簡易 CNN（MNIST 的 4 層 CNN）</h3>
+  <div class="callout aim">
+    <p><strong>🎯 目的</strong>：把卷積、ReLU、Pooling、Flatten、FC、Softmax 串成一個完整的 CNN。</p>
+    <p><strong>✅ 效果</strong>：能一層層算出 Feature Map 大小與參數量，並看出參數大多集中在 FC 層（約 98%）。</p>
+  </div>
   <ul>
     <li>輸入 28×28×1 → Conv_1（32 個 3×3）＋ReLU → Conv_2（64 個 3×3）＋ReLU → Max Pool（2×2）→ Flatten → FC（128）→ Softmax（10）</li>
     <li>設定：stride = 1、padding = 0（不使用）、Max Pool stride = 2</li>
@@ -385,6 +425,10 @@
   </div>
 
   <h3>2.11 參數 vs 超參數</h3>
+  <div class="callout aim">
+    <p><strong>🎯 目的</strong>：分清楚哪些值由模型學習（參數）、哪些值由人設定（超參數）。</p>
+    <p><strong>✅ 效果</strong>：參數靠梯度下降與反向傳播更新；超參數要在訓練前設定，並看 Validation 結果調整。</p>
+  </div>
   <ul>
     <li>參數（Parameter）：訓練過程中由模型學習的變數，又叫可學習參數或權重（weights）；卷積層與全連接層有權重</li>
     <li>超參數（Hyperparameter）：訓練前手動設定，例如節點數、激活函數</li>
@@ -394,6 +438,10 @@
   </ul>
 
   <h3>2.12 為什麼 CNN 有用</h3>
+  <div class="callout aim">
+    <p><strong>🎯 目的</strong>：說明 CNN 比全連接網路更適合處理影像的原因。</p>
+    <p><strong>✅ 效果</strong>：<strong>參數共享</strong>與<strong>連接稀疏性</strong>讓參數量大減（16,959,488 → 320），訓練快、較不易 overfitting；<strong>不變性</strong>讓特徵在任何位置都偵測得到。</p>
+  </div>
   <ul>
     <li>若用一般神經網路處理 28×28 灰階圖（784 個像素），並讓下一層有與 Conv_1 一樣多的節點（26×26×32 = 21,632），這一層就需要 784 × 21,632 = <strong>16,959,488</strong> 個參數</li>
     <li>CNN 的 Conv_1 只需要 <strong>320</strong> 個參數</li>

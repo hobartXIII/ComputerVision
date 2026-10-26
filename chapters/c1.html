@@ -30,6 +30,10 @@
   <h2 id="outline">2. 章節大綱</h2>
 
   <h3>2.1 電腦視覺的挑戰</h3>
+  <div class="callout aim">
+    <p><strong>🎯 目的</strong>：了解為什麼「讓電腦看懂圖片」很難，也就是電腦視覺模型要克服的問題。</p>
+    <p><strong>✅ 效果</strong>：知道模型必須應付角度、亮度、大小、遮擋雜亂、同類外觀差異等變化，這也是後面需要大量資料、能自動學特徵的模型的原因。</p>
+  </div>
   <ul>
     <li>豐富的資訊量（物件類別、深度…）</li>
     <li>相機和感測器性能</li>
@@ -40,6 +44,10 @@
   </ul>
 
   <h3>2.2 電腦眼中的影像</h3>
+  <div class="callout aim">
+    <p><strong>🎯 目的</strong>：把圖片表示成電腦能計算的數字：高 × 寬 × channel 的像素矩陣，每個值 0～255。</p>
+    <p><strong>✅ 效果</strong>：圖片變成可以輸入模型的數值資料；也看出影像維度很高（224×224×3 = 150,528），傳統方法直接處理會很吃力。</p>
+  </div>
   <ul>
     <li>彩色圖片由 R、G、B 三個頻道（channel）組成，每個頻道由許多像素（pixel）組成，每個像素值介於 <strong>0～255</strong></li>
     <li>灰階圖片只有<strong>一個頻道</strong></li>
@@ -118,6 +126,10 @@
   </div>
 
   <h3>2.3 機器學習 × 電腦視覺</h3>
+  <div class="callout aim">
+    <p><strong>🎯 目的</strong>：說明機器學習「從資料中學習」的概念，以及 ML 與 DL 的差別：特徵由人工擷取，還是由模型自動學習。</p>
+    <p><strong>✅ 效果</strong>：依資料有沒有標籤選擇監督式、非監督式或強化學習；DL 讓特徵擷取和分類一起學，不用人工設計特徵。</p>
+  </div>
   <ul>
     <li><strong>什麼是機器學習</strong>：三層同心圓，人工智慧（Artificial Intelligence, AI）⊃ 機器學習（Machine Learning, ML）⊃ 深度學習（Deep Learning, DL）
       <ul>
@@ -172,6 +184,10 @@
   <p class="muted" style="font-size:.88rem">前三列整理自講義「ML 的不同任務」圖；標【補充】的列是講義沒有的延伸說明。</p>
 
   <h3>2.4 支持向量機（Support Vector Machine, SVM）</h3>
+  <div class="callout aim">
+    <p><strong>🎯 目的</strong>：找一個<strong>最佳超平面</strong>區分不同類別，並<strong>最大化間隔（margin）</strong>。</p>
+    <p><strong>✅ 效果</strong>：分類邊界清楚，對新資料的準確率較高；搭配 <strong>Kernel Trick</strong> 可以處理線性不可分的資料。</p>
+  </div>
   <ul>
     <li>監督式學習演算法，主要用於<strong>分類</strong></li>
     <li>目標：找到一個「最佳超平面（hyperplane）」區分不同類別</li>
@@ -211,6 +227,10 @@
   </div>
 
   <h3>2.5 K 最近鄰（K-Nearest Neighbors, KNN）</h3>
+  <div class="callout aim">
+    <p><strong>🎯 目的</strong>：用<strong>距離</strong>判斷類別：看新樣本最近的 K 個鄰居多數屬於哪一類。</p>
+    <p><strong>✅ 效果</strong>：概念簡單、不需要訓練；但預測時要和所有樣本算距離，資料大或維度高時又慢又不準。</p>
+  </div>
   <ul>
     <li>監督式學習演算法，主要用於分類，核心是<strong>以距離判斷類別</strong></li>
     <li>基本三步驟：① 計算新樣本與所有訓練樣本的距離 ② 取最近的 K 個鄰居 ③ 多數決決定類別 <span class="tag add">補充</span>講義以圖說明</li>
@@ -317,6 +337,10 @@
   <p>講義的結論：歐幾里得距離下 B、C 幾乎一樣遠（B 在 x 軸的巨大差異主導了計算）；曼哈頓距離下 C 明顯比較遠，反映「兩個維度都有中等差異」。想像在 1000 維的空間裡，歐幾里得距離會完全由少數差異最大的維度決定，曼哈頓距離則能更穩健地反映所有維度的整體差異。</p>
 
   <h3>2.6 主成分分析（Principal Component Analysis, PCA）</h3>
+  <div class="callout aim">
+    <p><strong>🎯 目的</strong>：<strong>降維</strong>：在保留主要資訊的同時減少特徵數量（投影到變異最大的方向）。</p>
+    <p><strong>✅ 效果</strong>：減少計算量、加快訓練，還能去噪；但只能做線性降維，可能遺失細節。</p>
+  </div>
   <ul>
     <li>是一種<strong>降維</strong>技術</li>
     <li>主要用於在保持資料主要資訊的同時，<strong>減少特徵數量</strong></li>
@@ -363,6 +387,10 @@
   </ul>
 
   <h3>2.7 深度學習 × 電腦視覺：神經網路的結構</h3>
+  <div class="callout aim">
+    <p><strong>🎯 目的</strong>：用多層節點（每個節點先算 z = Σwx + b，再套 Activation Function）組成模型，從資料中學習權重。</p>
+    <p><strong>✅ 效果</strong>：能學出非線性的關係並<strong>自動學習特徵</strong>，是下一章 CNN 的基礎。</p>
+  </div>
   <ul>
     <li><strong>簡單神經網路（A Simple Neural Network）</strong>：講義的例子用體重（weight）與身高（height）兩個輸入判斷性別（gender）。輸入層 2 個節點 → 隱藏層 2 個節點 \(h_1, h_2\) → 輸出層 1 個節點 \(o_1\)；連線上的 \(w_1\)～\(w_6\) 是權重，\(b_1, b_2, b_3\) 是各節點的偏差（bias）。</li>
     <li><strong>每個節點（For each node）</strong>做兩件事：先把輸入乘上權重再加總、加上偏差，得到 \(z\)；再把 \(z\) 送進激活函數 \(f\)，得到這個節點的輸出 \(a\)。</li>
@@ -393,6 +421,10 @@
   </div>
 
   <h3>2.8 激活函數（Activation Function）</h3>
+  <div class="callout aim">
+    <p><strong>🎯 目的</strong>：<strong>引入非線性</strong>。</p>
+    <p><strong>✅ 效果</strong>：網路能學出彎曲的決策邊界；沒有它，疊再多層也只等於一層線性模型。ReLU 計算快、正值區梯度為 1，比 Sigmoid 不容易梯度消失。</p>
+  </div>
   <ul>
     <li>目的：<strong>引入非線性（Introduce non-linearity）</strong>。如果每個節點只做 \(\sum w_ix_i+b\)，疊再多層也還是一個線性函數，無法學出彎曲的決策邊界 <span class="tag add">補充</span>。</li>
     <li>講義列出的 6 種激活函數：</li>
@@ -455,6 +487,10 @@
   </div>
 
   <h3>2.9 輸出層的輸出：Sigmoid 與 Softmax</h3>
+  <div class="callout aim">
+    <p><strong>🎯 目的</strong>：把輸出層的分數轉成機率：<strong>二元分類用 Sigmoid，多類別分類用 Softmax</strong>。</p>
+    <p><strong>✅ 效果</strong>：輸出可以直接解讀為各類別的機率（Softmax 加總為 1），也能拿來計算 Cross-Entropy Loss。</p>
+  </div>
   <ul>
     <li>分類任務（For classification task）的輸出層：
       <ul>
@@ -504,6 +540,10 @@
   </div>
 
   <h3>2.10 前向傳播（Forward Propagation）</h3>
+  <div class="callout aim">
+    <p><strong>🎯 目的</strong>：把輸入資料一層一層算到輸出層，得到預測值。</p>
+    <p><strong>✅ 效果</strong>：有了預測值，才能用 Loss Function 算出和正確答案差多少。</p>
+  </div>
   <ul>
     <li>資料從輸入層一層一層往輸出層算，得到預測值</li>
     <li>講義的圖把每個節點分成兩步：<strong>Step 1 轉換函數（Transfer Function）</strong>：\(\sum_{i=1}^{n}w_ix_i\) 加上偏差（Bias）；<strong>Step 2 激活函數（Activation Function）</strong>：把結果送進激活函數，得到輸出 \(Y\)</li>
@@ -521,6 +561,10 @@
   </div>
 
   <h3>2.11 訓練損失（Training Loss）</h3>
+  <div class="callout aim">
+    <p><strong>🎯 目的</strong>：衡量預測值和真實值的差距（分類用 <strong>Cross-Entropy</strong>，迴歸用 <strong>MSE／MAE</strong>），作為調整權重的依據。</p>
+    <p><strong>✅ 效果</strong>：訓練的目標變成「把 Loss 降到最小」；Loss 曲線也用來判斷 overfitting、決定 Early Stopping。</p>
+  </div>
   <ul>
     <li>衡量神經網路預測結果與真實值之間的差距，並根據結果來調整神經網路的權重</li>
     <li>分類任務：<strong>交叉熵（Cross-Entropy）</strong></li>
@@ -585,6 +629,10 @@
   </div>
 
   <h3>2.12 反向傳播（Backward Propagation）</h3>
+  <div class="callout aim">
+    <p><strong>🎯 目的</strong>：把誤差往回傳，用<strong>連鎖律</strong>算出 Loss 對每個權重的<strong>梯度</strong>。</p>
+    <p><strong>✅ 效果</strong>：知道每個權重該往哪個方向調、調多少，交給梯度下降更新；也說明了層數多時為什麼會梯度消失。</p>
+  </div>
   <p>講義用三張圖說明反向傳播：</p>
   <ul>
     <li><strong>整體流程</strong>（第一張圖的三個步驟）：① 算出誤差（Error）＝預測輸出與實際輸出的差；② 把誤差往回傳給每個神經元（反方向）；③ 對每個權重計算誤差的<strong>梯度（Gradient）</strong>。</li>
@@ -646,6 +694,10 @@
   </div>
 
   <h3>2.13 梯度下降（Gradient Descent）與學習率</h3>
+  <div class="callout aim">
+    <p><strong>🎯 目的</strong>：沿著梯度的反方向更新權重，讓 Loss 一步步變小；<strong>Learning Rate</strong> 決定每一步走多大。</p>
+    <p><strong>✅ 效果</strong>：Learning Rate 適當時穩定收斂；太大會跳過最佳解、震盪甚至發散，太小則收斂很慢。</p>
+  </div>
   <ul>
     <li>梯度下降是一種<strong>優化演算法</strong>，用來根據 Loss 的梯度更新神經網路的權重，目的是讓 Loss 最小化</li>
     <li>講義的圖：損失 \(J\) 對權重 \(w\) 是一條山谷形的曲線，從初始權重 \(w_{old}\) 出發，每一步沿斜率的反方向走，步伐大小是學習率 \(\alpha\)，得到新權重 \(w_{new}\)，一步步走到谷底（Minimum point of cost function）</li>
@@ -689,6 +741,10 @@
   <p>👉 學習率太大、太小的實際效果，可以在 <a href="#w-gd">2.14 的梯度下降元件</a>選「梯度下降（GD）」調 η 試試看。</p>
 
   <h3>2.14 優化器（Optimizer）</h3>
+  <div class="callout aim">
+    <p><strong>🎯 目的</strong>：改良梯度下降的更新方式，讓訓練更快、更穩。</p>
+    <p><strong>✅ 效果</strong>：SGD 更新快，波動有助跳出 local minima；Momentum 靠慣性前進；RMSProp 自動調整每個參數的學習率；<strong>Adam 結合 Momentum 與 RMSProp</strong>，是常用的預設選擇。</p>
+  </div>
   <ul>
     <li>優化器：根據訓練損失調整模型參數。講義介紹兩種：
       <ul>
@@ -856,6 +912,10 @@
   </div>
 
   <h3>2.15 整體流程（Whole Picture）</h3>
+  <div class="callout aim">
+    <p><strong>🎯 目的</strong>：把前向傳播、Loss、反向傳播、Optimizer 串成完整的訓練迴圈。</p>
+    <p><strong>✅ 效果</strong>：反覆「預測 → 算 Loss → 算梯度 → 更新權重」，直到 Loss 最小化，模型就學會了。</p>
+  </div>
   <p>講義用一張圖把前面的內容串起來，整個過程<strong>反覆進行，直到損失函數最小化</strong>（Iterative process until loss function is minimized）：</p>
   <ol>
     <li><strong>前向傳播</strong>（圖的上方，由左往右）：輸入 \(x_1,x_2\)（加上偏差節點）經過兩個隱藏層，每個節點先算 \(z\)、再套激活函數，得到預測值 \(\hat{y}\)（Prediction）</li>
@@ -865,6 +925,10 @@
   </ol>
 
   <h3>2.16 標籤編碼（Label Encoding）</h3>
+  <div class="callout aim">
+    <p><strong>🎯 目的</strong>：把類別標籤轉成模型能計算的數字。</p>
+    <p><strong>✅ 效果</strong>：Label Encoding 簡單，但會產生<strong>虛假順序</strong>；One-Hot Encoding 沒有順序問題，但類別多時會<strong>維度爆炸</strong>。</p>
+  </div>
   <ul>
     <li><strong>Label Encoding</strong>（密集表示，dense representation）：每個類別給一個整數。<strong>需注意虛假順序問題</strong></li>
     <li><strong>One-Hot Encoding</strong>（稀疏表示，sparse representation）：每個類別一個欄位，是該類就填 1、其他填 0。<strong>需注意維度爆炸問題</strong></li>
@@ -905,6 +969,10 @@
   </div>
 
   <h3>2.17 評估指標（Metrics）</h3>
+  <div class="callout aim">
+    <p><strong>🎯 目的</strong>：用 Accuracy、Precision、Recall 等指標衡量模型表現。</p>
+    <p><strong>✅ 效果</strong>：能從不同角度看模型好不好：整體對多少、預測為正的可信度、有沒有漏抓。</p>
+  </div>
   <ul>
     <li>分類任務<strong>通常使用 Accuracy</strong></li>
     <li><strong>Precision（精確率）</strong>：模型預測為 positive 的結果中，有多少是 True Positive</li>
@@ -963,6 +1031,10 @@
   </div>
 
   <h3>2.18 需要設定的超參數</h3>
+  <div class="callout aim">
+    <p><strong>🎯 目的</strong>：整理訓練前要由人設定的值（節點數、Activation Function、Optimizer、Learning Rate 等）。</p>
+    <p><strong>✅ 效果</strong>：知道哪些東西不是模型自己學的，要靠 Validation 結果手動調整。</p>
+  </div>
   <ul>
     <li>每一層：
       <ul>

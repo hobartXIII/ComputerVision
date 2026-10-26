@@ -31,6 +31,10 @@
   <h2 id="outline">2. 章節大綱</h2>
 
   <h3>2.1 為什麼需要遷移學習</h3>
+  <div class="callout aim">
+    <p><strong>🎯 目的</strong>：解決新任務<strong>資料太少</strong>、難以從頭訓練 CNN 的問題。</p>
+    <p><strong>✅ 效果</strong>：借用 Pretrained Model，以少量資料和較短的時間就能得到好表現。</p>
+  </div>
   <ul>
     <li>從頭訓練一個 CNN 需要三樣東西：<strong>大量標註資料、強大的運算資源、足夠的訓練時間</strong></li>
     <li>多數實際任務只有幾百到幾千張影像，很難滿足這些條件</li>
@@ -41,6 +45,10 @@
   </ul>
 
   <h3>2.2 遷移學習原理</h3>
+  <div class="callout aim">
+    <p><strong>🎯 目的</strong>：利用預訓練模型學到的<strong>通用特徵</strong>（邊緣、色塊、紋理）。</p>
+    <p><strong>✅ 效果</strong>：這些特徵也適用於新任務，所以能以較少的資料和訓練時間取得好表現。</p>
+  </div>
   <ul>
     <li>在 ImageNet 等大型資料集上訓練模型，有時需要數週時間</li>
     <li>這類模型的卷積層學到許多<strong>通用特徵</strong>，例如淺層的邊緣、色塊與紋理偵測器，這些特徵也適用於其他影像任務</li>
@@ -50,6 +58,10 @@
   </ul>
 
   <h3>2.3 特徵提取（Feature Extraction）</h3>
+  <div class="callout aim">
+    <p><strong>🎯 目的</strong>：<strong>凍結</strong>卷積基底，只訓練新的分類層，直接拿預訓練模型擷取特徵。</p>
+    <p><strong>✅ 效果</strong>：訓練快、需要的資料少，不會破壞預訓練權重。</p>
+  </div>
   <ul>
     <li>取一個預先訓練好的網路，分成兩部分：
       <ul>
@@ -67,6 +79,10 @@
   </ul>
 
   <h3>2.4 微調（Fine-tuning）</h3>
+  <div class="callout aim">
+    <p><strong>🎯 目的</strong>：解凍部分或全部預訓練層，用<strong>很小的學習率</strong>調整，讓特徵更貼近新資料。</p>
+    <p><strong>✅ 效果</strong>：比 Feature Extraction 更能適應新資料集，準確率通常更高。</p>
+  </div>
   <ul>
     <li>微調是在完成特徵提取的所有步驟之後，接著：
       <ul>
@@ -78,6 +94,10 @@
   </ul>
 
   <h3>2.5 微調的注意事項</h3>
+  <div class="callout aim">
+    <p><strong>🎯 目的</strong>：避免微調時<strong>破壞預訓練學到的特徵</strong>。</p>
+    <p><strong>✅ 效果</strong>：先訓練新分類層再解凍、用小學習率、BN 沿用預訓練統計量，訓練較穩定。</p>
+  </div>
   <ul>
     <li><strong>先訓練新分類層，再解凍預訓練層</strong>：新分類層是隨機初始化的，若一開始就一起訓練，大的梯度會破壞預訓練權重</li>
     <li><span class="tag add">補充</span>兩階段的邏輯（期中模擬考選填題）：
@@ -119,6 +139,10 @@
   </div>
 
   <h3>2.6 CV 裡常見的微調方式</h3>
+  <div class="callout aim">
+    <p><strong>🎯 目的</strong>：依資料量與運算資源，選擇要更新多少參數。</p>
+    <p><strong>✅ 效果</strong>：在適應能力與訓練成本之間取捨：Full、Partial、PEFT、Regularized。</p>
+  </div>
   <ul>
     <li>Full Fine-tuning</li>
     <li>Partial／Selective Fine-tuning</li>
@@ -183,6 +207,10 @@
   </div>
 
   <h3>2.7 Full Fine-tuning</h3>
+  <div class="callout aim">
+    <p><strong>🎯 目的</strong>：<strong>所有參數</strong>都微調，讓模型完全適應新資料。</p>
+    <p><strong>✅ 效果</strong>：適應能力最大，資料夠多時效果最好；但計算與記憶體成本高，資料少時容易 overfitting。</p>
+  </div>
   <ul>
     <li>對所有 layer 的參數進行微調（全部參數都可以改）</li>
     <li>優點：
@@ -198,6 +226,10 @@
   </ul>
 
   <h3>2.8 Partial／Selective Fine-tuning</h3>
+  <div class="callout aim">
+    <p><strong>🎯 目的</strong>：只更新<strong>部分參數</strong>，例如最後幾層，或只更新 BN、bias。</p>
+    <p><strong>✅ 效果</strong>：計算成本比 Full 低、較不易 overfitting，保留預訓練的通用特徵。</p>
+  </div>
   <ul>
     <li>部分參數微調，不一定所有 layer 都需要更新</li>
     <li>常見做法：
@@ -217,6 +249,10 @@
   </ul>
 
   <h3>2.9 Last-k Fine-tuning</h3>
+  <div class="callout aim">
+    <p><strong>🎯 目的</strong>：只解凍<strong>最後 k 個 block</strong> 進行微調。</p>
+    <p><strong>✅ 效果</strong>：保留通用的淺層特徵，只調整和任務相關的深層；k 依資料量與相似度調整。</p>
+  </div>
   <ul>
     <li>只解凍模型最後的 \(k\) 個 layer／block 進行微調（<strong>不含</strong>新準備的分類 head）</li>
     <li>核心假設：越靠近輸入端的特徵越通用，越靠近輸出端的特徵越 task-specific</li>
@@ -275,6 +311,10 @@
   </div>
 
   <h3>2.10 Parameter-Efficient Fine-tuning（PEFT）</h3>
+  <div class="callout aim">
+    <p><strong>🎯 目的</strong>：凍結大部分模型，<strong>只訓練非常少量的參數</strong>。</p>
+    <p><strong>✅ 效果</strong>：可訓練參數少、GPU 記憶體較省，多個任務可以共用同一個 backbone。</p>
+  </div>
   <ul>
     <li>Freeze 大部分 pretrained model，只訓練非常少量的參數</li>
     <li>常見方法：LoRA、Adapter、Visual Prompt Tuning（VPT）</li>
@@ -322,6 +362,10 @@
   </div>
 
   <h3>2.11 LoRA — Low-Rank Adaptation</h3>
+  <div class="callout aim">
+    <p><strong>🎯 目的</strong>：凍結預訓練權重 W₀，只訓練<strong>低秩矩陣</strong> B、A 來表示權重的變化。</p>
+    <p><strong>✅ 效果</strong>：可訓練參數只有約 2%（768×768、r=8）；訓練完可合併回 W₀，推論不增加計算。</p>
+  </div>
   <ul>
     <li>Full fine-tuning 的缺點：訓練成本高、需要更多 GPU memory</li>
     <li>核心概念：凍結大部分 pretrained model 參數，在部分線性層加入 low-rank adapters，僅訓練這些少量參數</li>
@@ -445,6 +489,10 @@
   </div>
 
   <h3>2.12 Regularized Fine-tuning</h3>
+  <div class="callout aim">
+    <p><strong>🎯 目的</strong>：讓參數可以動，但<strong>不要離預訓練模型太遠</strong>。</p>
+    <p><strong>✅ 效果</strong>：降低 overfitting、保留預訓練知識；但來源與目標差太多時可能反而有害。</p>
+  </div>
   <ul>
     <li>核心概念：可以讓 parameters 動，但不要讓它們離 pretrained model 太遠</li>
     <li>常見做法：L2-SP</li>
@@ -454,6 +502,10 @@
   </ul>
 
   <h3>2.13 L2-SP</h3>
+  <div class="callout aim">
+    <p><strong>🎯 目的</strong>：在 Loss 加上 (α/2)‖w − w⁰‖²，把權重<strong>拉向預訓練值</strong>而不是 0。</p>
+    <p><strong>✅ 效果</strong>：小資料集上更穩定，保留預訓練的泛化能力；但所有參數仍需訓練。</p>
+  </div>
   <ul>
     <li>Full fine-tuning 會更新整個模型，但在小資料集或 target domain 資料不足時，模型可能：overfitting、忘記 pretrained model 學到的通用視覺特徵、更新幅度過大導致泛化能力下降</li>
     <li>核心概念：fine-tuning 時，不只是讓模型 fit 新資料，也要限制模型不要離 pretrained weights 太遠</li>

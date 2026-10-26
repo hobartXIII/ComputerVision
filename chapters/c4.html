@@ -91,6 +91,10 @@
   </ul>
 
   <h3>2.3 VGGNet</h3>
+  <div class="callout aim">
+    <p><strong>🎯 目的</strong>：用規整的「多層 3×3 卷積 ＋ Pooling」把網路<strong>加深</strong>，提升準確率。</p>
+    <p><strong>✅ 效果</strong>：結構規範、準確率高（ImageNet top-5 92.7%）；但參數龐大（約 1.38 億），計算需求大。</p>
+  </div>
   <h4 class="formula-head">公式：先複習：一層卷積的三個數字 <span class="tag add">補充</span></h4>
   <p>這章幾乎所有計算都是在算同一件事：<strong>一層卷積的「輸出尺寸」、「參數量」、「乘法次數」</strong>。把這三個算熟，後面的瓶頸層、Depthwise、Fire module、GAP 都只是換數字套進去。</p>
   <div class="table-wrap">
@@ -184,6 +188,10 @@
   </div>
 
   <h3>2.4 Inception Network</h3>
+  <div class="callout aim">
+    <p><strong>🎯 目的</strong>：不必選 Filter 大小：在同一層<strong>並行多種 Filter</strong>擷取多尺度特徵，並用 1×1 卷積降低運算量。</p>
+    <p><strong>✅ 效果</strong>：同時抓到細節與大範圍的特徵；Bottleneck Layer 讓運算量降到約 1/10。</p>
+  </div>
   <ul>
     <li>動機：設計 CNN 要決定很多超參數（filter size、stride、padding、層數、FC 層數…），其中 <strong>filter size 最難選</strong>：小 kernel 擅長捕捉細節，大 kernel 擅長捕捉較大範圍的特徵</li>
     <li>想法：<strong>不必選</strong>，在同一層並行使用多種 filter size，再把結果串接，讓網路自己學</li>
@@ -293,6 +301,10 @@
   </div>
 
   <h3>2.5 ResNet</h3>
+  <div class="callout aim">
+    <p><strong>🎯 目的</strong>：解決網路很深時<strong>難以優化、效能反而下降</strong>的問題。</p>
+    <p><strong>✅ 效果</strong>：殘差連接讓層只需學殘差 F(x)，梯度也能經捷徑傳回前面，可以訓練上百層的網路。</p>
+  </div>
   <ul>
     <li>一般 CNN 是線性順序的序列；模型很深時效能反而下降，而且<strong>不是過擬合</strong>（例如 50 層比 20 層還差）</li>
     <li>原因之一：<strong>梯度爆炸／消失（Exploding／Vanishing Gradients）</strong>：N 層網路更新時要把 N 個導數相乘，導數大就指數成長、小就指數消失</li>
@@ -371,6 +383,10 @@
   </div>
 
   <h3>2.6 Global Average Pooling（GAP）</h3>
+  <div class="callout aim">
+    <p><strong>🎯 目的</strong>：每張 Feature Map 取平均，<strong>取代 Flatten ＋ 大型 Fully Connected Layer</strong>。</p>
+    <p><strong>✅ 效果</strong>：大幅減少參數、降低 overfitting、對輸入尺寸更靈活；但丟失空間位置資訊。</p>
+  </div>
   <ul>
     <li>每張特徵圖取平均：7×7×512 → 1×1×512</li>
     <li>優點：
@@ -438,6 +454,10 @@
   </div>
 
   <h3>2.7 訓練效率 vs 計算成本</h3>
+  <div class="callout aim">
+    <p><strong>🎯 目的</strong>：區分「每一步要花多少資源」（計算成本）與「要幾步才能達到目標」（訓練效率）。</p>
+    <p><strong>✅ 效果</strong>：能估計總訓練成本，判斷模型適不適合部署在手機或即時應用。</p>
+  </div>
   <ul>
     <li>計算成本：完成一次運算（例如一個 batch 的前向與反向傳播）需要多少資源</li>
     <li>訓練效率：需要多少訓練步數（或資料量）才能達到目標性能</li>
@@ -475,6 +495,10 @@
   </div>
 
   <h3>2.8 SqueezeNet</h3>
+  <div class="callout aim">
+    <p><strong>🎯 目的</strong>：維持 AlexNet 等級的準確率，同時<strong>大幅縮小模型</strong>。</p>
+    <p><strong>✅ 效果</strong>：用 Fire module，參數約 AlexNet 的 1/50，方便傳輸與部署；但參數少不代表運算少。</p>
+  </div>
   <ul>
     <li>2016 年提出；目標：維持 AlexNet 等級準確率，大幅縮小模型</li>
     <li>小模型的好處：分散式訓練時伺服器間傳輸量少、透過網路更新模型需要的頻寬小（例如自駕車遠端更新）、更容易部署在嵌入式系統</li>
@@ -559,6 +583,10 @@
   </div>
 
   <h3>2.9 MobileNet</h3>
+  <div class="callout aim">
+    <p><strong>🎯 目的</strong>：讓 CNN 能在<strong>手機、嵌入式裝置</strong>上即時執行。</p>
+    <p><strong>✅ 效果</strong>：Depthwise Separable Convolution 讓運算量降到約 1/8～1/9（3×3），並可用 α、ρ 依裝置效能調整。</p>
+  </div>
   <ul>
     <li>2017 年提出；動機：VGG、ResNet 參數與運算量大，手機／嵌入式裝置放不下、推論（inference，即 forward propagation）太慢</li>
     <li>行動裝置運算能力低（便宜、省電），需要訓練小模型或壓縮模型</li>

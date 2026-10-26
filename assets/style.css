@@ -129,6 +129,8 @@ main { min-width: 0; max-width: 820px; padding-top: 24px; }
 .callout.warn { border-left-color: var(--c-c); }
 /* 公式的「目的與後續用途」 */
 .callout.use { border-left-color: var(--pos); }
+.callout.aim { border-left-color: var(--accent); padding-top: 8px; padding-bottom: 8px; }
+.callout.aim p { margin: .25em 0; }
 .callout.use p { margin: .3em 0; }
 .callout.use ul { margin: .3em 0 0; padding-left: 1.3em; }
 .callout.use li { margin: .2em 0; }

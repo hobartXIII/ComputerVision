@@ -30,6 +30,10 @@
   <h2 id="outline">2. 章節大綱</h2>
 
   <h3>2.1 Training、Validation、Test 資料集</h3>
+  <div class="callout aim">
+    <p><strong>🎯 目的</strong>：把資料分成 Training、Validation、Test，分別用來學習、調整與最終評估。</p>
+    <p><strong>✅ 效果</strong>：能公正地評估模型、及早發現 overfitting；最後的 Test 結果代表真正的泛化能力。</p>
+  </div>
   <ul>
     <li><strong>Training data</strong>：模型用來學習參數</li>
     <li><strong>Validation data</strong>：訓練期間用來對模型做公正評估（每個 epoch 訓練完就評估一次）</li>
@@ -47,6 +51,10 @@
   </ul>
 
   <h3>2.2 Accuracy 不夠用：混淆矩陣</h3>
+  <div class="callout aim">
+    <p><strong>🎯 目的</strong>：看出模型在每個類別的對錯，以及容易把誰誤認成誰。</p>
+    <p><strong>✅ 效果</strong>：找出表現較差的類別（例如 4 容易被判成 9），補足 Accuracy 只有一個數字的不足。</p>
+  </div>
   <ul>
     <li>問題情境：模型分不出「3」和「8」。怎麼找出這種問題？哪個類別表現較差？模型是不是傾向把 8 判成 3？單一個 Accuracy 數字回答不了這些問題</li>
     <li>混淆矩陣：列為真實類別、欄為預測類別 <span class="tag add">補充</span>這是慣例，有些工具相反。對角線（綠色）是預測正確、其他格（紅色）是預測錯誤</li>
@@ -62,6 +70,10 @@
   </div>
 
   <h3>2.3 二元分類指標（COVID 例子）</h3>
+  <div class="callout aim">
+    <p><strong>🎯 目的</strong>：從混淆矩陣的不同角度衡量分類器（Accuracy、Recall、Precision、Specificity、FPR）。</p>
+    <p><strong>✅ 效果</strong>：可以依應用選指標，例如疾病篩檢重視 Recall，避免漏掉病人。</p>
+  </div>
   <ul>
     <li>準確率（Accuracy）、錯誤率（Misclassification／Error Rate）</li>
     <li>真陽性率（True Positive Rate, TPR）＝ 敏感度（Sensitivity）＝ 召回率（Recall）：患有 COVID 的病人中，我們預測出了多少</li>
@@ -126,6 +138,10 @@
   </div>
 
   <h3>2.4 Precision、Recall、F1 與分類報告</h3>
+  <div class="callout aim">
+    <p><strong>🎯 目的</strong>：同時考慮「預測為正的可信度」（Precision）和「有沒有漏抓」（Recall）。</p>
+    <p><strong>✅ 效果</strong>：類別不平衡時比 Accuracy 可靠；F1 用調和平均兼顧兩者，任一個太低 F1 就會很低。</p>
+  </div>
   <ul>
     <li><span class="tag add">補充</span><strong>類別不平衡時 Accuracy 會失真</strong>：例如 100 人只有 5 人有病，模型全部猜「沒病」也有 95% 的 Accuracy，卻一個病人都沒抓到（Recall = 0），所以要搭配 Precision 與 Recall 一起看</li>
     <li><strong>Precision／Recall 取捨（tradeoff）</strong>：通常提升其中一個，另一個就會下降</li>
@@ -146,6 +162,10 @@
   </div>
 
   <h3>2.5 過度擬合與泛化</h3>
+  <div class="callout aim">
+    <p><strong>🎯 目的</strong>：認識模型在訓練資料表現好、在新資料表現差的問題與成因。</p>
+    <p><strong>✅ 效果</strong>：知道要用增加資料、降低模型複雜度、正則化等方法提升<strong>泛化能力</strong>。</p>
+  </div>
   <ul>
     <li>過度擬合（Overfitting）：模型在訓練資料上過度訓練，在測試資料上表現很差（很常發生）</li>
     <li>常見成因：訓練資料太少、用太多特徵（Features）、模型太複雜</li>
@@ -173,6 +193,10 @@
   </div>
 
   <h3>2.6 正則化方法一：L1 與 L2</h3>
+  <div class="callout aim">
+    <p><strong>🎯 目的</strong>：在 Loss 加上 Penalty，<strong>迫使模型使用較小的權重</strong>，避免 overfitting。</p>
+    <p><strong>✅ 效果</strong>：<strong>L1</strong> 把不重要特徵的權重降為 0（特徵選取）；<strong>L2</strong> 讓所有權重一起變小；λ 太大會 underfitting。</p>
+  </div>
   <ul>
     <li>做法：<strong>Loss Function ＋ Penalty（L1 或 L2）</strong></li>
     <li>目的：迫使模型使用較小的參數（weights 和 biases），避免特定節點產生過大影響</li>
@@ -232,6 +256,10 @@
   </div>
 
   <h3>2.7 正則化方法二：Dropout</h3>
+  <div class="callout aim">
+    <p><strong>🎯 目的</strong>：<strong>防止 overfitting</strong>：訓練時隨機關閉部分節點。</p>
+    <p><strong>✅ 效果</strong>：模型不能依賴少數節點，學到更可靠的特徵、泛化較好；代價是收斂較慢。</p>
+  </div>
   <ul>
     <li>出處：Srivastava et al., “Dropout: a simple way to prevent neural networks from overfitting”, JMLR 2014</li>
     <li>Dropout 影響的不是訓練損失，而是<strong>模型本身</strong></li>
@@ -263,6 +291,10 @@
   </div>
 
   <h3>2.8 正則化方法三：Early Stopping</h3>
+  <div class="callout aim">
+    <p><strong>🎯 目的</strong>：在模型開始 overfitting 之前<strong>停止訓練</strong>。</p>
+    <p><strong>✅ 效果</strong>：不用事先決定 epoch 數，並取回驗證損失最低那一輪的權重。</p>
+  </div>
   <ul>
     <li>設定一個門檻：如果接下來 <strong>P 個 epoch</strong> 都沒有更好的結果就停止訓練</li>
     <li>每個 epoch 都儲存模型權重（以便取回最佳的那一個）</li>
@@ -314,6 +346,10 @@
   </div>
 
   <h3>2.9 正則化方法四：Batch Normalization（BN）</h3>
+  <div class="callout aim">
+    <p><strong>🎯 目的</strong>：對每個 mini-batch 標準化，<strong>穩定每一層輸入的分布</strong>。</p>
+    <p><strong>✅ 效果</strong>：訓練更穩定、可以用較大的學習率、收斂較快，也有輕微的正則化效果。</p>
+  </div>
   <ul>
     <li>做法：對<strong>每組 mini-batch</strong> 分別計算 mean 與標準差（STD）並標準化</li>
     <li>CNN 中：每一層有 <strong>d 個 mean 和 d 個 STD</strong>，d 為該層 filter 數量（即 channel 數）</li>
@@ -397,6 +433,10 @@
   </div>
 
   <h3>2.10 正則化小建議</h3>
+  <div class="callout aim">
+    <p><strong>🎯 目的</strong>：說明使用正則化時要注意的地方。</p>
+    <p><strong>✅ 效果</strong>：先建立 Baseline 再加正則化，避免參數設錯讓模型變差或 underfitting。</p>
+  </div>
   <ul>
     <li>不要一開始就用正則化，先建立 <strong>Baseline Model</strong></li>
     <li>正則化有時會讓模型變差（例如參數設定錯誤）</li>
@@ -406,6 +446,10 @@
   </ul>
 
   <h3>2.11 資料擴增（Data Augmentation）</h3>
+  <div class="callout aim">
+    <p><strong>🎯 目的</strong>：對訓練資料做變換，<strong>增加資料的多樣性</strong>。</p>
+    <p><strong>✅ 效果</strong>：等於讓模型看到更多不同版本的圖片，減少 overfitting、提升泛化能力。</p>
+  </div>
   <ul>
     <li>Overfitting 的原因之一是訓練資料不夠，資料擴增可以解決；<strong>影像資料特別適合</strong></li>
     <li>Keras 與 PyTorch 的基本方法：翻轉（水平／垂直）、亮度與對比、旋轉、縮放、裁切、扭曲</li>
