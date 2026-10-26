@@ -5,7 +5,7 @@
   const DATA = window.QUIZ_DATA;
   const LETTER = 'ABCD';
   const CHS = [
-    { id: 'c0', no: 'C0（不考）' }, { id: 'c1', no: 'C1' }, { id: 'c2', no: 'C2' }, { id: 'c3', no: 'C3' },
+    { id: 'c0', no: 'C0' }, { id: 'c1', no: 'C1' }, { id: 'c2', no: 'C2' }, { id: 'c3', no: 'C3' },
     { id: 'c4', no: 'C4（含 DenseNet）' }, { id: 'c5', no: 'C5' },
   ];
   const PAGE_NO = { c0: 'C0', c1: 'C1', c2: 'C2', c3: 'C3', c4: 'C4', 'c4-2': 'C4-2', c5: 'C5' };
