@@ -24,6 +24,18 @@
   <p class="eyebrow">C5 · 講義：c5_transfer_learning_and_fine_tuning</p>
   <h1>🔁 遷移學習與微調</h1>
 
+  <h2 id="story">📖 故事版：第 5 集：小視去隔壁梨園幫忙</h2>
+  <div class="story">
+    <p>隔壁梨園的老闆想讓機器人認出梨樹的病葉，可是手上只有幾百張照片。從頭訓練一個 CNN 需要大量標註資料、強大的運算資源和很長的時間，他們都沒有。</p>
+    <p>小視說：「我看過幾百萬張圖，那是在 <strong>ImageNet</strong> 上練的。」這就是<strong>遷移學習（Transfer Learning）</strong>：借用<strong>預訓練模型（Pretrained Model）</strong>。淺層學到的<strong>邊緣、色塊、紋理</strong>這些<strong>通用特徵</strong>，看蘋果用得上，看梨葉也用得上。</p>
+    <p>第一種做法是<strong>特徵提取（Feature Extraction）</strong>。把預訓練的<strong>卷積基底（convolutional base）</strong>整個<strong>凍結（freeze）</strong>，只換上一個新的分類器來訓練。訓練快、資料少也行，而且不會弄壞原本學好的權重。</p>
+    <p>第二種是<strong>微調（Fine-tuning）</strong>。先把新分類器訓練好，再<strong>解凍（unfreeze）</strong>部分或全部的層，用<strong>很小的學習率</strong>慢慢調，讓特徵更貼近梨葉。注意事項有三：先訓練新層再解凍，否則隨機初始化的新層會把大錯誤傳回來、破壞舊特徵；學習率要小；<strong>BN</strong> 沿用預訓練時的統計量。</p>
+    <p>梨園老闆問：「要調多少才夠？」小視拿出四種方案：</p>
+    <ol><li><strong>全部微調（Full Fine-tuning）</strong>：所有參數都能改，資料夠多時效果最好，但最花運算和記憶體，資料少時容易 overfitting。</li><li><strong>部分微調（Partial／Selective Fine-tuning）</strong>：只改一部分，例如只更新 BN 或 bias。最常見的是 <strong>Last-k Fine-tuning</strong>：保留淺層的通用特徵，只解凍最後 \(k\) 個 block。資料越少、任務越像原本的，\(k\) 就越小。</li><li><strong>參數高效微調（Parameter-Efficient Fine-tuning, PEFT）</strong>：凍結幾乎整個模型，只訓練一點點新參數，多個任務還能共用同一個 backbone。代表是<strong>低秩適應（Low-Rank Adaptation, LoRA）</strong>：原本的 \(W_0\) 不動，只學兩個小矩陣 \(B\)、\(A\)，用 \(BA\) 表示權重的變化。768×768、\(r=8\) 時，只要訓練約 2% 的參數，訓練完還能合併回 \(W_0\)，推論不增加計算。</li><li><strong>正則化微調（Regularized Fine-tuning）</strong>：參數可以動，但不能離家太遠。<strong>L2-SP</strong> 在 Loss 加上 \(\frac{\alpha}{2}\lVert w-w^0\rVert^2\)，把權重拉回<strong>預訓練值 \(w^0\)</strong>，而不是像一般的 L2 拉向 0。</li></ol>
+    <p>梨園只有幾百張照片，小視選了先做特徵提取、再微調最後幾個 block。一個下午就教會了梨園的機器人。回程路上它想起第 0 集，自己只會說「我收到了很多數字」，現在已經能把看過的世界借給別人用了。</p>
+    <p class="story-note">故事是幫助記憶的改寫，細節與數字以下方筆記為準。<span class="tag add">補充</span></p>
+  </div>
+
   <h2 id="summary">1. 本章重點摘要</h2>
   <p>從頭訓練 CNN 需要大量標註資料、強大運算資源與長時間，多數實際任務只有幾百到幾千張影像，做不到。遷移學習（Transfer Learning）借用在 ImageNet 等大型資料集上預訓練好的模型：淺層學到的邊緣、色塊、紋理等通用特徵也適用於新任務。用法分兩種：<strong>特徵提取</strong>（凍結卷積基底、只訓練新的分類層）與<strong>微調</strong>（在特徵提取之後，解凍部分或全部層，用很小的學習率再訓練）。</p>
   <p>後半介紹 CV 常見的四種微調方式：Full Fine-tuning（全部可改）、Partial／Selective Fine-tuning（例如 Last-k，只解凍最後 \(k\) 個 block）、參數高效微調（Parameter-Efficient Fine-tuning, PEFT，例如低秩適應 LoRA 只訓練小矩陣 \(BA\)）、Regularized Fine-tuning（例如 L2-SP，懲罰權重離預訓練值 \(w^0\) 太遠）。這章直接建立在 <a href="c4.html">C4</a> 的經典模型（ResNet、VGG 等作為 backbone）與 <a href="c3.html">C3</a> 的 BN、L2 正則化之上。</p>

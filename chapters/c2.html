@@ -24,6 +24,19 @@
   <p class="eyebrow">C2 · 講義：c2_cnn</p>
   <h1>🧠 卷積神經網路（CNN）</h1>
 
+  <h2 id="story">📖 故事版：第 2 集：小視裝上「放大鏡」</h2>
+  <div class="story">
+    <p>阿明送給小視一盒放大鏡，每一片都只看一小塊，而且只找一種形狀。有的專找上邊，有的專找左邊，有的找鬍鬚般的細線。這些放大鏡就是<strong>濾波器（Filter／Kernel）</strong>，整套做法叫<strong>卷積神經網路（Convolutional Neural Network, CNN）</strong>。</p>
+    <p>小視拿一片 3×3 的放大鏡，從照片左上角開始滑。每到一個位置，就把放大鏡上的數字和底下的像素<strong>對應相乘再相加</strong>，寫下一個數。這個動作叫<strong>卷積（Convolution）</strong>。滑完整張圖，得到一張<strong>特徵圖（Feature Map）</strong>，上面標出「哪裡有這個形狀」。例如每列都是 1, 0, −1 的<strong>垂直邊緣偵測器</strong>，會在左亮右暗的地方亮起來。</p>
+    <p>彩色照片有 R、G、B 三層，所以放大鏡也要做成三層厚：<strong>濾波器深度要等於輸入通道數</strong>，三層各自乘完再全部加起來，只輸出一張圖。想找幾種形狀，就準備幾片放大鏡，輸出就有幾張特徵圖。</p>
+    <p>滑了幾次，小視發現兩個問題。第一，邊緣的像素被看到的次數比較少，輸出也越縮越小。於是它在圖外圍補一圈 0，這叫<strong>填充（Padding）</strong>。第二，一格一格滑太慢，可以一次跳兩格，這叫<strong>步幅（Stride）</strong>，輸出也會跟著縮小。放大鏡的大小、片數、padding 和 stride，都是要先決定的<strong>超參數</strong>。</p>
+    <p>每張特徵圖接著經過 <strong>ReLU</strong>，把負值清成 0，只留下「有找到」的訊號。再用<strong>池化層（Pooling Layer）</strong>把圖縮小：<strong>Max Pooling</strong> 每一區只留最大值，<strong>Average Pooling</strong> 取平均。池化沒有參數，卻讓圖變小、計算變少，物體稍微移動也不怕。</p>
+    <p>一層一層下去，前面的放大鏡找邊緣，後面的把邊緣組成眼睛、鬍鬚和整張臉。最後把特徵攤平（<strong>Flatten</strong>），交給<strong>全連接層（Fully Connected Layer, FC）</strong>綜合判斷，再用 <strong>Softmax</strong> 給出各類別的機率。小視用這套流程認手寫數字（<strong>MNIST</strong>），一次就成功了。</p>
+    <p>阿明問它為什麼比上一集好。小視說：「同一片放大鏡掃整張圖，這叫<strong>參數共享（parameter sharing）</strong>，所以參數少。每個輸出只看一小塊，這叫<strong>局部連接</strong>。蘋果不管在左邊右邊，我都認得出來。」</p>
+    <p>不過，期末評鑑要來了。小視在練習題上考滿分，換了新題目卻頻頻出錯（→ C3）。</p>
+    <p class="story-note">故事是幫助記憶的改寫，細節與數字以下方筆記為準。<span class="tag add">補充</span></p>
+  </div>
+
   <h2 id="summary">1. 本章重點摘要</h2>
   <p>本章介紹卷積神經網路（Convolutional Neural Network, CNN），是現代電腦視覺的核心模型。CNN 用「濾波器（filter／kernel）」當作特徵偵測器，在圖上滑動做卷積運算得到特徵圖（feature map），再經過 ReLU 激活、池化（pooling）縮小尺寸，最後用全連接層整合特徵、Softmax 分類。本章重點是理解<strong>卷積的計算方式</strong>、<strong>padding 與 stride 對輸出尺寸的影響</strong>，以及<strong>如何計算每層的輸出尺寸與參數量</strong>。它延續 C1 的神經網路訓練觀念（激活函數、Softmax、反向傳播），並說明為什麼 CNN 比一般全連接神經網路更適合處理影像。</p>
 

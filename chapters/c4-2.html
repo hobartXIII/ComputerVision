@@ -24,6 +24,18 @@
   <p class="eyebrow">C4 Part 2 · 講義：c4_advanced_cnn_part2</p>
   <h1>🌲 進階影像視覺模型（Part 2）：DenseNet</h1>
 
+  <h2 id="story">📖 故事版：第 4-2 集：每一層都記得大家</h2>
+  <div class="story">
+    <p>特展的主角是<strong>密集連接卷積網路（Densely Connected Convolutional Networks, DenseNet）</strong>。導覽員先帶小視複習：一般的 CNN 一層只接下一層；ResNet 多了一條捷徑，用<strong>逐元素相加（element-wise addition）</strong>把舊特徵加回來。</p>
+    <p>DenseNet 問：「為什麼只給一條捷徑？」在同一個 <strong>Dense Block</strong> 裡，每一層都直接拿到<strong>前面所有層</strong>的特徵圖，而且不是相加，是沿著通道方向<strong>串接（concatenation）</strong>。舊的特徵原封不動地保留下來，大家都能<strong>重複利用特徵（feature reuse）</strong>，梯度也有很多條路可以回到前面。</p>
+    <p>既然前面的特徵都拿得到，每一層就不用再學很多新東西，只要多貢獻 \(k\) 張特徵圖。這個 \(k\) 叫<strong>增長率（growth rate）</strong>。所以每一層可以很「窄」，整個網路用比 ResNet 少得多的參數，就能達到相近的準確率。</p>
+    <p>每一層的工作順序是 <strong>BN → ReLU → 3×3 Conv</strong>，叫<strong>組成層（Composition Layer）</strong>，先正規化、激活，再卷積（pre-activation）。可是越後面的層，收到的通道越多。於是在 3×3 之前先放一個 <strong>1×1 卷積</strong>，把通道壓到 \(4k\)，這就是<strong>瓶頸層（Bottleneck Layer）</strong>，加了它的版本叫 <strong>DenseNet-B</strong>。</p>
+    <p>Block 和 Block 之間有一座<strong>過渡層（Transition Layer）</strong>：先用 1×1 卷積按<strong>壓縮因子 \(\theta\)</strong>（compression factor）減少通道，再用 <strong>2×2 Average Pooling</strong> 把圖縮小一半。瓶頸層和壓縮都用的版本，就叫 <strong>DenseNet-BC</strong>。</p>
+    <p>小視很心動，但導覽員小聲補了一句：「每一層都要記得前面所有人，<strong>記憶體需求很高</strong>。串接又多，實際跑起來不一定比較快。」</p>
+    <p>參觀完，阿明打電話來：「隔壁梨園的樹生病了，可是他們只有幾百張照片。」小視想了想：「我腦袋裡已經有很多看過的東西了，也許可以借來用。」（→ C5）</p>
+    <p class="story-note">故事是幫助記憶的改寫，細節與數字以下方筆記為準。<span class="tag add">補充</span></p>
+  </div>
+
   <h2 id="summary">1. 本章重點摘要</h2>
   <p>Part 2 只介紹一個模型：密集連接卷積網路（Densely Connected Convolutional Networks, DenseNet）。它延續 <a href="c4.html#w-res">Part 1 ResNet</a>「給梯度一條捷徑」的想法，但把合併方式從<strong>逐元素相加</strong>改成<strong>通道串接</strong>：同一個 Dense Block 裡，每一層都直接拿到前面所有層的特徵圖，自己只再新增 \(k\) 個（增長率，growth rate）。因為特徵可以重複利用，每層可以很窄，所以 DenseNet 能用比 ResNet 少得多的參數達到相近的準確率。代價是要保存所有先前層的輸出，記憶體需求高，而且大量串接讓實際速度不一定比較快。</p>
   <p>配套設計有三個：pre-activation 的組成層（BN → ReLU → 3×3 Conv）、瓶頸層（Bottleneck，先用 1×1 壓到 \(4k\)，即 DenseNet-B）、區塊之間的過渡層（Transition Layer，1×1 Conv 以壓縮因子 \(\theta\) 減少通道 ＋ 2×2 Average Pooling；兩者都用就是 DenseNet-BC）。</p>

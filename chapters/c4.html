@@ -24,6 +24,20 @@
   <p class="eyebrow">C4 · 講義：c4_advanced_cnn_part1</p>
   <h1>🏛️ 進階影像視覺模型（Part 1）</h1>
 
+  <h2 id="story">📖 故事版：第 4 集：小視參觀「名模型博物館」</h2>
+  <div class="story">
+    <p>博物館入口掛著兩位前輩的照片：LeNet 和 AlexNet。小視繞過它們，直接走進第一個展廳。</p>
+    <p><strong>VGGNet</strong> 的口號是「越深越好」。它只用 <strong>3×3 卷積</strong>，一層疊一層，每隔幾層接一次 <strong>Pooling</strong>。導覽員解釋：「兩層 3×3 看到的範圍等於一層 5×5，三層等於 7×7，但參數更少、中間還多了好幾次 ReLU。」VGG 很準，代價是參數高達約 1.38 億。</p>
+    <p>下一廳是 <strong>Inception Network</strong>。它說：「濾波器要選 1×1、3×3 還是 5×5？我不選，全部一起上！」同一層<strong>並行</strong>多種大小的濾波器，同時抓細節和大範圍的<strong>多尺度特徵</strong>，再把結果串起來。為了不讓運算爆炸，它先用 <strong>1×1 卷積</strong>把通道壓扁，這叫<strong>瓶頸層（Bottleneck Layer）</strong>，運算量約降到 1/10。</p>
+    <p>第三廳最熱鬧。小視聽說「網路越深越難訓練」：太深時梯度一路相乘，會<strong>梯度消失（Vanishing Gradient）</strong>或<strong>梯度爆炸（Exploding Gradient）</strong>，50 層甚至比 20 層還差。<strong>殘差網路（Residual Network, ResNet）</strong>的解法是幫每幾層開一條<strong>捷徑（Skip Connection）</strong>：輸出等於 \(F(x)+x\)，這幾層只要學「還差多少」的<strong>殘差（residual）</strong>，梯度也能沿捷徑直接傳回前面。從此上百層的網路也訓練得動。</p>
+    <p>走廊上，小視看到一個簡單的裝置：<strong>全域平均池化（Global Average Pooling, GAP）</strong>。它把每張特徵圖直接取平均成一個數，7×7×512 變成 512。這樣就不用 Flatten 加上大型 FC，<strong>參數大減、比較不會 overfitting</strong>，輸入大小也更有彈性。缺點是丟掉了「東西在哪裡」的<strong>空間位置資訊</strong>。</p>
+    <p>後半館是「輕量化」主題。導覽員先在牆上寫：<strong>計算成本（Computational Cost）</strong>是每一步花多少資源，<strong>訓練效率（Training Efficiency）</strong>是要走幾步才到終點，兩個都要看。</p>
+    <p><strong>SqueezeNet</strong> 展示它的 <strong>Fire module</strong>：先用 1×1 卷積<strong>擠壓（squeeze）</strong>通道，再用 1×1 加 3×3 卷積<strong>展開（expand）</strong>。準確率和 AlexNet 差不多，參數卻只有約 1/50。不過導覽員提醒：「參數少，不代表運算少。」</p>
+    <p>最後是 <strong>MobileNet</strong>，專門給手機用。它把一般卷積拆成兩步，叫<strong>深度可分離卷積（Depthwise Separable Convolution）</strong>：先用 <strong>Depthwise</strong> 卷積每個通道各自做 3×3，再用 <strong>Pointwise</strong> 的 1×1 卷積混合通道。運算量降到約 1/8～1/9，還能用<strong>寬度乘數 α</strong> 和<strong>解析度乘數 ρ</strong> 依裝置調整大小。</p>
+    <p>小視走到出口，看到牆上預告著下一展：「如果捷徑不只一條呢？」（→ C4-2）</p>
+    <p class="story-note">故事是幫助記憶的改寫，細節與數字以下方筆記為準。<span class="tag add">補充</span></p>
+  </div>
+
   <h2 id="summary">1. 本章重點摘要</h2>
   <p>本章介紹經典的 CNN 架構演進：從最早的 LeNet、AlexNet，到「越深越好」的 VGG，再到用多種 filter 並行、並用 1×1 卷積省運算的 Inception，以及用殘差連接（Skip Connection）解決深層網路訓練困難的殘差網路（Residual Network, ResNet）。後半轉向輕量化：SqueezeNet 用 Fire module 壓低<strong>參數量</strong>，MobileNet 用深度可分離卷積（Depthwise Separable Convolution）壓低<strong>運算量</strong>，EfficientNet 則用複合縮放（Compound Scaling）同時放大深度、寬度與解析度。這章把 C2 的 CNN 基礎與 C3 的改進技巧（BN、正則化）串成實際的經典模型，也是之後遷移學習、物件偵測等章節常用的骨幹網路（backbone）來源。</p>
   <div class="callout warn">

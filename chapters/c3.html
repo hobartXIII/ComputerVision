@@ -24,6 +24,19 @@
   <p class="eyebrow">C3 · 講義：c3_model_improvement</p>
   <h1>📈 模型品質與改進</h1>
 
+  <h2 id="story">📖 故事版：第 3 集：小視的期末評鑑</h2>
+  <div class="story">
+    <p>小視把練習題背得滾瓜爛熟，阿明卻搖頭：「背答案不算會。」他把資料分成三份：<strong>訓練集（Training Set）</strong>是課本，拿來學；<strong>驗證集（Validation Set）</strong>是模擬考，拿來調<strong>超參數</strong>、決定什麼時候停；<strong>測試集（Test Set）</strong>是正式考卷，最後才打開，只考一次。</p>
+    <p>這次的任務是從照片篩出生病的果樹。小視交出 95% 的<strong>準確率（Accuracy）</strong>，阿明卻發現：病樹本來就只有 5%，它把全部都說成健康，也能拿到 95 分。<strong>Accuracy 不夠用</strong>。</p>
+    <p>阿明畫了一張 2×2 的<strong>混淆矩陣（Confusion Matrix）</strong>：<strong>真陽性（TP）</strong>、<strong>偽陽性（FP）</strong>、<strong>真陰性（TN）</strong>、<strong>偽陰性（FN）</strong>。用它就能算出不同角度的分數：</p>
+    <ul><li><strong>召回率（Recall）</strong>，又叫<strong>敏感度（Sensitivity）</strong>或 <strong>TPR</strong>：真的生病的樹，抓到了幾成？篩檢最怕漏掉，所以最重視它，就像課本裡的 COVID 篩檢例子。</li><li><strong>精確率（Precision）</strong>：被說成生病的樹，有幾成真的生病？</li><li><strong>特異度（Specificity）</strong>，又叫 <strong>TNR</strong>：健康的樹，有幾成被正確放過？<strong>FPR</strong> 則是被冤枉的比例。</li><li><strong>F1</strong>：Precision 和 Recall 的調和平均，兩邊都要顧到才會高。</li></ul>
+    <p>接著阿明處理背答案的毛病，也就是<strong>過度擬合（Overfitting）</strong>：訓練誤差一直降，驗證誤差卻開始上升，代表<strong>泛化（Generalization）</strong>能力變差了。他開了四帖<strong>正則化（Regularization）</strong>藥方：</p>
+    <ol><li><strong>L1／L2 正則化</strong>：在 Loss 加上權重的懲罰（<strong>Penalty</strong>），強度由 \(\lambda\) 控制。<strong>L1（Lasso）</strong>把不重要特徵的權重降為 0（<strong>特徵選取</strong>），<strong>L2（Ridge）</strong>讓所有權重一起變小；\(\lambda\) 太大會 underfitting。</li><li><strong>Dropout</strong>：訓練時隨機關掉一些神經元，讓小視不能只靠某幾個「學霸神經元」。測試時則全部打開。</li><li><strong>提早停止（Early Stopping）</strong>：驗證誤差一連幾回合不再下降，就停在最好的那一刻。</li><li><strong>批次正規化（Batch Normalization, BN）</strong>：把每一層的輸出拉回平均 0、變異 1 附近，訓練更穩更快，也帶一點正則化效果。</li></ol>
+    <p>最後一招是<strong>資料擴增（Data Augmentation）</strong>：照片翻轉、旋轉、裁切、調亮度，一張變很多張。小視就這樣看過各種「換了角度的蘋果」，不再只認得課本上那一顆。</p>
+    <p>評鑑通過了。阿明說：「現在你會看、也會自我檢查。接下來，去看看前輩們都怎麼蓋更厲害的眼睛。」（→ C4）</p>
+    <p class="story-note">故事是幫助記憶的改寫，細節與數字以下方筆記為準。<span class="tag add">補充</span></p>
+  </div>
+
   <h2 id="summary">1. 本章重點摘要</h2>
   <p>本章處理「模型訓練好之後，怎麼知道它好不好、不好又該怎麼改」。前半講<strong>評估</strong>：訓練集、驗證集、測試集（Training／Validation／Test）三種資料集的角色，以及準確率（Accuracy）不夠用時要看的混淆矩陣（Confusion Matrix）、精確率（Precision）、召回率（Recall）、F1 等指標。後半講<strong>改進</strong>：過度擬合（Overfitting）的成因，以及四種正則化（Regularization）方法：L1／L2、Dropout、提早停止（Early Stopping）、批次正規化（Batch Normalization, BN），還有各式資料擴增（Data Augmentation）。這章延續 C1 的評估指標與 C2 的 CNN，是把模型從「能跑」推到「好用」的工具箱。</p>
 

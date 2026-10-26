@@ -24,6 +24,22 @@
   <p class="eyebrow">C1 · 講義：c1_computer_vision_models</p>
   <h1>🤖 視覺機器學習模型</h1>
 
+  <h2 id="story">📖 故事版：第 1 集：小視學會「學習」</h2>
+  <div class="story">
+    <p>小視第一次認真看蘋果，才發現事情不簡單。同一顆蘋果換個<strong>角度</strong>、<strong>亮度</strong>就像另一顆；放遠了會變小（<strong>規模</strong>）；被葉子擋住、背景又亂（<strong>雜亂，Clutter</strong>）；紅蘋果、青蘋果明明同一類，長得卻差很多。</p>
+    <p>更麻煩的是，在小視的腦袋裡，一張照片只是一個 <strong>高 × 寬 × 通道（channel）</strong> 的數字矩陣：彩色圖有 <strong>RGB</strong> 三個通道，灰階圖只有一個，每個數字介於 0～255。一張 224×224 的彩色照片，就有 150,528 個數字。</p>
+    <p>小視先找傳統<strong>機器學習</strong>的三位老師：</p>
+    <ul><li><strong>支持向量機（Support Vector Machine, SVM）</strong>在蘋果和橘子之間畫一條分界線，也就是<strong>超平面（hyperplane）</strong>，並讓它離兩邊最近的點越遠越好，這段距離叫<strong>間隔（margin）</strong>。線畫不直的時候，就用<strong>核技巧（Kernel Trick）</strong>。</li><li><strong>K 最近鄰（K-Nearest Neighbors, KNN）</strong>說：「看你最近的 K 個鄰居多數是誰，你就是誰。」它簡單又不用訓練，可是每次都要和所有樣本量<strong>距離</strong>，圖一大就又慢又不準。</li><li><strong>主成分分析（Principal Component Analysis, PCA）</strong>幫小視<strong>降維（dimensionality reduction）</strong>：只留下變異最大的方向，數字變少、還能去噪，但只能做線性的壓縮。</li></ul>
+    <p>三位老師都要人先告訴小視「該看哪些特徵」。後來小視遇到<strong>深度學習（Deep Learning, DL）</strong>：<strong>特徵擷取</strong>和<strong>分類</strong>一起交給模型自己學。</p>
+    <p>小視在腦中搭起一個<strong>神經網路（Neural Network）</strong>：<strong>輸入層</strong>、<strong>隱藏層</strong>、<strong>輸出層</strong>。每個節點先算 \(z=\sum wx+b\)，也就是<strong>權重（weight）</strong>乘上輸入再加<strong>偏差（bias）</strong>，再交給<strong>激活函數（Activation Function）</strong>加上非線性。少了這一步，疊再多層也只是一條直線。小視最愛 <strong>ReLU</strong>：負的變 0、正的照抄，算得快，也不容易<strong>梯度消失</strong>。</p>
+    <p>最後一層要交出答案。二元分類用 <strong>Sigmoid</strong>，多類別用 <strong>Softmax</strong>，把分數變成加總為 1 的機率。答案本身得先變成數字：<strong>Label Encoding</strong> 簡單，卻會造出假的大小順序；<strong>One-Hot Encoding</strong> 沒這個問題，但類別一多維度就爆炸。</p>
+    <p>訓練就是一個迴圈。<strong>前向傳播（Forward Propagation）</strong>算出預測，<strong>損失函數（Loss Function）</strong>量出錯多少（分類用 <strong>Cross-Entropy</strong>，迴歸用 <strong>MSE／MAE</strong>）。<strong>反向傳播（Backward Propagation）</strong>用<strong>連鎖律</strong>把錯誤往回分給每個權重，<strong>梯度下降（Gradient Descent）</strong>再往梯度的反方向走一步。</p>
+    <p>每一步走多大由<strong>學習率（Learning Rate）</strong>決定：太大會跳過谷底、來回震盪，太小則走到天荒地老。小視試了幾種<strong>優化器（Optimizer）</strong>：<strong>SGD</strong> 快但晃，<strong>Momentum</strong> 帶慣性，<strong>RMSProp</strong> 替每個參數調步伐，<strong>Adam</strong> 把後兩者合在一起，成了它的預設選擇。</p>
+    <p>學完後，阿明用<strong>評估指標（Metrics）</strong>給它打分數：<strong>Accuracy</strong>（整體對幾成）、<strong>Precision</strong>（說是蘋果的有幾成真的是）、<strong>Recall</strong>（真的蘋果被抓到幾成）。節點數、學習率、優化器這些得由人先決定，叫<strong>超參數（hyperparameter）</strong>。</p>
+    <p>可是小視發現一個問題：把照片攤成一長串數字餵進網路，蘋果的「形狀」就散掉了，參數也多得嚇人。它需要一雙真正會看圖的眼睛（→ C2）。</p>
+    <p class="story-note">故事是幫助記憶的改寫，細節與數字以下方筆記為準。<span class="tag add">補充</span></p>
+  </div>
+
   <h2 id="summary">1. 本章重點摘要</h2>
   <p>本章先說明電腦視覺的挑戰（角度、亮度、規模、遮擋雜亂等），以及影像在電腦中如何以 RGB 或灰階像素矩陣表示。接著介紹三個傳統機器學習方法：<strong>SVM（分類）、KNN（距離分類）、PCA（降維）</strong>，各自在電腦視覺的用途與缺點。後半進入深度學習：神經網路的結構、激活函數、輸出層（Sigmoid／Softmax）、損失函數、前向與反向傳播、梯度下降與優化器（SGD、Adam），最後是標籤編碼與評估指標。這章是下一章「卷積神經網路（CNN）」的基礎，CNN 的訓練流程完全沿用本章的神經網路觀念。</p>
 

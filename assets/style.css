@@ -134,6 +134,15 @@ main { min-width: 0; max-width: 820px; padding-top: 24px; }
 .callout.use p { margin: .3em 0; }
 .callout.use ul { margin: .3em 0 0; padding-left: 1.3em; }
 .callout.use li { margin: .2em 0; }
+/* 每章開頭的「故事版」 */
+.story {
+  border: 1px solid var(--border); border-left: 4px solid var(--c-c);
+  background: var(--surface); border-radius: var(--radius); padding: 14px 18px; margin: 1em 0 1.5em;
+}
+.story p:first-child { margin-top: 0; }
+.story ol, .story ul { padding-left: 1.4em; }
+.story li { margin: .3em 0; }
+.story .story-note { margin-bottom: 0; font-size: .88em; color: var(--text-2); }
 .callout p:first-child { margin-top: 0; }
 .callout p:last-child, .callout ol:last-child, .callout ul:last-child { margin-bottom: 0; }
 
