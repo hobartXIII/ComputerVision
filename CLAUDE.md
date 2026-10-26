@@ -53,6 +53,9 @@ assets/highlights.js  共享螢光筆標記 window.HL_SHARED（由 tools/merge-h
 tools/merge-highlights.js  把頁面匯出的螢光筆 JSON 合併進 highlights.js（Node）
 chapters/c<n>.html    每章一頁，檔名與講義章號一致
 chapters/c<n>.js      該章的互動元件，每個元件一個 IIFE，對應 HTML 裡的 .widget#w-xxx
+chapters/quiz.html    期中模擬題庫（練習、模擬考、錯題本），見下方「期中模擬題庫」
+chapters/quiz.js      題庫的畫面與作答邏輯
+chapters/quiz-data.js 題庫資料 window.QUIZ_DATA（選擇 200 題、問答 80 題）
 ```
 
 - 所有 script 都用 `defer` 載入，順序是 KaTeX → `highlighter.js` → `common.js` → `c<n>.js`；樣式是 `style.css` → `highlighter.css`。新增頁面時兩個都要加。不能用 ES modules，因為用 `file://` 直接開啟時會被擋。
@@ -147,6 +150,24 @@ chapters/c<n>.js      該章的互動元件，每個元件一個 IIFE，對應 H
 C3 門檻元件的分數是依常態分位數排列產生的，讓門檻 0.5 剛好得到講義的 TP90/FN10/FP5/TN40；改分布參數後要重新確認。
 
 梯度下降曲線的係數是模擬後才選定的：換係數或學習率範圍之前，先用 Node 模擬確認上面這幾種現象仍然成立，頁面上的「試試看」說明才不會與實際行為不符。
+
+## 期中模擬題庫
+
+- `chapters/quiz.html`：選擇 200 題、問答 80 題，依各章網頁筆記**自己出的練習題，不是老師的題目**（頁面上也這樣標示）。題目依老師的考試提示加重 C2、C4；LeNet、AlexNet、EfficientNet 不出。
+- 頁首的「題庫」連結寫在 `common.js` 的 `buildTopbar()`；首頁有一張入口卡片（`index.html`）。這頁不載入螢光筆，也沒有目錄。
+- 三個分頁：
+  - 練習：依章節、題型、順序篩選，選擇題選了馬上判對錯；鍵盤 1～4／A～D 選答案、← → 換題
+  - 模擬考：隨機抽題（選擇 10／25／50、問答 0／3／5／10），交卷後算分數與各章答對率；未作答時按交卷會先提醒一次
+  - 錯題本：答錯（或問答自評「還不會」）就加入，之後答對就移除；存在 localStorage `cv-quiz-wrong`
+- 問答題一律自評：先寫答案、看參考答案，再按「會了／還不會」。
+- 資料格式（`quiz-data.js`）：
+  - 選擇題 `{ id: 'm<n>', n, ch, page, q, o: [4 個選項], a: 正確選項 0～3, e: 解析 }`
+  - 問答題 `{ id: 's<n>', n, ch, page, star, q, a: 參考答案 HTML }`
+  - `ch` 是篩選用的章（C4-2 併入 `c4`），`page` 是「看筆記」連到的頁面；`star` 是模擬考原題或老師上課提到的主題
+  - 文字是 HTML（`<strong>` 等），題目裡的 `<`、`&` 要寫成實體
+- 題目原稿是專案根目錄的 `mock-exam-mcq.md`、`mock-exam-short.md`（只在本機、不 commit，`midterm-mock-exam.md`、`midterm-review.md` 也一樣，commit 時不要用 `git add .`）。原稿改了之後要重新轉成 `quiz-data.js`；也可以直接改 `quiz-data.js`，但原稿就不會同步。
+- 選擇題正確答案的位置已平衡成 A、B、C、D 各 50 題；改題目時盡量維持。
+- 驗證：模擬考抽 10 題選擇、答對 5 題 → 顯示 50 分；390px 寬度不橫向捲動（問答解答裡的表格包在 `.table-wrap`），淺色、深色都看。
 
 ## 新增一章的流程
 
