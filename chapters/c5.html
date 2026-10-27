@@ -26,13 +26,89 @@
 
   <h2 id="story">📖 故事版：第 5 集：小視去隔壁梨園幫忙</h2>
   <div class="story">
-    <p>隔壁梨園的老闆想讓機器人認出梨樹的病葉，可是手上只有幾百張照片。從頭訓練一個 CNN 需要大量標註資料、強大的運算資源和很長的時間，他們都沒有。</p>
-    <p>小視說：「我看過幾百萬張圖，那是在 <strong>ImageNet</strong> 上練的。」這就是<strong>遷移學習（Transfer Learning）</strong>：借用<strong>預訓練模型（Pretrained Model）</strong>。淺層學到的<strong>邊緣、色塊、紋理</strong>這些<strong>通用特徵</strong>，看蘋果用得上，看梨葉也用得上。</p>
-    <p>第一種做法是<strong>特徵提取（Feature Extraction）</strong>。把預訓練的<strong>卷積基底（convolutional base）</strong>整個<strong>凍結（freeze）</strong>，只換上一個新的分類器來訓練。訓練快、資料少也行，而且不會弄壞原本學好的權重。</p>
-    <p>第二種是<strong>微調（Fine-tuning）</strong>。先把新分類器訓練好，再<strong>解凍（unfreeze）</strong>部分或全部的層，用<strong>很小的學習率</strong>慢慢調，讓特徵更貼近梨葉。注意事項有三：先訓練新層再解凍，否則隨機初始化的新層會把大錯誤傳回來、破壞舊特徵；學習率要小；<strong>BN</strong> 沿用預訓練時的統計量。</p>
+    <h4>場景 1｜梨園只有幾百張照片</h4>
+    <p>隔壁梨園的老闆想讓機器人認出梨樹的病葉，可是手上只有幾百張照片。小視先評估從頭訓練一個 CNN 要什麼：<strong>大量標註資料</strong>、<strong>強大的運算資源</strong>、<strong>足夠的訓練時間</strong>。梨園三樣都沒有。阿明說：「大部分實際的任務都是這樣，只有幾百到幾千張影像。」</p>
+    <p>小視說：「我看過很多圖，那是在 <strong>ImageNet</strong> 上練的。」ImageNet 常用的 ILSVRC 子集約 120 萬張影像、1000 個類別，在上面訓練一個模型，有時要好幾週。小視的提議是：不要從頭學，借用已經學好的。這就是<strong>遷移學習（Transfer Learning）</strong>，借來的叫<strong>預訓練模型（Pretrained Model）</strong>。</p>
+
+    <h4>場景 2｜哪些東西可以借</h4>
+    <p>梨園老闆懷疑：「你是看蘋果、汽車、貓狗長大的，怎麼會懂梨葉？」小視解釋，卷積網路的淺層學到的是<strong>邊緣、色塊、紋理</strong>這些<strong>通用特徵</strong>，看什麼都用得上；深層才是和原本資料集有關的細節。就像辨識老虎、獅子和馬的模型，學到的特徵也有助於辨識其他四足哺乳動物。</p>
+    <p>小視判斷：「梨葉也有邊緣、斑點和紋理，淺層一定能借。深層學的是『這是哪一種 ImageNet 類別』，要看情況調整。」</p>
+
+    <h4>場景 3｜第一種借法：特徵提取</h4>
+    <p>小視先把預訓練模型拆成兩部分：前面的卷積層和池化層叫<strong>卷積基底（Convolutional Base）</strong>，負責擷取特徵；後面的全連接層和輸出層叫<strong>分類層（Classifier Head）</strong>，對應原本的 1000 個類別。</p>
+    <p>第一種做法是<strong>特徵提取（Feature Extraction）</strong>：</p>
+    <ol>
+      <li>把卷積基底整個<strong>凍結（freeze）</strong>，訓練時權重不更新。</li>
+      <li>拿掉原本 1000 類的分類層，換上新的，輸出數量等於梨園的類別數。</li>
+      <li>在梨園的資料上訓練，只有新分類層會更新。</li>
+    </ol>
+    <p>小視用 ResNet-50 算了一下：GAP 之後是 2,048 維，梨園有 10 種病葉，新的分類層是 \((2048+1)\times10=20{,}490\) 個參數，只佔全部約 0.09%。訓練快、資料少也行，而且<strong>不會弄壞原本學好的權重</strong>。</p>
+
+    <h4>場景 4｜第二種借法：微調，與一次失敗</h4>
+    <p>特徵提取的準確率還不錯，但小視想讓特徵更貼近梨葉。第二種做法是<strong>微調（Fine-tuning）</strong>：在特徵提取之後，<strong>解凍（unfreeze）</strong>部分或全部預訓練層，通常是較深的層，用<strong>很小的學習率</strong>再訓練幾個 epoch。</p>
+    <p>小視想省事，一開始就把整個網路解凍，和新分類層一起訓練。結果前幾個 epoch 的 Loss 很大，準確率反而比只做特徵提取還差。阿明幫它找原因：「新分類層是隨機初始化的，一開始幾乎是亂猜，Loss 很大、梯度也很大。這些大梯度往回傳，把預訓練的權重改壞了，等於有一部分得從頭學起。」</p>
+    <p>小視改成<strong>兩階段</strong>：先凍結，只訓練新分類層，等它學會用現有的特徵分類、Loss 降下來、梯度也穩定了；再解凍後面幾層，用小學習率輕輕調整。阿明問學習率要多小，小視說：「比初始訓練小一到兩個數量級，例如原本 0.01，微調用 0.001～0.0001。」</p>
+
+    <h4>場景 5｜BN 的陷阱</h4>
+    <p>改完之後，小視的表現還是有點不穩。阿明檢查發現問題出在 <strong>BN</strong>。預訓練時，BN 在 120 萬張圖上估出 running mean 0.5，很穩定。梨園的資料少，一個 batch 只有 4 張，平均剛好是 2.0。BN 在訓練模式下，一個 batch 就把 running mean 拉到 \(0.9\times0.5+0.1\times2.0=0.65\)，而且正規化直接用這 4 張的平均，後面每一層看到的分布都跟著晃，原本學到的特徵就被打亂了。</p>
+    <p>小視本來以為把權重凍結就沒事了。阿明說：「把 requires_grad 關掉，只是不更新權重，running mean 還是會被新資料更新。凍結的層裡如果有 BN，要另外設成 <strong>eval 模式</strong>，沿用預訓練的統計量。」</p>
+
+    <h4>場景 6｜顯示卡放不放得下</h4>
+    <p>梨園的電腦只有一張小顯示卡。小視先估訓練時要放多少東西：全部的權重，加上可訓練參數的梯度，再加上優化器為每個可訓練參數存的狀態。Adam 每個參數存 2 份（C1 學過的 \(m\)、\(s\)），每個數字 4 bytes。</p>
+    <ul>
+      <li>Full Fine-tuning：全部 23,528,522 個參數都要訓練，權重 ＋ 梯度 ＋ 2 份狀態 = 4 份，約 <strong>376.5 MB</strong>。</li>
+      <li>特徵提取：權重還是要全部載入，約 94.1 MB；梯度和狀態只給 20,490 個參數，約 0.25 MB，合計約 <strong>94.4 MB</strong>。</li>
+    </ul>
+    <p>小視注意到：「凍結省下的是梯度和優化器狀態，凍結的權重還是要佔記憶體。」實際訓練還要再加上激活值，這裡沒有算進去。</p>
+
+    <h4>場景 7｜要調多少才夠：四種方案</h4>
     <p>梨園老闆問：「要調多少才夠？」小視拿出四種方案：</p>
-    <ol><li><strong>全部微調（Full Fine-tuning）</strong>：所有參數都能改，資料夠多時效果最好，但最花運算和記憶體，資料少時容易 overfitting。</li><li><strong>部分微調（Partial／Selective Fine-tuning）</strong>：只改一部分，例如只更新 BN 或 bias。最常見的是 <strong>Last-k Fine-tuning</strong>：保留淺層的通用特徵，只解凍最後 \(k\) 個 block。資料越少、任務越像原本的，\(k\) 就越小。</li><li><strong>參數高效微調（Parameter-Efficient Fine-tuning, PEFT）</strong>：凍結幾乎整個模型，只訓練一點點新參數，多個任務還能共用同一個 backbone。代表是<strong>低秩適應（Low-Rank Adaptation, LoRA）</strong>：原本的 \(W_0\) 不動，只學兩個小矩陣 \(B\)、\(A\)，用 \(BA\) 表示權重的變化。768×768、\(r=8\) 時，只要訓練約 2% 的參數，訓練完還能合併回 \(W_0\)，推論不增加計算。</li><li><strong>正則化微調（Regularized Fine-tuning）</strong>：參數可以動，但不能離家太遠。<strong>L2-SP</strong> 在 Loss 加上 \(\frac{\alpha}{2}\lVert w-w^0\rVert^2\)，把權重拉回<strong>預訓練值 \(w^0\)</strong>，而不是像一般的 L2 拉向 0。</li></ol>
-    <p>梨園只有幾百張照片，小視選了先做特徵提取、再微調最後幾個 block。一個下午就教會了梨園的機器人。回程路上它想起第 0 集，自己只會說「我收到了很多數字」，現在已經能把看過的世界借給別人用了。</p>
+    <ol>
+      <li><strong>全部微調（Full Fine-tuning）</strong>：所有參數都能改，適應能力最大。目標資料夠多時通常效果最好；和原本的資料差很多時，連淺層都可能需要重新適應。代價是最花運算和記憶體，資料少時容易 overfitting。</li>
+      <li><strong>部分微調（Partial／Selective Fine-tuning）</strong>：只更新一部分。可以依位置選，最常見的是 <strong>Last-k Fine-tuning</strong>，只解凍最後 \(k\) 個 block；也可以依參數類型選，例如只更新 BN 或 bias。最大的問題是要決定哪些層要調。</li>
+      <li><strong>參數高效微調（Parameter-Efficient Fine-tuning, PEFT）</strong>：凍結幾乎整個模型，只訓練一點點新參數。</li>
+      <li><strong>正則化微調（Regularized Fine-tuning）</strong>：參數可以動，但不能離預訓練模型太遠。</li>
+    </ol>
+
+    <h4>場景 8｜k 要選多少</h4>
+    <p>小視先研究 Last-k。它的核心假設是：越靠近輸入的特徵越通用，越靠近輸出的越 task-specific。\(k\) 怎麼選，要看兩件事：</p>
+    <ul>
+      <li><strong>目標資料的多寡</strong>：資料很少 → \(k\) 小一點（例如 1～2）；資料很多 → \(k\) 大一點。</li>
+      <li><strong>來源和目標的相似度</strong>：差異小 → \(k\) 小一點；差異大 → \(k\) 大一點。</li>
+    </ul>
+    <p>梨園資料只有幾百張，小視選 \(k=1\)，以為這樣很省。算了才發現：解凍 ResNet-50 的最後一個 block（layer4）有 14,964,736 個參數，加上新的分類層，要訓練 14,985,226 個，已經是全部的 <strong>63.7%</strong>；\(k=2\) 更到 93.9%。原因是越後面的 block 通道越多，參數也越多。小視記下：「<strong>k 小不代表便宜很多</strong>，要看解凍的是哪一段。」</p>
+
+    <h4>場景 9｜如果要服務很多任務：LoRA</h4>
+    <p>梨園老闆聽完很高興，又說：「附近還有九家果園，各有各的病害，能不能都幫忙？」小視判斷：「如果每家都做 Full Fine-tuning，每家都要存一整份模型。」以 ViT-Base 約 86M 參數來算，10 個任務就要 860M。</p>
+    <p>這時適合用 <strong>PEFT</strong>：凍結 backbone，只訓練很少的新參數，所有任務共用同一個 backbone，每個任務只存自己的小模組。代表方法是<strong>低秩適應（Low-Rank Adaptation, LoRA）</strong>：原本的 \(W_0\) 不動，只學兩個小矩陣 \(B\)、\(A\)，輸出變成 \(h=W_0x+BAx\)。</p>
+    <p>小視算一層 768×768 的權重：原本 589,824 個參數；\(r=8\) 時，\(B\) 是 768×8、\(A\) 是 8×768，合計 12,288 個，約 <strong>2%</strong>。ViT-Base 有 12 層，每層 Q、K、V、O 四個權重，一個任務的 LoRA 約 0.59M。10 個任務是 \(86+10\times0.59\approx92\)M，比 860M 省了約 9 倍。</p>
+    <p>阿明問：「一開始 \(BA\) 是亂的，不會把模型弄壞嗎？」小視：「初始化時 \(A\) 是隨機的、\(B\) 是 0，所以 \(BA=0\)，一開始和預訓練模型完全一樣。」它用小例子驗證合併：\(W_0=I\)、\(B=(0.5,1)^\top\)、\(A=(2,-1)\)、\(x=(3,1)\)，先算 \(Ax=5\)，再 \(B(Ax)=(2.5,5)\)，加上 \(W_0x=(3,1)\)，得 \((5.5,6)\)。訓練完把 \(BA\) 加回 \(W_0\) 合成一個權重，直接算 \(Wx\) 也是 \((5.5,6)\)，所以<strong>推論不增加計算</strong>。</p>
+    <p>不過小視也注意到幾個限制：LoRA 主要用在 ViT、CLIP 這類 Transformer 模型；rank 太小學不夠，太大又失去省參數的優點（常見 4、8、16）；插在哪些層也會影響效果。同樣是 PEFT，Adapter 和 VPT 會增加推論的計算量，LoRA 可以合併回去，所以不會。</p>
+
+    <h4>場景 10｜可以動，但不要離家太遠：L2-SP</h4>
+    <p>最後一種是正則化微調，代表是 <strong>L2-SP</strong>。小視擔心全部微調時，小資料會讓模型忘掉預訓練學到的通用特徵。L2-SP 在 Loss 加上 \(\frac{\alpha}{2}\lVert w-w^0\rVert^2\)，把權重拉回<strong>預訓練值 \(w^0\)</strong>（SP 就是 starting point），而不是像一般的 L2 拉向 0。新加的分類層沒有預訓練值，所以改用一般的 L2。</p>
+    <p>小視算一個例子：\(w^0=(1.0,\ -2.0,\ 0.5)\)、目前 \(w=(1.2,\ -1.5,\ 0.5)\)、\(\alpha=0.1\)。L2-SP 的懲罰只有 \(0.05\times0.29=0.0145\)；如果用 weight decay，懲罰是 \(0.05\times3.94=0.197\)。第 3 個參數根本沒離開預訓練值，L2-SP 完全不拉它，weight decay 卻還是把它往 0 拉。小視的結論：「weight decay 會把有用的預訓練權重一起往 0 拉。用 L2-SP 時，optimizer 不要再另外開 weight_decay，否則權重會同時被拉向 0 和 \(w^0\)。」</p>
+    <p>它也記下限制：\(\alpha\) 要調；來源和目標差太多時，限制太強反而有害；所有參數都還是要訓練，不像 LoRA 能減少可訓練參數。</p>
+
+    <h4>場景 11｜最後的決定</h4>
+    <p>小視把條件整理一遍：梨園只有幾百張照片、顯示卡很小、病葉照片和 ImageNet 的自然影像都是一般拍攝的照片。它的判斷是：</p>
+    <ol>
+      <li>先做<strong>特徵提取</strong>，只訓練新分類層，讓 Loss 穩定下來。</li>
+      <li>再用 <strong>Last-k</strong> 解凍最後一個 block，學習率小一到兩個數量級。</li>
+      <li>凍結層的 BN 設成 eval 模式。</li>
+      <li>如果之後要服務附近十家果園，就改用 LoRA，共用同一個 backbone。</li>
+    </ol>
+    <p>一個下午就教會了梨園的機器人。回程路上，小視想起第 0 集，自己只會說「我收到了很多數字」，現在已經能把看過的世界借給別人用了。</p>
+
+    <h4>小視的筆記本｜本集學到的判斷法</h4>
+    <ul>
+      <li><strong>資料少、運算少</strong> → 遷移學習；淺層通用、深層專門。</li>
+      <li><strong>特徵提取還是微調</strong>：先特徵提取，穩定後再微調；不要一開始就全部一起訓練。</li>
+      <li><strong>微調三提醒</strong>：先訓練新 head 再解凍、學習率小一到兩個數量級、BN 沿用預訓練統計量（設 eval）。</li>
+      <li><strong>選 k</strong>：資料少、任務相似 → k 小；資料多、差異大 → k 大。但 k = 1 在 ResNet-50 就佔 63.7%。</li>
+      <li><strong>選方案</strong>：資料多、差異大 → Full；資料少 → Partial／Last-k；很多任務、記憶體少、Transformer → PEFT（LoRA）；想保留預訓練知識 → L2-SP（不要同時開 weight decay）。</li>
+      <li><strong>記憶體</strong>：權重 ＋ 梯度 ＋ 優化器狀態；凍結省的是後兩者。</li>
+    </ul>
     <p class="story-note">故事是幫助記憶的改寫，細節與數字以下方筆記為準。<span class="tag add">補充</span></p>
   </div>
 

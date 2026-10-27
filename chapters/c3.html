@@ -26,14 +26,96 @@
 
   <h2 id="story">📖 故事版：第 3 集：小視的期末評鑑</h2>
   <div class="story">
-    <p>小視把練習題背得滾瓜爛熟，阿明卻搖頭：「背答案不算會。」他把資料分成三份：<strong>訓練集（Training Set）</strong>是課本，拿來學；<strong>驗證集（Validation Set）</strong>是模擬考，拿來調<strong>超參數</strong>、決定什麼時候停；<strong>測試集（Test Set）</strong>是正式考卷，最後才打開，只考一次。</p>
-    <p>這次的任務是從照片篩出生病的果樹。小視交出 95% 的<strong>準確率（Accuracy）</strong>，阿明卻發現：病樹本來就只有 5%，它把全部都說成健康，也能拿到 95 分。<strong>Accuracy 不夠用</strong>。</p>
-    <p>阿明畫了一張 2×2 的<strong>混淆矩陣（Confusion Matrix）</strong>：<strong>真陽性（TP）</strong>、<strong>偽陽性（FP）</strong>、<strong>真陰性（TN）</strong>、<strong>偽陰性（FN）</strong>。用它就能算出不同角度的分數：</p>
-    <ul><li><strong>召回率（Recall）</strong>，又叫<strong>敏感度（Sensitivity）</strong>或 <strong>TPR</strong>：真的生病的樹，抓到了幾成？篩檢最怕漏掉，所以最重視它，就像課本裡的 COVID 篩檢例子。</li><li><strong>精確率（Precision）</strong>：被說成生病的樹，有幾成真的生病？</li><li><strong>特異度（Specificity）</strong>，又叫 <strong>TNR</strong>：健康的樹，有幾成被正確放過？<strong>FPR</strong> 則是被冤枉的比例。</li><li><strong>F1</strong>：Precision 和 Recall 的調和平均，兩邊都要顧到才會高。</li></ul>
-    <p>接著阿明處理背答案的毛病，也就是<strong>過度擬合（Overfitting）</strong>：訓練誤差一直降，驗證誤差卻開始上升，代表<strong>泛化（Generalization）</strong>能力變差了。他開了四帖<strong>正則化（Regularization）</strong>藥方：</p>
-    <ol><li><strong>L1／L2 正則化</strong>：在 Loss 加上權重的懲罰（<strong>Penalty</strong>），強度由 \(\lambda\) 控制。<strong>L1（Lasso）</strong>把不重要特徵的權重降為 0（<strong>特徵選取</strong>），<strong>L2（Ridge）</strong>讓所有權重一起變小；\(\lambda\) 太大會 underfitting。</li><li><strong>Dropout</strong>：訓練時隨機關掉一些神經元，讓小視不能只靠某幾個「學霸神經元」。測試時則全部打開。</li><li><strong>提早停止（Early Stopping）</strong>：驗證誤差一連幾回合不再下降，就停在最好的那一刻。</li><li><strong>批次正規化（Batch Normalization, BN）</strong>：把每一層的輸出拉回平均 0、變異 1 附近，訓練更穩更快，也帶一點正則化效果。</li></ol>
-    <p>最後一招是<strong>資料擴增（Data Augmentation）</strong>：照片翻轉、旋轉、裁切、調亮度，一張變很多張。小視就這樣看過各種「換了角度的蘋果」，不再只認得課本上那一顆。</p>
+    <h4>場景 1｜背答案不算會</h4>
+    <p>小視把練習題背得滾瓜爛熟，每次都考滿分。阿明卻換了一批它沒看過的新照片，分數馬上掉下來。阿明說：「<strong>背答案不算會</strong>。要知道你是不是真的會，得用你沒看過的題目考。」</p>
+    <p>他把資料分成三份：</p>
+    <ul>
+      <li><strong>訓練集（Training Set）</strong>是課本，唯一拿來<strong>更新權重</strong>的資料。</li>
+      <li><strong>驗證集（Validation Set）</strong>是模擬考。不更新權重，每個 epoch 訓練完就考一次，用來調<strong>超參數</strong>、挑最好的模型、判斷是不是開始背答案、決定什麼時候停。</li>
+      <li><strong>測試集（Test Set）</strong>是正式考卷，模型從沒看過，等訓練全部結束才打開，<strong>只考一次</strong>。</li>
+    </ul>
+    <p>小視想偷懶：「如果我拿正式考卷來調學習率，調到分數最高，不是更好嗎？」阿明搖頭：「那等於先看過考卷再考試，分數會<strong>過度樂觀</strong>，代表不了你在真實世界的表現。」小視記下流程：每個 epoch 先在 Train 上更新權重，再到 Val 算 loss 和 accuracy；重複 n 個 epoch，最後才在 Test 上算一次。</p>
+
+    <h4>場景 2｜一個分數看不出哪裡錯</h4>
+    <p>小視在手寫數字測驗拿到 9,873／10,000，也就是 98.73%。阿明問：「你最常把哪個數字認錯？是不是常把 8 看成 3？」小視答不出來，因為 Accuracy 只有一個數字。</p>
+    <p>阿明畫了一張 10×10 的<strong>混淆矩陣（Confusion Matrix）</strong>：列是真實的數字、欄是預測的數字，對角線是答對的，其他格子是答錯的。小視一眼就找到最大的兩格：<strong>4 被判成 9</strong> 有 9 次，<strong>7 被判成 2</strong> 有 7 次。「原來我最弱的是 4 和 7。」</p>
+    <p>阿明再給它一份<strong>分類報告（Classification Report）</strong>：每個數字各自的 Precision、Recall、F1，以及 Support（這個類別在資料中出現幾次）。小視判斷：要找「哪一類最差」，看分類報告；要找「把誰誤認成誰」，看混淆矩陣。</p>
+
+    <h4>場景 3｜95 分的陷阱</h4>
+    <p>這次的任務是從照片篩出生病的果樹。小視交出 95% 的 Accuracy，很得意。阿明卻發現：果園裡病樹本來就只有 5%，小視<strong>把每一棵都說成健康</strong>，就能拿到 95 分，可是一棵病樹都沒抓到。小視第一次明白：<strong>類別不平衡時，Accuracy 不夠用</strong>。</p>
+    <p>阿明把二元分類的混淆矩陣縮成 2×2：<strong>真陽性（TP）</strong>是病樹、也判成病樹；<strong>偽陰性（FN）</strong>是病樹、卻判成健康；<strong>偽陽性（FP）</strong>是健康、卻判成病樹；<strong>真陰性（TN）</strong>是健康、也判成健康。小視背下讀法：第二個字母是「模型說的」，第一個字母是「說得對不對」。</p>
+
+    <h4>場景 4｜同一張表，五種角度</h4>
+    <p>小視改進模型後重新篩檢，數字剛好和課本的 COVID 例子一樣：TP = 90、FN = 10、FP = 5、TN = 40，共 145 棵。阿明教它先把四個小計算好：實際生病 100、實際健康 45、判成生病 95、全部 145，「每個指標都是某一格除以某個小計，分母不會搞錯」。</p>
+    <ul>
+      <li><strong>Accuracy</strong>：\((90+40)\div145\approx0.897\)；錯誤率約 0.103。</li>
+      <li><strong>召回率（Recall）</strong>，又叫<strong>敏感度（Sensitivity）</strong>、<strong>TPR</strong>：100 棵病樹抓到幾棵？\(90\div100=0.9\)。</li>
+      <li><strong>FPR</strong>：45 棵健康的樹，被冤枉的比例 \(5\div45\approx0.111\)。</li>
+      <li><strong>特異度（Specificity）</strong>，又叫 <strong>TNR</strong>：健康的樹被正確放過的比例 \(40\div45\approx0.889\)，剛好等於 \(1-\text{FPR}\)。</li>
+      <li><strong>精確率（Precision）</strong>：說是病樹的 95 棵裡，真的生病的比例 \(90\div95\approx0.947\)。</li>
+    </ul>
+
+    <h4>場景 5｜該看哪一個指標</h4>
+    <p>阿明給了小視三種情況，要它判斷該重視哪個指標：</p>
+    <ul>
+      <li>「病樹會傳染整片果園，漏掉一棵就麻煩了。」小視：「最怕漏掉，看 <strong>Recall</strong>。就像 COVID 篩檢，寧可多抽幾個人去複檢，也不要漏掉真的病人。」</li>
+      <li>「判成病樹就會直接砍掉。」小視：「最怕冤枉健康的樹，看 <strong>Precision</strong>。」</li>
+      <li>「兩種錯誤都很麻煩。」小視：「看 <strong>F1</strong>。」</li>
+    </ul>
+    <p>小視本來想直接把 Precision 和 Recall 平均。阿明舉了一個例子：Precision 1、Recall 0.1，也就是只抓到一成病樹。算術平均是 0.55，看起來還行；<strong>F1</strong> 是 \(\frac{2\times1\times0.1}{1+0.1}\approx0.18\)，直接反映出「有一項很爛」。F1 是兩者的<strong>調和平均</strong>，兩邊都要顧到才會高。這次篩檢的 F1 是 \(\frac{2\times0.947\times0.9}{0.947+0.9}\approx0.923\)。</p>
+    <p>小視又發現兩者通常<strong>此消彼長</strong>：把判斷門檻調低，只要有一點像病樹就報，Recall（TPR）會上升，但 FPR 也跟著上升，健康的樹被冤枉的變多。要在兩者之間取捨，取決於哪一種錯誤的代價比較高。</p>
+
+    <h4>場景 6｜從兩條曲線判斷病因</h4>
+    <p>接著阿明處理背答案的毛病。他把小視訓練時的兩條曲線畫出來：訓練誤差一直往下降，驗證誤差降到一半卻開始往上升。阿明說：「這就是<strong>過度擬合（Overfitting）</strong>：在訓練資料上表現很好，在沒看過的資料上表現很差，也就是<strong>泛化（Generalization）</strong>能力變差了。」</p>
+    <p>小視學會看曲線判斷：</p>
+    <ul>
+      <li>訓練誤差和驗證誤差<strong>都很高</strong> → 連課本都沒學會，是<strong>擬合不足（Underfitting）</strong>。</li>
+      <li>訓練誤差很低、驗證誤差<strong>開始上升</strong> → 背答案，是 Overfitting。</li>
+      <li>兩條都低、而且很接近 → 泛化良好。</li>
+    </ul>
+    <p>阿明舉了幾個背錯東西的例子。有個模型把所有紅色的東西都判成「消防車」，因為它學到的是顏色，不是消防車真正的特徵。四張狗的照片背景都是草地，模型如果學到的是「草」，一張只有草地的照片也會被判成狗。還有一張拼圖：捲毛的棕色小狗和貼上塑膠眼睛的炸雞交錯排列，顏色紋理幾乎一樣，連人都會搞混。只靠表面特徵的模型很容易被騙。</p>
+    <p>過度擬合常見的原因有三個：訓練資料太少、用了太多特徵、模型太複雜。阿明說：「最簡單的解法是<strong>增加訓練資料</strong>或<strong>降低模型複雜度</strong>。如果還不夠，就用<strong>正則化（Regularization）</strong>，逼模型學對的特徵，例如狗的尾巴、鼻子、耳朵，而不是背景的樹和草。」</p>
+
+    <h4>場景 7｜第一帖藥：L1 與 L2</h4>
+    <p>第一帖藥是在 Loss 加上權重的懲罰（<strong>Penalty</strong>），強度由 \(\lambda\) 控制。<strong>L1（Lasso）</strong>加的是權重絕對值的總和，<strong>L2（Ridge）</strong>加的是權重平方的總和。目的都是讓模型用小一點的權重，不讓少數節點有過大的影響。</p>
+    <p>小視拿權重 \((3,\ -0.1,\ 0)\)、\(\lambda=0.01\) 試算：L1 penalty 是 \(0.01\times3.1=0.031\)，L2 是 \(0.01\times9.01=0.0901\)。它發現 L2 的 0.09 幾乎全來自大權重 3。</p>
+    <p>阿明問：「那兩者推權重的方式哪裡不同？」小視算推力（penalty 的斜率）：L1 對每個權重的推力都是 0.01，不管大小，小權重很快就被推到 0；L2 的推力是 \(2\lambda w\)，\(w=3\) 被推 0.06，\(w=0.1\) 只被推 0.002，越接近 0 越推不動。結論：<strong>L1 會把不重要特徵的權重降為 0</strong>，有<strong>特徵選取</strong>的效果；<strong>L2 讓所有權重一起變小</strong>，大的縮最多。</p>
+    <p>小視判斷要用哪一個：想知道哪些特徵根本沒用、把它們刪掉 → L1；只是想讓整個模型平滑一點 → L2。阿明補一句：「\(\lambda\) 不能太大，權重被壓得太小，模型就學不到東西，變成 underfitting。」</p>
+
+    <h4>場景 8｜第二帖藥：Dropout</h4>
+    <p>第二帖藥是 <strong>Dropout</strong>。小視發現自己的網路裡有幾個「學霸神經元」，大部分的判斷都靠它們。Dropout 的做法是：每個 mini-batch 隨機關掉一層裡的一些節點（例如一半，由 <strong>Dropout Rate</strong> 控制），前向、反向傳播後只更新開著的節點；下一個 mini-batch 再重新隨機關一批。</p>
+    <p>學霸不一定在場，其他神經元只好也學會判斷，模型因此學到更可靠的特徵，效果就像把很多個子網路平均起來。小視問：「考試的時候也要關嗎？」阿明說：「<strong>測試時全部打開</strong>。」代價是收斂變慢，所以用 Dropout 時要多給一些 epoch。</p>
+
+    <h4>場景 9｜第三帖藥：在最好的時候停下來</h4>
+    <p>第三帖藥是<strong>提早停止（Early Stopping）</strong>。小視不知道該訓練幾個 epoch，阿明教它設一個耐心值 P：驗證誤差連續 P 個 epoch 都沒有更好，就停；每個 epoch 都存一次權重。</p>
+    <p>小視用 P = 3 實際跑一次，驗證損失依序是 0.50、0.40、0.35、0.36、0.37、0.38。第 3 個 epoch 是最低的 0.35，之後連續 3 次沒有進步，在第 6 個 epoch 停下來。小視本來想直接用第 6 個 epoch 的權重，阿明提醒：「停下來的時候已經多練了 3 個 epoch，要<strong>取回第 3 個 epoch 存的權重</strong>。」</p>
+    <p>P 要怎麼選？小視判斷：P 太小，一兩次小波動就會誤判而太早停；P 太大，又會浪費訓練時間。</p>
+
+    <h4>場景 10｜第四帖藥：把每一層拉回同一個起跑線</h4>
+    <p>第四帖藥是<strong>批次正規化（Batch Normalization, BN）</strong>。小視發現，深層的輸入分布一直在漂移，因為前面每一層的權重都在變。BN 對每個 mini-batch 算平均和標準差，把數值拉回平均 0、變異 1 附近，再用兩個可學習的參數 \(\gamma\)（縮放）、\(\beta\)（平移）調成這一層最適合的分布。</p>
+    <p>小視用 batch \((2,4,6,8)\)、\(\gamma=2\)、\(\beta=1\) 算一次：平均 5、變異數 5、標準差約 2.236，標準化後是 \((-1.342,\ -0.447,\ 0.447,\ 1.342)\)，再乘 2 加 1，得到 \((-1.683,\ 0.106,\ 1.894,\ 3.683)\)。</p>
+    <p>BN 通常放在卷積層和激活函數之間，控制進入非線性函數的數值，避免落進 Sigmoid／tanh 的飽和區。效果是訓練更穩、可以用比較大的學習率、收斂比較快，也帶一點正則化效果。</p>
+    <p>阿明問：「推論時一次只來一張照片，batch 平均怎麼算？」小視想了想：「算不出來，而且同一張照片跟不同照片一起進來，結果還會不一樣。」所以推論時改用訓練中用移動平均累積的 <strong>running mean</strong> 和 <strong>running std</strong>。momentum 0.9、從 0 開始，第一個 batch 平均 5，running mean 變成 0.5；第二個 batch 平均 4，變成 \(0.9\times0.5+0.1\times4=0.85\)，慢慢靠近真正的平均。小視也算了參數量：接在 32 片濾波器後面的 BN，有 \(2\times32=64\) 個可學習參數（running mean／var 不算）。</p>
+
+    <h4>場景 11｜吃藥的順序</h4>
+    <p>小視想一口氣把四帖藥全吃下去。阿明攔住它：「<strong>先建立 Baseline Model</strong>，看看不加正則化的表現，再一帖一帖加。參數設錯的話，正則化反而會讓模型變差。很簡單的模型，也不太需要正則化。」小視照做，每加一帖就看一次驗證曲線，確認真的有改善。</p>
+
+    <h4>場景 12｜一張變很多張</h4>
+    <p>最後一招是治本的。既然過度擬合的原因之一是資料太少，那就增加資料。<strong>資料擴增（Data Augmentation）</strong>把照片翻轉、旋轉、縮放、裁切、扭曲、調亮度和對比，一張變很多張。它發生在 Data Loader 搬資料的時候，每次讓模型看到不同版本的圖片，而且<strong>只對訓練資料做</strong>。</p>
+    <p>小視本來想全部的變換都開到最大。阿明問：「果樹的照片上下顛倒合理嗎？」小視想了想：「實際拍照不會拍到倒過來的樹，模型學那個沒有用。」它判斷：擴增出來的圖，要是<strong>現實中可能出現的樣子</strong>。左右翻轉、亮度變化、稍微旋轉都很合理。</p>
+    <p>阿明又介紹幾種進階方法。<strong>遮擋類</strong>的 CutOut、Random Erasing 故意蓋掉一塊，逼模型不要只看最明顯的地方；<strong>混合類</strong>的 <strong>MixUp</strong> 把兩張圖按比例疊在一起，例如狗 0.7、貓 0.3，標籤也變成 (0.7, 0.3)；<strong>CutMix</strong> 則把一塊 16×16 的貓圖貼到 32×32 的狗圖上，面積佔 \(256\div1{,}024=0.25\)，所以標籤是狗 0.75、貓 0.25。小視注意到：邊長是一半，面積卻是四分之一。<strong>組合類</strong>還有 Copy-Paste 和 Mosaic。</p>
+    <p>最後兩種更聰明：<strong>自適應（Adaptive）</strong>擴增會依訓練中的 loss 和梯度回饋，把擴增參數往讓 loss 變大的方向調，讓樣本一直保持適當的挑戰性；<strong>針對性資料生成（TDG）</strong>則不平均增加資料，而是先找出模型容易誤判的子群，再專門為它們生成樣本。小視就這樣看過各種「換了角度的蘋果」，不再只認得課本上那一顆。</p>
     <p>評鑑通過了。阿明說：「現在你會看、也會自我檢查。接下來，去看看前輩們都怎麼蓋更厲害的眼睛。」（→ C4）</p>
+
+    <h4>小視的筆記本｜本集學到的判斷法</h4>
+    <ul>
+      <li><strong>資料分工</strong>：Train 更新權重；Val 調超參數、決定何時停；Test 最後只用一次，不能拿來調。</li>
+      <li><strong>類別不平衡</strong>：不要只看 Accuracy。怕漏抓 → Recall；怕誤報 → Precision；兩者都要 → F1（調和平均）。</li>
+      <li><strong>看曲線判斷病因</strong>：兩條都高 → Underfitting；訓練低、驗證上升 → Overfitting。</li>
+      <li><strong>選正則化</strong>：想刪掉沒用的特徵 → L1；整體縮小權重 → L2；不依賴少數節點 → Dropout；不知道訓練幾輪 → Early Stopping（取回最佳權重）；訓練不穩 → BN。</li>
+      <li><strong>順序</strong>：先建 Baseline，再一項一項加；\(\lambda\) 太大會 Underfitting。</li>
+      <li><strong>選擴增</strong>：只做在訓練資料上，而且要是現實中可能出現的樣子。</li>
+    </ul>
     <p class="story-note">故事是幫助記憶的改寫，細節與數字以下方筆記為準。<span class="tag add">補充</span></p>
   </div>
 

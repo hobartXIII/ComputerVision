@@ -26,17 +26,103 @@
 
   <h2 id="story">📖 故事版：第 1 集：小視學會「學習」</h2>
   <div class="story">
-    <p>小視第一次認真看蘋果，才發現事情不簡單。同一顆蘋果換個<strong>角度</strong>、<strong>亮度</strong>就像另一顆；放遠了會變小（<strong>規模</strong>）；被葉子擋住、背景又亂（<strong>雜亂，Clutter</strong>）；紅蘋果、青蘋果明明同一類，長得卻差很多。</p>
-    <p>更麻煩的是，在小視的腦袋裡，一張照片只是一個 <strong>高 × 寬 × 通道（channel）</strong> 的數字矩陣：彩色圖有 <strong>RGB</strong> 三個通道，灰階圖只有一個，每個數字介於 0～255。一張 224×224 的彩色照片，就有 150,528 個數字。</p>
-    <p>小視先找傳統<strong>機器學習</strong>的三位老師：</p>
-    <ul><li><strong>支持向量機（Support Vector Machine, SVM）</strong>在蘋果和橘子之間畫一條分界線，也就是<strong>超平面（hyperplane）</strong>，並讓它離兩邊最近的點越遠越好，這段距離叫<strong>間隔（margin）</strong>。線畫不直的時候，就用<strong>核技巧（Kernel Trick）</strong>。</li><li><strong>K 最近鄰（K-Nearest Neighbors, KNN）</strong>說：「看你最近的 K 個鄰居多數是誰，你就是誰。」它簡單又不用訓練，可是每次都要和所有樣本量<strong>距離</strong>，圖一大就又慢又不準。</li><li><strong>主成分分析（Principal Component Analysis, PCA）</strong>幫小視<strong>降維（dimensionality reduction）</strong>：只留下變異最大的方向，數字變少、還能去噪，但只能做線性的壓縮。</li></ul>
-    <p>三位老師都要人先告訴小視「該看哪些特徵」。後來小視遇到<strong>深度學習（Deep Learning, DL）</strong>：<strong>特徵擷取</strong>和<strong>分類</strong>一起交給模型自己學。</p>
-    <p>小視在腦中搭起一個<strong>神經網路（Neural Network）</strong>：<strong>輸入層</strong>、<strong>隱藏層</strong>、<strong>輸出層</strong>。每個節點先算 \(z=\sum wx+b\)，也就是<strong>權重（weight）</strong>乘上輸入再加<strong>偏差（bias）</strong>，再交給<strong>激活函數（Activation Function）</strong>加上非線性。少了這一步，疊再多層也只是一條直線。小視最愛 <strong>ReLU</strong>：負的變 0、正的照抄，算得快，也不容易<strong>梯度消失</strong>。</p>
-    <p>最後一層要交出答案。二元分類用 <strong>Sigmoid</strong>，多類別用 <strong>Softmax</strong>，把分數變成加總為 1 的機率。答案本身得先變成數字：<strong>Label Encoding</strong> 簡單，卻會造出假的大小順序；<strong>One-Hot Encoding</strong> 沒這個問題，但類別一多維度就爆炸。</p>
-    <p>訓練就是一個迴圈。<strong>前向傳播（Forward Propagation）</strong>算出預測，<strong>損失函數（Loss Function）</strong>量出錯多少（分類用 <strong>Cross-Entropy</strong>，迴歸用 <strong>MSE／MAE</strong>）。<strong>反向傳播（Backward Propagation）</strong>用<strong>連鎖律</strong>把錯誤往回分給每個權重，<strong>梯度下降（Gradient Descent）</strong>再往梯度的反方向走一步。</p>
-    <p>每一步走多大由<strong>學習率（Learning Rate）</strong>決定：太大會跳過谷底、來回震盪，太小則走到天荒地老。小視試了幾種<strong>優化器（Optimizer）</strong>：<strong>SGD</strong> 快但晃，<strong>Momentum</strong> 帶慣性，<strong>RMSProp</strong> 替每個參數調步伐，<strong>Adam</strong> 把後兩者合在一起，成了它的預設選擇。</p>
-    <p>學完後，阿明用<strong>評估指標（Metrics）</strong>給它打分數：<strong>Accuracy</strong>（整體對幾成）、<strong>Precision</strong>（說是蘋果的有幾成真的是）、<strong>Recall</strong>（真的蘋果被抓到幾成）。節點數、學習率、優化器這些得由人先決定，叫<strong>超參數（hyperparameter）</strong>。</p>
-    <p>可是小視發現一個問題：把照片攤成一長串數字餵進網路，蘋果的「形狀」就散掉了，參數也多得嚇人。它需要一雙真正會看圖的眼睛（→ C2）。</p>
+    <h4>場景 1｜同一顆蘋果，看起來不一樣</h4>
+    <p>小視第一次認真看蘋果，才發現事情不簡單。阿明把同一顆蘋果擺在不同的地方，讓小視拍照：</p>
+    <ul>
+      <li>轉個<strong>角度</strong>，從底部看，蒂頭不見了；</li>
+      <li>傍晚光線暗下來，<strong>亮度</strong>一變，紅色看起來像咖啡色；</li>
+      <li>放到三公尺外，<strong>規模（大小）</strong>變得只剩幾個像素；</li>
+      <li>掛回樹上，被葉子擋住一半，背景又全是枝葉，這叫<strong>雜亂（Clutter）</strong>；</li>
+      <li>旁邊的青蘋果、富士、小顆的野生蘋果，明明同一類，<strong>型態</strong>卻差很多。</li>
+    </ul>
+    <p>阿明補充：還有相機和感測器的性能限制、一張圖裡豐富的資訊量（物件類別、深度……），甚至有連人都會看錯的<strong>視錯覺（Optical Illusions）</strong>。小視歸納：「要認得蘋果，就得同時應付這些變化。」這也是為什麼後來它需要大量資料、而且能自己學特徵的模型。</p>
+
+    <h4>場景 2｜在小視眼中，照片是一大堆數字</h4>
+    <p>在小視的腦袋裡，一張照片是一個 <strong>高 × 寬 × 通道（channel）</strong> 的數字矩陣。彩色圖有 <strong>RGB</strong> 三個通道，灰階圖只有一個，每個數字介於 0～255。</p>
+    <p>阿明問：「一張 224×224 的彩色照片有幾個數字？」小視算給他看：像素數是 \(224\times224=50{,}176\)，每個像素有 R、G、B 三個值，所以 \(50{,}176\times3=150{,}528\) 個數字。一張 28×28 的灰階手寫數字，則是 784 個。小視嘆氣：「如果每比較兩張照片，都要比 150,528 個數字，那一定很慢。」這個問題，等一下就會遇到。</p>
+
+    <h4>場景 3｜先分清楚：要學的是哪一種東西</h4>
+    <p>阿明在白板上畫了三個同心圓：最外圈是<strong>人工智慧（AI）</strong>，能感知、推理、行動並適應環境的程式；中間是<strong>機器學習（ML）</strong>，接觸越多資料、表現越好的演算法；最裡面是<strong>深度學習（Deep Learning, DL）</strong>，用多層神經網路從大量資料中學習。</p>
+    <p>接著他給小視三份工作，要它判斷各是哪一種學習方式：</p>
+    <ul>
+      <li>「這裡有一萬張照片，每張都標好是蘋果或梨，學會分辨它們。」小視：「有標籤、有正確答案可以對照，是<strong>監督式學習（Supervised）</strong>。」</li>
+      <li>「這一堆照片沒人標過，幫我把長得像的分在一起。」小視：「沒有標籤，要自己找資料的結構，是<strong>非監督式學習（Unsupervised）</strong>。」</li>
+      <li>「自己試著找出送貨最快的路線，送得快就有獎勵。」小視：「沒有正確答案，只依結果給獎勵（Reward），是<strong>強化學習（Reinforcement）</strong>。」</li>
+    </ul>
+    <p>阿明又問：「機器學習和深度學習差在哪？」他用「是不是車子」當例子。機器學習的流程是：輸入 → <strong>人工做特徵擷取</strong> → 分類模型 → 輸出。深度學習則是：輸入 → <strong>同一個神經網路同時做特徵擷取和分類</strong> → 輸出。小視想起 C0 的蘋果規則：「這跟傳統 CV 和現代 CV 的差別是同一件事，差在特徵是人設計的，還是模型自己學的。」</p>
+    <p>阿明再補一張比較表讓它判斷什麼時候用哪個：機器學習的資料少也能訓練、用 CPU 就夠、可解釋性好，適合結構化的表格資料；深度學習需要大量資料、通常要 GPU、像黑盒子，但很擅長影像、語音、文字這類非結構化資料。</p>
+
+    <h4>場景 4｜三位傳統老師</h4>
+    <p>小視先找傳統機器學習的三位老師。</p>
+    <p>第一位是<strong>支持向量機（Support Vector Machine, SVM）</strong>。它在一張圖上畫出蘋果（紅點）和橘子（橘點），問小視：「這兩條線都能把它們分開，你選哪一條？」第一條線緊貼著幾顆蘋果；第二條線剛好在兩群中間。小視選第二條：「新的蘋果如果稍微偏一點，第一條線就會把它分錯。」SVM 很滿意：「這就是我的原則。分界線叫<strong>超平面（hyperplane）</strong>，它和兩邊最近的點之間的距離叫<strong>間隔（margin）</strong>，我要讓 margin 越大越好，加入新資料時才能維持高準確率。」</p>
+    <p>小視又問：「如果兩群點纏在一起，一條直線分不開怎麼辦？」SVM 說：「用<strong>核技巧（Kernel Trick）</strong>，把資料投影到更高維的空間再切。」不過 SVM 也坦白自己的缺點：資料一多，算最佳超平面非常耗時；kernel function 不好選、參數不好調；它原本是為二分類設計的，多類別要用「一對一」或「一對多」轉換，計算成本更高。</p>
+    <p>第二位是<strong>K 最近鄰（K-Nearest Neighbors, KNN）</strong>。它的方法只有三步：算出新樣本和所有訓練樣本的<strong>距離</strong>、取最近的 K 個鄰居、多數決。小視先選 K = 4，結果 2 票蘋果、2 票橘子，平手了。KNN 說：「所以 <strong>K 通常設成奇數</strong>。」</p>
+    <p>接著 KNN 出了一道題：A 在 (0, 0)，B 在 (10, 1)，C 在 (7, 7)，B 和 C 誰離 A 比較遠？小視先用直線距離，也就是<strong>歐幾里得距離（Euclidean Distance）</strong>：A→B 是 \(\sqrt{100+1}\approx10.05\)，A→C 是 \(\sqrt{49+49}\approx9.90\)，兩個幾乎一樣遠。再用走棋盤格的<strong>曼哈頓距離（Manhattan Distance）</strong>：A→B 是 \(10+1=11\)，A→C 是 \(7+7=14\)，C 明顯比較遠。小視愣住了：「答案竟然看用哪一種距離。」KNN 解釋：「歐幾里得會先平方，B 在 x 方向差 10，平方後是 100，把 y 方向的差異整個蓋過去。曼哈頓每一維都算得一樣重。維度很高的時候，曼哈頓比較穩健。兩者可以統整成<strong>明氏距離（Minkowski Distance）</strong>，p = 1 是曼哈頓、p = 2 是歐幾里得。」</p>
+    <p>KNN 很簡單，不用訓練，但每次預測都要和所有樣本量距離，資料越大越慢。更糟的是，照片有 150,528 維，在這麼高的維度裡，「距離」的概念不再可靠。圖像之間的非線性關係，它也處理不了。</p>
+    <p>第三位是<strong>主成分分析（Principal Component Analysis, PCA）</strong>。它拿出一組資料：同一批物體的長度，一欄用公分量、一欄用英寸量。點在圖上幾乎排成一條斜線。PCA 說：「這兩個特徵其實在描述同一件事。把每個點投影到這條斜線上，二維就變成一維，幾乎沒有損失。」這叫<strong>降維（dimensionality reduction）</strong>，保留資料中<strong>變異最大的方向</strong>，也就是主成分。在電腦視覺裡，PCA 可以做圖像降維，例如邊緣偵測不需要色彩，改用灰階圖，資料量只剩三分之一；也可以做圖像去噪，讓夜間或畫質差的畫面變清楚。缺點是它只能做<strong>線性</strong>的壓縮，而且只留下變異最大的方向，可能丟掉需要細節判斷的資訊。</p>
+    <p>上完三堂課，小視發現一個共同點：三位老師都要人先告訴它「該看哪些特徵」。後來它遇到<strong>深度學習</strong>：特徵擷取和分類一起交給模型自己學。</p>
+
+    <h4>場景 5｜搭一個會學習的網路</h4>
+    <p>小視在腦中搭起一個<strong>神經網路（Neural Network）</strong>。阿明用講義的例子：輸入體重和身高兩個數字，判斷性別。網路有<strong>輸入層</strong>（2 個節點）、<strong>隱藏層</strong>（2 個節點 \(h_1,h_2\)）、<strong>輸出層</strong>（1 個節點 \(o_1\)），連線上是<strong>權重（weight）</strong> \(w_1\)～\(w_6\)，每個節點還有自己的<strong>偏差（bias）</strong>。</p>
+    <p>每個節點只做兩件事：先算 \(z=\sum wx+b\)，再交給<strong>激活函數（Activation Function）</strong>得到輸出。小視試著算一個：輸入 \(x=(2,3)\)、權重 \(w=(0,1)\)、\(b=4\)，所以 \(z=0\times2+1\times3+4=7\)；用 Sigmoid 得到 \(\sigma(7)\approx0.999\)。</p>
+    <p>小視覺得激活函數很多餘：「直接輸出 \(z\) 不就好了？」阿明讓它算兩層沒有激活函數的網路：第一層乘 2、第二層乘 3，結果就是乘 6，疊一百層也只是乘上一個數。小視恍然大悟：「少了激活函數，疊再多層也只是一條直線，學不出彎曲的分界線。」激活函數的目的就是<strong>引入非線性</strong>。</p>
+    <p>接著要挑哪一種激活函數。小視把 \(x=-2\) 丟進講義列的六種函數比較：Sigmoid 得 0.119、tanh 得 −0.964、<strong>ReLU</strong> 得 0、Leaky ReLU 得 −0.2、ELU 得 −0.865，Maxout 則取兩條直線中較大的那條。它最後選 ReLU 當隱藏層的預設：負的變 0、正的照抄，只要比大小、算得快，正值區斜率永遠是 1，比 Sigmoid 不容易<strong>梯度消失</strong>。如果擔心負值區斜率是 0、梯度傳不回去，再換成 Leaky ReLU 或 ELU。</p>
+
+    <h4>場景 6｜交出答案的方式</h4>
+    <p>最後一層要交出答案，得先判斷是哪一種題目。</p>
+    <ul>
+      <li>「這顆是不是蘋果？」只有是或不是兩種，是<strong>二元分類</strong>，用 <strong>Sigmoid</strong>，輸出一個 0～1 的機率。\(\sigma(0)=0.5\)，一半一半；\(\sigma(2)\approx0.881\)。</li>
+      <li>「這是蘋果、梨，還是橘子？」三選一，是<strong>多類別分類</strong>，用 <strong>Softmax</strong>，把每個類別的分數變成加總為 1 的機率。</li>
+    </ul>
+    <p>小視用講義的分數 \((2.4,\ 0,\ -1.5)\) 走一遍 Softmax：先取 \(e^z\) 得到 \((11.023,\ 1,\ 0.223)\)，加總 12.246，再各自除以總和，得到 \((0.90,\ 0.08,\ 0.02)\)。它注意到：分數只差 2.4，機率卻差了 11 倍。Softmax 會放大分數之間的差距。</p>
+    <p>答案本身也得先變成數字。小視一開始用 <strong>Label Encoding</strong>：Apple = 1、Chicken = 2、Broccoli = 3。阿明皺眉：「這樣模型會以為花椰菜比雞肉『大』，甚至以為蘋果和雞肉的平均就是花椰菜。」這叫<strong>虛假順序</strong>。小視改用 <strong>One-Hot Encoding</strong>：每個類別一個欄位，是該類就填 1。順序問題沒了，可是 3 種食物就要 3 個欄位，類別一多就會<strong>維度爆炸</strong>。小視記下判斷方式：類別沒有大小順序時，別用 Label Encoding；類別非常多時，要留意 One-Hot 的維度。</p>
+
+    <h4>場景 7｜錯了多少、要往哪裡改</h4>
+    <p>訓練是一個迴圈。第一步是<strong>前向傳播（Forward Propagation）</strong>：資料一層一層算到輸出。小視用體重身高網路試算，所有權重都是 \((0,1)\)、偏差 0、激活函數用 Sigmoid：隱藏層 \(h_1=h_2=\sigma(3)\approx0.9526\)，輸出 \(\hat{y}=\sigma(0.9526)\approx0.7216\)。</p>
+    <p>第二步是用<strong>損失函數（Loss Function）</strong>量出錯多少。阿明先問：「預測蘋果的種類，和預測蘋果的重量，可以用同一種損失嗎？」小視判斷：「種類是分類，用<strong>交叉熵（Cross-Entropy）</strong>；重量是連續的數字，是迴歸，用 <strong>MSE</strong> 或 <strong>MAE</strong>。」</p>
+    <p>交叉熵其實只看一件事：模型給<strong>正確答案</strong>多少機率。Softmax 給第 1 類 0.900，如果正確答案就是第 1 類，損失是 \(-\log0.900\approx0.105\)；如果正確答案是第 3 類（只給了 0.018），損失變成 \(-\log0.018\approx4.01\)。越有把握地答錯，罰得越重。</p>
+    <p>迴歸的例子：真實重量 (3, 5)、預測 (2, 7)，誤差是 1 和 −2。MAE 取絕對值平均，得 1.5；MSE 平方再平均，得 2.5。小視比較後發現：MSE 會把大誤差罰得特別重，MAE 則比較不怕少數極端值。資料裡如果有幾顆量錯的離譜重量，MAE 比較穩。</p>
+    <p>第三步是<strong>反向傳播（Backward Propagation）</strong>：用<strong>連鎖律（Chain Rule）</strong>把錯誤往回分給每個權重。真實答案是 1，預測只有 0.7216，損失 \(\frac12(0.7216-1)^2\approx0.0387\)。小視往回算：靠近輸出的 \(w_6\) 梯度是 −0.0533；再往前一層的 \(w_3\)，因為要多乘一個 Sigmoid 的斜率（約 0.045），只剩 −0.00505。小視發現一個警訊：「越前面的權重，梯度要乘越多個斜率。Sigmoid 的斜率最大只有 0.25，乘多了梯度就趨近 0，前面的層幾乎學不動。」這就是<strong>梯度消失</strong>，也是隱藏層改用 ReLU 的原因。</p>
+
+    <h4>場景 8｜一步要走多大</h4>
+    <p>拿到梯度後，<strong>梯度下降（Gradient Descent）</strong>往梯度的反方向走一步：\(w_{new}=w_{old}-\alpha\,\partial J/\partial w\)。每一步走多大由<strong>學習率（Learning Rate）</strong> \(\alpha\) 決定。</p>
+    <p>阿明出了一個山谷 \(J=w^2\)，谷底在 0，起點 \(w=2\)，讓小視試三種學習率：</p>
+    <ul>
+      <li>\(\alpha=0.1\)：\(2\to1.6\to1.28\to\cdots\)，越靠近谷底斜率越小，步伐自動變小，穩穩收斂。</li>
+      <li>\(\alpha=1\)：\(2\to-2\to2\to\cdots\)，一步跨過谷底跳到對面，永遠到不了 0。再大一點就會越跳越遠，也就是<strong>發散</strong>。</li>
+      <li>\(\alpha=0.01\)：第一步只到 1.96，方向對，但要走非常多步。</li>
+    </ul>
+    <p>小視整理出看曲線的判斷法：Loss 上下震盪或越來越大 → 學習率太大，調小；Loss 降得很慢 → 學習率太小，調大。</p>
+    <p>接著要決定每次更新看幾筆資料。<strong>Batch GD</strong> 每次看全部資料，路徑平滑，但一次要算全部，慢又吃記憶體；<strong>SGD</strong> 一次看一張，更新快但很晃，好處是晃動可能幫它跳出<strong>局部最小值（local minima）</strong>；<strong>Mini-batch GD</strong> 一次看一小批（例如 32、64 張），介於兩者之間，也能利用 GPU 平行運算。小視選了 Mini-batch，代價是多一個要調的超參數 batch size。</p>
+    <p>小視又試了幾種<strong>優化器（Optimizer）</strong>，同樣從 \(w=2\)、\(\eta=0.1\) 出發：</p>
+    <ul>
+      <li><strong>Momentum</strong> 帶著上一步的慣性。第二步一般梯度下降只到 1.28，Momentum 多了上一步的 −0.36，衝到 0.92。在平坦處梯度是 0，它還能靠慣性往前，有機會衝過小山丘。</li>
+      <li><strong>RMSProp</strong> 依最近的梯度大小替每個參數調步伐。第一步梯度是 4，很大，實際學習率就從 0.1 降到約 0.079，避免一步跨太遠。</li>
+      <li><strong>Adam</strong> 把 Momentum（決定方向）和 RMSProp（決定步伐）合在一起，再加上偏差修正。第一步剛好走 0.1，到 1.9，和梯度大小無關，所以很好調。</li>
+    </ul>
+    <p>小視把 Adam 設成預設選擇，並記住常考的那句話：<strong>Adam ＝ Momentum ＋ RMSProp</strong>。</p>
+
+    <h4>場景 9｜成績單與自己決定的設定</h4>
+    <p>學完後，阿明用<strong>評估指標（Metrics）</strong>給小視打分數。100 張測試照片裡：TP = 40（說是蘋果、真的是）、FP = 10（說是蘋果、其實不是）、FN = 20（是蘋果、卻沒認出來）、TN = 30。</p>
+    <ul>
+      <li><strong>Accuracy</strong>（整體對幾成）：\((40+30)\div100=0.7\)</li>
+      <li><strong>Precision</strong>（說是蘋果的有幾成真的是）：\(40\div(40+10)=0.8\)</li>
+      <li><strong>Recall</strong>（真的蘋果被抓到幾成）：\(40\div(40+20)\approx0.667\)</li>
+    </ul>
+    <p>阿明問：「你最該改進哪一項？」小視看了看：「Recall 最低，代表我漏掉了三分之一的蘋果。如果工作是採收，漏掉就是損失，要先提高 Recall。」</p>
+    <p>最後阿明提醒，有些東西模型不會自己學，要由人先決定：每層的節點數、激活函數、優化器、學習率、訓練損失、評估指標。這些叫<strong>超參數（hyperparameter）</strong>。</p>
+    <p>可是小視發現一個問題：把照片攤成一長串數字餵進網路，蘋果的「形狀」就散掉了，上下左右相鄰的像素被拆開，參數也多得嚇人。它需要一雙真正會看圖的眼睛（→ C2）。</p>
+
+    <h4>小視的筆記本｜本集學到的判斷法</h4>
+    <ul>
+      <li><strong>有沒有標籤</strong>：有 → 監督式；沒有 → 非監督式；只有獎勵 → 強化學習。</li>
+      <li><strong>選 SVM 的分界線</strong>：選 margin 最大的；線性分不開 → Kernel Trick。</li>
+      <li><strong>KNN</strong>：K 用奇數避免平手；高維時曼哈頓距離比較穩健。</li>
+      <li><strong>輸出層</strong>：二元 → Sigmoid；多類別 → Softmax。<strong>損失</strong>：分類 → Cross-Entropy；迴歸 → MSE（重罰大誤差）或 MAE（不怕極端值）。</li>
+      <li><strong>看 Loss 曲線調學習率</strong>：震盪或發散 → 調小；太慢 → 調大。</li>
+      <li><strong>標籤編碼</strong>：沒有順序的類別不要用 Label Encoding；類別很多時注意 One-Hot 的維度。</li>
+      <li><strong>看指標找弱點</strong>：漏抓多 → Recall 低；誤報多 → Precision 低。</li>
+    </ul>
     <p class="story-note">故事是幫助記憶的改寫，細節與數字以下方筆記為準。<span class="tag add">補充</span></p>
   </div>
 

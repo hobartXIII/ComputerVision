@@ -26,15 +26,81 @@
 
   <h2 id="story">📖 故事版：第 4 集：小視參觀「名模型博物館」</h2>
   <div class="story">
-    <p>博物館入口掛著兩位前輩的照片：LeNet 和 AlexNet。小視繞過它們，直接走進第一個展廳。</p>
-    <p><strong>VGGNet</strong> 的口號是「越深越好」。它只用 <strong>3×3 卷積</strong>，一層疊一層，每隔幾層接一次 <strong>Pooling</strong>。導覽員解釋：「兩層 3×3 看到的範圍等於一層 5×5，三層等於 7×7，但參數更少、中間還多了好幾次 ReLU。」VGG 很準，代價是參數高達約 1.38 億。</p>
-    <p>下一廳是 <strong>Inception Network</strong>。它說：「濾波器要選 1×1、3×3 還是 5×5？我不選，全部一起上！」同一層<strong>並行</strong>多種大小的濾波器，同時抓細節和大範圍的<strong>多尺度特徵</strong>，再把結果串起來。為了不讓運算爆炸，它先用 <strong>1×1 卷積</strong>把通道壓扁，這叫<strong>瓶頸層（Bottleneck Layer）</strong>，運算量約降到 1/10。</p>
-    <p>第三廳最熱鬧。小視聽說「網路越深越難訓練」：太深時梯度一路相乘，會<strong>梯度消失（Vanishing Gradient）</strong>或<strong>梯度爆炸（Exploding Gradient）</strong>，50 層甚至比 20 層還差。<strong>殘差網路（Residual Network, ResNet）</strong>的解法是幫每幾層開一條<strong>捷徑（Skip Connection）</strong>：輸出等於 \(F(x)+x\)，這幾層只要學「還差多少」的<strong>殘差（residual）</strong>，梯度也能沿捷徑直接傳回前面。從此上百層的網路也訓練得動。</p>
-    <p>走廊上，小視看到一個簡單的裝置：<strong>全域平均池化（Global Average Pooling, GAP）</strong>。它把每張特徵圖直接取平均成一個數，7×7×512 變成 512。這樣就不用 Flatten 加上大型 FC，<strong>參數大減、比較不會 overfitting</strong>，輸入大小也更有彈性。缺點是丟掉了「東西在哪裡」的<strong>空間位置資訊</strong>。</p>
-    <p>後半館是「輕量化」主題。導覽員先在牆上寫：<strong>計算成本（Computational Cost）</strong>是每一步花多少資源，<strong>訓練效率（Training Efficiency）</strong>是要走幾步才到終點，兩個都要看。</p>
-    <p><strong>SqueezeNet</strong> 展示它的 <strong>Fire module</strong>：先用 1×1 卷積<strong>擠壓（squeeze）</strong>通道，再用 1×1 加 3×3 卷積<strong>展開（expand）</strong>。準確率和 AlexNet 差不多，參數卻只有約 1/50。不過導覽員提醒：「參數少，不代表運算少。」</p>
-    <p>最後是 <strong>MobileNet</strong>，專門給手機用。它把一般卷積拆成兩步，叫<strong>深度可分離卷積（Depthwise Separable Convolution）</strong>：先用 <strong>Depthwise</strong> 卷積每個通道各自做 3×3，再用 <strong>Pointwise</strong> 的 1×1 卷積混合通道。運算量降到約 1/8～1/9，還能用<strong>寬度乘數 α</strong> 和<strong>解析度乘數 ρ</strong> 依裝置調整大小。</p>
+    <h4>場景 1｜入口：導覽員的三把尺</h4>
+    <p>博物館入口掛著兩位前輩的照片：LeNet 和 AlexNet。小視看了看牌子上寫著「本次不考」，就繞過它們，直接走進大廳。</p>
+    <p>導覽員先發給它三把尺：「待會每個展品，你都用這三把尺量一量。」它們是一層卷積的<strong>輸出尺寸</strong>、<strong>參數量</strong>、<strong>乘法次數</strong>。導覽員用一個例子示範：12×12×3 的輸入，用 128 片 5×5 的濾波器、不補邊、stride 1。</p>
+    <ul>
+      <li>輸出尺寸：\(12-5+1=8\)，得 8×8×128。</li>
+      <li>參數量：一片濾波器 \(5\times5\times3=75\) 個權重加 1 個 bias，共 76，\(76\times128=9{,}728\)。</li>
+      <li>乘法次數：輸出有 \(8\times8\times128=8{,}192\) 個數字，每個要乘 75 次，共 614,400 次。</li>
+    </ul>
+    <p>小視注意到一件事：參數量的算式裡<strong>完全沒有 12</strong>，因為同一片濾波器掃整張圖都用同一組權重，圖變大，濾波器不會變大；乘法次數卻和圖的大小有關，圖越大，濾波器要停的位置越多。導覽員點頭：「記住，<strong>參數少和運算少是兩回事</strong>。後半館會用到。」</p>
+
+    <h4>場景 2｜第一廳：VGGNet，越深越好</h4>
+    <p><strong>VGGNet</strong> 的口號是「越深越好」。它的結構很規整：只用 <strong>3×3 卷積</strong>，一層疊一層，每隔幾層接一次 <strong>Pooling</strong>，濾波器數量逐漸增加，最後接 FC。VGG16 是 13 層卷積加 3 層 FC，VGG19 是 16 層卷積加 3 層 FC，在 ImageNet（1000 類）拿到 top-5 準確率 92.7%。</p>
+    <p>小視問：「為什麼全部都用 3×3，不用大一點的？」導覽員反問：「你在 C2 算過了。」小視想起來：「兩層 3×3 看到的範圍等於一個 5×5，權重是 18 對 25；三層等於 7×7，是 27 對 49。參數比較少，而且每層後面都有 ReLU，中間多了好幾次非線性。」</p>
+    <p>不過 VGG 的代價很大，參數高達約 1.38 億。小視想起 C2 的 MNIST，又問：「參數是不是大多在 FC？」導覽員點頭：「VGG16 的 FC 約佔 89%。它準，但訓練很慢、參數冗餘、計算需求大。」</p>
+
+    <h4>場景 3｜第二廳：Inception，我不選，全部一起上</h4>
+    <p>設計 CNN 要決定一大堆超參數，其中最難選的是濾波器大小：小的擅長細節，大的擅長大範圍。下一廳的 <strong>Inception Network</strong> 說：「1×1、3×3 還是 5×5？我不選，全部一起上！」同一層<strong>並行</strong>多種大小的濾波器和 max pooling，同時抓細節和大範圍的<strong>多尺度特徵</strong>，再把結果在通道方向串起來，讓網路自己學要用哪一個。Inception V1 又叫 GoogLeNet，是 ILSVRC 2014 的分類冠軍。</p>
+    <p>小視想自己做一個，卻發現串不起來：3×3 分支的輸出比 1×1 分支小一圈。導覽員提醒：「所有分支都要用 <strong>same padding、stride 1</strong>，輸出長寬一樣，才能串接。」小視又發現 max pooling 不會改變通道數，192 個通道原封不動，所以 GoogLeNet 在 pooling 後面再接 1×1 卷積，把 192 壓成 32。</p>
+    <p>接著小視拿第一把尺量運算量，嚇了一跳。輸入 28×28×192，直接用 5×5 輸出 32 個通道：每個輸出數字要乘 \(5\times5\times192=4{,}800\) 次，輸出有 \(28\times28\times32=25{,}088\) 個數字，共約 <strong>1.2 億次</strong>。</p>
+    <p>導覽員教它一招：先用 <strong>1×1 卷積</strong>把通道壓到 16，這叫<strong>瓶頸層（Bottleneck Layer）</strong>。小視先搞懂 1×1 在做什麼：某個像素有三個通道 \((2,1,3)\)，用權重 \((0.5,-1,1)\) 的 1×1 濾波器，得到 \(1-1+3=3\)；再用權重 \((1,1,1)\) 的，得到 6。三個通道變成兩個，長寬完全不變。「它不看鄰居，只負責混合、增減通道。」</p>
+    <p>小視重算：1×1 壓到 16 要約 240 萬次，接著 5×5 的輸入只剩 16 個通道，每個數字只要乘 400 次，約 1,000 萬次，合計約 1,244 萬次，降到原本的約 <strong>1/10</strong>。「多加一層 1×1 要花 240 萬，卻省下 1 億多，非常划算。」</p>
+    <p>Inception 還有<strong>輔助分類器（Auxiliary Classifier）</strong>：總 Loss = 主 Loss ＋ \(w_1\)×輔助 Loss1 ＋ \(w_2\)×輔助 Loss2，幫助深層網路訓練，<strong>只在訓練時用，推論時移除</strong>。名字來自電影《全面啟動》的「We need to go deeper」。缺點是結構複雜，參數和架構選擇也複雜，難以移植到資源有限的設備。</p>
+
+    <h4>場景 4｜第三廳：越深越差的怪事</h4>
+    <p>第三廳最熱鬧。牆上有一張圖：大家「期望」層數越多 loss 越低，「現實」卻是 50 層比 20 層還差。小視第一個反應是：「過度擬合了吧？」導覽員指著曲線：「如果是過度擬合，訓練誤差應該很低。可是這裡<strong>連訓練誤差都比較高</strong>，代表深的網路根本訓練不起來，不是背答案。」</p>
+    <p>原因之一是梯度：反向傳播時，N 層要把 N 個導數相乘。小視算了一下：每層導數 0.5，20 層之後是 \(0.5^{20}\approx9.5\times10^{-7}\)，前面的層幾乎不更新，這是<strong>梯度消失（Vanishing Gradient）</strong>；每層 1.5，就是 \(1.5^{20}\approx3{,}325\)，更新一次就跳太遠，這是<strong>梯度爆炸（Exploding Gradient）</strong>。</p>
+    <p>導覽員又說了一個道理：「理論上，更深的網路至少應該和淺的一樣好。多出來的層只要學會『什麼都不做』，也就是恆等映射 \(H(x)=x\)。可是要讓好幾層非線性的網路剛好學成恆等函數，對優化器來說很難。」</p>
+    <p><strong>殘差網路（Residual Network, ResNet）</strong>的解法是幫每兩層開一條<strong>捷徑（Skip Connection）</strong>，把輸入直接加到輸出：\(H(x)=F(x)+x\)。這幾層只要學「還差多少」，也就是<strong>殘差（residual）</strong> \(F(x)=H(x)-x\)。要達到恆等，只要 \(F(x)\to0\)，容易得多。小視用數字試：輸入 3、理想輸出 3.2，普通網路要從零學出 3.2，ResNet 只要學 0.2 這個小修正。導覽員的比喻是：「傳統網路要學生每次從空白紙重畫，ResNet 先給你原圖，只改需要改的地方。」</p>
+    <p>反向傳播時，\(\partial H/\partial x=F'+1\)。那個「+1」讓梯度至少有一條不會衰減的路。小視再算一次：殘差分支的導數 0.05，每個 block 的倍率是 1.05，20 個 block 是 \(1.05^{20}\approx2.65\)，不會消失也不會爆炸。從此上百層的網路也訓練得動，ResNet 有 18、34、50、101、152 甚至 1202 層的版本，也成了最常用的骨幹網路。缺點是運算量和記憶體需求大，不適合放在手機上；而且很多 block 學到的殘差很小，參數使用效率不高。</p>
+
+    <h4>場景 5｜走廊：把 FC 砍掉的裝置</h4>
+    <p>走廊上，小視看到一個簡單的裝置：<strong>全域平均池化（Global Average Pooling, GAP）</strong>。它把每張特徵圖直接取平均成一個數，例如 \(\begin{bmatrix}1&3\\5&7\end{bmatrix}\) 取平均得 4。7×7×512 就變成 512 個數字。</p>
+    <p>小視想起 C2 那個佔了 98% 參數的 FC，立刻拿尺量：7×7×512 攤平是 25,088 維，接 VGG 那種 4,096 個節點的 FC，要 \((25{,}088+1)\times4{,}096\approx1.03\) 億個參數；改用 GAP，GAP 本身 0 參數，接 1,000 類只要 \((512+1)\times1{,}000=513{,}000\)，差了約 200 倍。</p>
+    <p>GAP 的好處是<strong>參數大減、比較不會 overfitting</strong>（等於一種正則化），而且不管特徵圖是 7×7 還是 10×10，都輸出一樣長的向量，<strong>輸入大小更有彈性</strong>。小視問：「那以後都用 GAP 嗎？」導覽員搖頭：「它丟掉了『東西在哪裡』的<strong>空間位置資訊</strong>。分類沒關係，但物件偵測、語意分割就不能直接用。小物體也可能和大片背景一起平均而被沖淡，這時有人改用 Global Max Pooling。」</p>
+
+    <h4>場景 6｜後半館：便宜要怎麼算</h4>
+    <p>後半館是「輕量化」主題。導覽員在牆上寫了兩個名詞：<strong>計算成本（Computational Cost）</strong>是每一步花多少資源，<strong>訓練效率（Training Efficiency）</strong>是要走幾步才達到目標。總訓練成本約等於兩者相乘。</p>
+    <p>他出了一題：「模型 A 每步 2 單位、要 1,000 步；模型 B 每步 1 單位、要 3,000 步。哪個便宜？」小視差點選 B，算了才發現 A 總共 2,000、B 總共 3,000，<strong>每步便宜不代表總成本低</strong>。牆上的四象限把模型分成：每步便宜又收斂快的「CP 值」、收斂快但每步極貴的「直上魂」、便宜但能力不足的「哪個最便宜」，以及又貴又學不好的「盤子」。</p>
+    <p>導覽員再給它一條規則：卷積的運算量正比於 \(H\times W\times C_{in}\times C_{out}\times k^2\)。小視拿一層 28×28、64 → 64 的 3×3 卷積試：原本約 2,890 萬次。<strong>寬度</strong>（通道數）加倍，\(C_{in}\)、\(C_{out}\) 都變 2 倍，運算量變 4 倍；<strong>解析度</strong>加倍，\(H\)、\(W\) 都變 2 倍，也是 4 倍；<strong>深度</strong>加倍，只是多做一次，2 倍。</p>
+
+    <h4>場景 7｜SqueezeNet：小到可以用簡訊傳</h4>
+    <p><strong>SqueezeNet</strong> 的目標是維持 AlexNet 等級的準確率，但把模型縮得非常小。它有三個策略：把部分 3×3 換成 1×1（每個濾波器參數變 1/9）、減少輸入到 3×3 的通道數、<strong>延後下採樣</strong>讓卷積在比較大的特徵圖上做，以維持準確率。前兩個策略做成 <strong>Fire module</strong>：先用 1×1 卷積<strong>擠壓（squeeze）</strong>通道，再用 1×1 加 3×3 並排<strong>展開（expand）</strong>。</p>
+    <p>小視拿 fire2 量參數：輸入 96 通道，squeeze 16 片 1×1 是 1,552；接著 expand 的輸入只剩 16 通道（小視差點又用 96 去算），1×1 的 64 片是 1,088、3×3 的 64 片是 9,280，合計 11,920，輸出 128 通道。如果直接用一層 3×3 從 96 變 128，要 110,720，約多 9 倍。整個 SqueezeNet 的參數約是 AlexNet 的 1/50，壓縮後可以小於 0.5MB。它還把 FC 整個拿掉，最後用 1×1 卷積直接輸出 1,000 個通道，再接 GAP。</p>
+    <p>小視很興奮：「那它一定跑得很快！」導覽員提醒：「<strong>參數少，不代表運算少</strong>。延後下採樣讓卷積都在大的特徵圖上算，運算量甚至比 AlexNet 還高；準確率也只有 AlexNet 的水準。」小視重新判斷它適合的工作：模型要透過網路傳給很多台裝置、儲存空間或頻寬有限的時候，例如自駕車遠端更新模型、分散式訓練時伺服器之間傳輸，SqueezeNet 最划算。</p>
+
+    <h4>場景 8｜MobileNet：拆成兩步的卷積</h4>
+    <p>最後是 <strong>MobileNet</strong>，專門給手機用。手機的運算能力低，VGG、ResNet 放不下，推論也太慢。MobileNet 把一般卷積拆成兩步，叫<strong>深度可分離卷積（Depthwise Separable Convolution）</strong>：</p>
+    <ul>
+      <li><strong>Depthwise</strong>：每個通道各自用一片 k×k×1 的濾波器，<strong>只看空間</strong>，通道不混。</li>
+      <li><strong>Pointwise</strong>：用 1×1 卷積，<strong>只混通道</strong>。</li>
+    </ul>
+    <p>小視用入口的例子量：一般卷積 614,400 次；depthwise 3 片 5×5，輸出 \(8\times8\times3\)，每個乘 25 次，共 4,800；pointwise 128 片 1×1×3，輸出 8,192 個，每個乘 3 次，共 24,576。合計 29,376，只有原本的約 1/21。導覽員給它一般式：比值是 \(\frac{1}{C_{out}}+\frac{1}{k^2}\)。小視判斷：「\(C_{out}\) 通常很大，所以大概就是 \(1/k^2\)。3×3 的話，省 8～9 倍。」</p>
+    <p>MobileNet 還有兩個旋鈕：<strong>寬度乘數 α</strong> 把每層的通道數乘上 α，運算量和參數量約變 \(\alpha^2\) 倍（α = 0.5 時約 0.25 倍）；<strong>解析度乘數 ρ</strong> 縮小輸入解析度，224 → 160 時運算量約變 0.51 倍，<strong>參數量不變</strong>。</p>
+    <p>阿明打電話來出題：「果園的舊手機記憶體不夠，模型放不進去，要轉哪個旋鈕？」小視：「參數量和解析度無關，要省記憶體只能調 <strong>α</strong>。」「那如果放得進去，只是太慢呢？」「兩個都可以，調 ρ 不會動到參數。」MobileNet 約 420 萬參數，是 VGG16 的 1/32，準確率接近 VGG16。缺點是準確率低於 ResNet，α 或解析度太小時下降明顯；depthwise 卷積在 GPU 上硬體利用率差，運算量少不一定等比例變快；沒有捷徑連接，難以加深（MobileNetV2 才改進）。</p>
+    <p>隔壁還有一間 EfficientNet 展廳，用複合縮放同時放大深度、寬度、解析度，門口也寫著「不考」，小視只看了一眼。</p>
+
+    <h4>場景 9｜出口：該選哪一個</h4>
+    <p>走到出口，導覽員考小視：「如果你是設計師，會怎麼挑？」小視把今天的展品整理成一張判斷表：</p>
+    <ul>
+      <li>要高準確率、資源充足，又要很深 → <strong>ResNet</strong>。</li>
+      <li>不知道濾波器選多大、想同時抓多尺度特徵 → <strong>Inception</strong>。</li>
+      <li>模型檔案要很小、要透過網路傳送 → <strong>SqueezeNet</strong>。</li>
+      <li>要在手機上即時執行 → <strong>MobileNet</strong>，再用 α、ρ 依裝置調整。</li>
+      <li>分類器的 FC 參數太多 → 用 <strong>GAP</strong> 取代，但需要位置資訊的任務不行。</li>
+    </ul>
     <p>小視走到出口，看到牆上預告著下一展：「如果捷徑不只一條呢？」（→ C4-2）</p>
+
+    <h4>小視的筆記本｜本集學到的判斷法</h4>
+    <ul>
+      <li><strong>三把尺</strong>：輸出尺寸 \(\lfloor(N-k+2p)/s\rfloor+1\)；參數 \((k^2C_{in}+1)C_{out}\)（和圖大小無關）；乘法 \(HWC_{out}\times k^2C_{in}\)（和圖大小有關）。</li>
+      <li><strong>分辨 overfitting 和退化</strong>：訓練誤差也變高 → 不是 overfitting，是深層訓練不起來 → 用捷徑。</li>
+      <li><strong>大卷積前先壓通道</strong>：1×1 瓶頸層，28×28×192 → 5×5 → 32 從約 1.2 億降到約 1,244 萬。</li>
+      <li><strong>放大哪一個維度</strong>：寬度、解析度加倍 → 運算 ×4；深度加倍 → ×2。</li>
+      <li><strong>省記憶體 vs 省運算</strong>：參數少（SqueezeNet）不等於運算少；MobileNet 的 α 同時省兩者，ρ 只省運算。</li>
+    </ul>
     <p class="story-note">故事是幫助記憶的改寫，細節與數字以下方筆記為準。<span class="tag add">補充</span></p>
   </div>
 
