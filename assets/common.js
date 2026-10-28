@@ -217,6 +217,23 @@
     }
   }
 
+  /* ---------- 問答閱讀筆記 ---------- */
+  // <div class="qa"><details class="qa-item"><summary>問題</summary><div>答案</div></details>…</div>
+  // 在開頭加「全部展開／全部收起」
+  function initQa() {
+    for (const box of $$('.qa')) {
+      const items = $$('details.qa-item', box);
+      if (!items.length) continue;
+      const open = el('button', { class: 'btn', type: 'button', text: '全部展開' });
+      const close = el('button', { class: 'btn', type: 'button', text: '全部收起' });
+      open.addEventListener('click', () => items.forEach((d) => { d.open = true; }));
+      close.addEventListener('click', () => items.forEach((d) => { d.open = false; }));
+      const lead = $('.qa-lead', box);
+      const ctrl = el('div', { class: 'qa-ctrl' }, [open, close]);
+      if (lead) lead.after(ctrl); else box.prepend(ctrl);
+    }
+  }
+
   /* ---------- 矩陣 ---------- */
   // M: 2D 陣列；opts.cls(i,j,v) 回傳 class 字串；opts.onClick(i,j)；opts.text(i,j,v)
   function matrix(M, opts = {}) {
@@ -328,7 +345,7 @@
         course: COURSE,
         chapter: ch && ch !== 'home' ? ch : null,   // 首頁不是筆記，不能標記
         content: 'main',
-        skip: '.widget, .katex, .steps-ctrl',
+        skip: '.widget, .katex, .steps-ctrl, .qa-ctrl',
         buttonClass: 'icon-btn',
       });
     }
@@ -336,6 +353,7 @@
     buildHome();
     initQuizzes();
     initSteps();
+    initQa();
     buildToc();
   });
   // KaTeX 以 defer 載入，等全部載完再渲染

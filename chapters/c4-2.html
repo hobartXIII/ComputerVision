@@ -102,6 +102,88 @@
     <p class="story-note">故事是幫助記憶的改寫，細節與數字以下方筆記為準。<span class="tag add">補充</span></p>
   </div>
 
+  <h2 id="qa">❓ 問答閱讀筆記</h2>
+  <div class="qa">
+    <p class="qa-lead">依講義順序，把本章用「問題 → 答案」整理一次，答案長度以能直接寫在考卷上為準，老師的關鍵字用粗體。點問題看答案，先自己想再打開。</p>
+
+    <h4>動機：從 ResNet 到 DenseNet（2.1～2.3）</h4>
+    <details class="qa-item"><summary>Q1. DenseNet 是什麼？和 ResNet 比有什麼成果？</summary><div>
+      <p>DenseNet（Densely Connected Convolutional Networks），2016 年提出，獲 CVPR 2017 最佳論文獎。在 ImageNet 上能以<strong>較少的參數量，達到與 ResNet 相近的準確率</strong>。</p>
+    </div></details>
+
+    <details class="qa-item"><summary>Q2. ResNet 的捷徑連接還有什麼限制？DenseNet 怎麼改？</summary><div>
+      <p>ResNet 用<strong>逐元素相加</strong> \(y=F(x)+x\)，能緩解梯度消失，但有兩個限制：</p>
+      <ol>
+        <li>以相加合併特徵，<strong>前面層的特徵和新特徵混在一起</strong>，後面的層無法分別取用。</li>
+        <li>許多層貢獻很小，卻各自擁有一組參數，<strong>參數使用效率不高</strong>。</li>
+      </ol>
+      <p>DenseNet 改用<strong>通道串接（concatenation）</strong>，讓每一層都能直接取用前面所有層的特徵圖（論文稱為「集體知識」），<strong>特徵可以重複利用</strong>，每層只需學少量新特徵。</p>
+      <p>例：\(x_0=(1,2)\)、新特徵 \(F=(3,-1)\)。相加 → \((4,1)\)，分不出原本是什麼；串接 → \((1,2,3,-1)\)，全部保留。<span class="tag add">補充</span></p>
+    </div></details>
+
+    <h4>Dense Block 與組成層（2.4～2.5）</h4>
+    <details class="qa-item"><summary>Q3. Dense Block 怎麼運作？什麼是增長率（growth rate）k？</summary><div>
+      <ul>
+        <li>同一個 Dense Block 中，<strong>每一層都接收前面所有層的特徵圖</strong>作為輸入（通道串接）。</li>
+        <li>每一層只輸出 \(k\) 個新的特徵圖，\(k\) 叫<strong>增長率</strong>，所以每層可以很「窄」。</li>
+        <li>同一個 Block 內特徵圖<strong>長寬不變</strong>，串接才能進行。</li>
+        <li>每層的輸出直接連到後面所有層，梯度也能走捷徑傳回淺層。</li>
+      </ul>
+      $$C^{(L)}_{in}=k_0+k\,(L-1),\qquad C_{\text{block out}}=k_0+k\,L$$
+      <p>例：\(k_0=64\)、\(k=32\)、6 層 → 各層輸入 64、96、128、160、192、224，區塊輸出 \(64+6\times32=256\)。</p>
+    </div></details>
+
+    <details class="qa-item"><summary>Q4. Dense Block 裡每一層（組成層）的順序是什麼？</summary><div>
+      <p><strong>BN → ReLU → 3×3 Conv</strong>，輸出 \(k\) 個特徵圖。這種「先正規化與激活，再卷積」的順序叫 <strong>pre-activation</strong>，和常見的 Conv → BN → ReLU 不同。</p>
+    </div></details>
+
+    <h4>Bottleneck、過渡層、DenseNet-BC（2.6～2.7）</h4>
+    <details class="qa-item"><summary>Q5. DenseNet-B 的 Bottleneck Layer 做什麼？</summary><div>
+      <p>串接讓輸入通道越來越多，3×3 卷積越來越貴。所以在 3×3 前先加 <strong>BN → ReLU → 1×1 Conv</strong>，把通道壓到 \(4k\) 再做 3×3，<strong>降低計算量與參數</strong>（DenseNet-121 從約 10.9M 降到約 8.0M）。加了 bottleneck 的版本叫 <strong>DenseNet-B</strong>。</p>
+      <p>和 Inception 的瓶頸層是同一個想法：先用 1×1 壓通道，再做昂貴的卷積。</p>
+    </div></details>
+
+    <details class="qa-item"><summary>Q6. 過渡層（Transition Layer）的作用？什麼是 DenseNet-BC？</summary><div>
+      <ul>
+        <li>Dense Block 內長寬不能變，所以<strong>降採樣要在區塊之間</strong>由過渡層負責。</li>
+        <li>組成：<strong>BN → 1×1 Conv → 2×2 Average Pooling</strong>。</li>
+        <li>Average Pooling：<strong>長寬減半</strong>；1×1 Conv：用<strong>壓縮因子 θ</strong>（0 &lt; θ ≤ 1，論文用 0.5）<strong>減少通道數</strong>，避免通道無限增長。</li>
+        <li>例：56×56×256 → 過渡層（θ = 0.5）→ 28×28×128。</li>
+        <li>同時使用 bottleneck（B）和壓縮（C）的版本叫 <strong>DenseNet-BC</strong>。</li>
+      </ul>
+    </div></details>
+
+    <h4>效能與優缺點（2.8～2.9）</h4>
+    <details class="qa-item"><summary>Q7. 為什麼 DenseNet 比 ResNet 省參數？</summary><div>
+      <ul>
+        <li><strong>特徵重用</strong>：每層都能直接用前面所有層的特徵，不必重複學相似的特徵，因此每層可以很窄。</li>
+        <li><strong>增長率 k 限制每層輸出</strong>：ResNet 為了相加，輸出通道必須和輸入相同，各層較寬；DenseNet 每層只新增 \(k\)（ImageNet 上 \(k=32\)）個特徵圖。例：輸入 256 通道的一層 3×3，ResNet 輸出 256 要 589,824 個權重，DenseNet 輸出 32 只要 73,728，約 1/8。</li>
+        <li>DenseNet-BC 再用 bottleneck 和過渡層壓縮通道。</li>
+      </ul>
+      <p>結果：在相近的錯誤率下，DenseNet 需要的參數量與計算量都比 ResNet 少（DenseNet-121 約 8.0M，ResNet-50 約 25.6M）。</p>
+    </div></details>
+
+    <details class="qa-item"><summary>Q8. DenseNet 的優缺點？</summary><div>
+      <ul>
+        <li>優點：<strong>緩解梯度消失、促進特徵重用、參數量較少</strong>。</li>
+        <li>缺點：<strong>記憶體需求高</strong>（要保存同一區塊內所有先前層的輸出）；<strong>實際執行速度不一定較快</strong>（FLOPs 較少，但大量串接與記憶體存取會拖慢訓練與推論）。</li>
+      </ul>
+    </div></details>
+
+    <details class="qa-item"><summary>Q9. ResNet 和 DenseNet 的捷徑差在哪？（比較題）</summary><div>
+      <div class="table-wrap"><table>
+        <thead><tr><th></th><th>ResNet</th><th>DenseNet</th></tr></thead>
+        <tbody>
+          <tr><td>合併方式</td><td>逐元素<strong>相加</strong> \(F(x)+x\)</td><td>通道<strong>串接</strong> \([x_0,x_1,\dots]\)</td></tr>
+          <tr><td>形狀要求</td><td>輸入輸出形狀完全相同</td><td>只要長寬相同，通道可不同</td></tr>
+          <tr><td>連接</td><td>每個 block 一條捷徑</td><td>每層連到後面所有層（L 層有 \(L(L+1)/2\) 條）</td></tr>
+          <tr><td>每層寬度</td><td>寬（要承載全部資訊）</td><td>窄（只新增 k 個）</td></tr>
+          <tr><td>共同點</td><td colspan="2">梯度都能走捷徑傳回淺層，緩解梯度消失</td></tr>
+        </tbody>
+      </table></div>
+    </div></details>
+  </div>
+
   <h2 id="summary">1. 本章重點摘要</h2>
   <p>Part 2 只介紹一個模型：密集連接卷積網路（Densely Connected Convolutional Networks, DenseNet）。它延續 <a href="c4.html#w-res">Part 1 ResNet</a>「給梯度一條捷徑」的想法，但把合併方式從<strong>逐元素相加</strong>改成<strong>通道串接</strong>：同一個 Dense Block 裡，每一層都直接拿到前面所有層的特徵圖，自己只再新增 \(k\) 個（增長率，growth rate）。因為特徵可以重複利用，每層可以很窄，所以 DenseNet 能用比 ResNet 少得多的參數達到相近的準確率。代價是要保存所有先前層的輸出，記憶體需求高，而且大量串接讓實際速度不一定比較快。</p>
   <p>配套設計有三個：pre-activation 的組成層（BN → ReLU → 3×3 Conv）、瓶頸層（Bottleneck，先用 1×1 壓到 \(4k\)，即 DenseNet-B）、區塊之間的過渡層（Transition Layer，1×1 Conv 以壓縮因子 \(\theta\) 減少通道 ＋ 2×2 Average Pooling；兩者都用就是 DenseNet-BC）。</p>

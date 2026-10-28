@@ -117,6 +117,129 @@
     <p class="story-note">故事是幫助記憶的改寫，細節與數字以下方筆記為準。<span class="tag add">補充</span></p>
   </div>
 
+  <h2 id="qa">❓ 問答閱讀筆記</h2>
+  <div class="qa">
+    <p class="qa-lead">依講義順序，把本章用「問題 → 答案」整理一次，答案長度以能直接寫在考卷上為準，老師的關鍵字用粗體。點問題看答案，先自己想再打開。⭐ 是期中模擬考出過的題目。</p>
+
+    <h4>CNN 的直覺與卷積（2.1～2.3）</h4>
+    <details class="qa-item"><summary>Q1. CNN 想解決什麼問題？「濾波器是特徵偵測器」是什麼意思？</summary><div>
+      <p>人分辨貓狗靠的是鬍鬚、臉型、眼睛等<strong>特徵</strong>。CNN 讓模型<strong>自己學會偵測</strong>這些特徵，不需要人工設計。</p>
+      <ul>
+        <li>每一個<strong>濾波器（Filter／Kernel）</strong>就是一個特徵偵測器，專門找一種形狀（例如上邊、左邊、垂直邊緣）。</li>
+        <li>濾波器裡的數字一開始是隨機的，用反向傳播與梯度下降學出來（C1）。</li>
+      </ul>
+    </div></details>
+
+    <details class="qa-item"><summary>Q2. 卷積（Convolution）怎麼算？輸出叫什麼？</summary><div>
+      <p>濾波器在輸入圖上滑動，每到一個位置就把框住的區域和濾波器<strong>對應位置相乘，再全部相加</strong>，得到一個數字。所有位置的結果組成<strong>特徵圖（Feature Map）</strong>，標出「哪裡有這個特徵」。</p>
+      <p>注意：是<strong>逐格相乘再加總</strong>，不是矩陣乘法。例：講義 5×5 輸入卷 3×3 濾波器，左上角 \(=2\)，整張輸出是 3×3。</p>
+    </div></details>
+
+    <details class="qa-item"><summary>Q3. 垂直邊緣偵測器為什麼能找到邊緣？</summary><div>
+      <p>濾波器每列是 \(1,0,-1\)，等於「左邊減右邊」。框住的區域左亮右暗時，相減的差很大 → 輸出大值；整片一樣亮（或一樣暗）時左右抵消 → 輸出 0。</p>
+      <p>講義例：輸入每列 \(1,1,0,0,0\)（左亮右暗）→ 輸出每列 \(3,3,0\)，大值 3 出現在亮暗交界。</p>
+    </div></details>
+
+    <details class="qa-item"><summary>Q4. 彩色圖（RGB）怎麼做卷積？輸出的深度由什麼決定？</summary><div>
+      <ul>
+        <li><strong>濾波器的深度要等於輸入的通道數</strong>：RGB 有 3 個通道，3×3 的濾波器其實是 3×3×3。</li>
+        <li>三個通道各自相乘後<strong>全部加總</strong>（再加 bias），每個位置只輸出一個數 → 一個濾波器得到一張特徵圖。</li>
+        <li><strong>輸出深度 = 濾波器的數量</strong>。例：\(5\times5\times3\) 卷 2 個 \(3\times3\times3\) → \(3\times3\times2\)。</li>
+      </ul>
+    </div></details>
+
+    <h4>卷積層的超參數：Filter、Padding、Stride（2.4～2.6）</h4>
+    <details class="qa-item"><summary>Q5. 卷積層要先設定哪些超參數？</summary><div>
+      <p>四個：<strong>Kernel size</strong>（濾波器大小 k×k）、<strong>Depth</strong>（濾波器數量）、<strong>Padding</strong>（外圍補幾圈 0）、<strong>Stride</strong>（每次移動幾格）。</p>
+      <p>小濾波器（1×1、3×3）抓邊緣、紋理等細節，參數少；大濾波器（5×5、7×7）看大範圍，但參數多。現代 CNN 多用多層 3×3：兩層 3×3 看到的範圍等於一個 5×5，權重 18 比 25 少，還多一次非線性。<span class="tag add">補充</span></p>
+    </div></details>
+
+    <details class="qa-item"><summary>⭐ Q6. 為什麼需要使用 Padding？</summary><div>
+      <p>Padding 是在輸入圖片外圍補 0。主要有兩個目的：</p>
+      <ol>
+        <li><strong>避免 feature map 越卷越小</strong>：沒有 padding 時每做一次卷積尺寸就縮小（5×5 卷 3×3 → 3×3），模型較深時特徵圖會很快縮到太小；補一圈 0（5×5 → 7×7）後輸出可維持 5×5。</li>
+        <li><strong>增加邊緣／角落像素的貢獻</strong>：沒有 padding 時，角落像素只會被卷積到一次，中間像素卻會被卷積很多次，邊緣資訊容易被忽略（padding 1 後角落變成 4 次）。</li>
+      </ol>
+      <p>常用組合：3×3 濾波器、stride 1 配 padding 1，輸出和輸入同尺寸（same padding）。</p>
+    </div></details>
+
+    <details class="qa-item"><summary>Q7. Stride 是什麼？變大有什麼效果？</summary><div>
+      <p>Stride 是濾波器每次移動的格數。stride 越大，輸出 feature map 越小。</p>
+      <p>好處：<strong>增加訓練效率、減少重複使用相同的像素、控制 feature map 的大小</strong>。例：5×5 卷 3×3，stride 1 → 3×3；stride 2 → 2×2。</p>
+    </div></details>
+
+    <details class="qa-item"><summary>⭐ Q8. 輸入 28×28，用 5×5 的 Filter，stride = 1、padding = 0，輸出 Feature Map 多大？</summary><div>
+      $$m=\left\lfloor\frac{n+2p-f}{s}\right\rfloor+1=\frac{28+2\times0-5}{1}+1=24$$
+      <p>\(n\)：輸入邊長 28；\(f\)：filter 邊長 5；\(p\)：padding 0；\(s\)：stride 1。<strong>答：24×24</strong>（用 \(N_f\) 個 filter 時深度為 \(N_f\)）。計算題要寫出公式與代入過程。</p>
+      <p>同一個公式也適用池化：2×2、stride 2 → 邊長減半。除不盡時 ⌊ ⌋ 無條件捨去，例如 \(n=6,f=3,s=2\) → \(\lfloor3/2\rfloor+1=2\)。</p>
+    </div></details>
+
+    <h4>ReLU 與 Pooling（2.7～2.8）</h4>
+    <details class="qa-item"><summary>Q9. 為什麼卷積後要接 ReLU？它有什麼缺點？</summary><div>
+      <p>\(\text{ReLU}(x)=\max(0,x)\)：負數變 0、正數保留。講義給三個理由：</p>
+      <ol>
+        <li><strong>正負意義分開處理</strong>：正值代表「由暗到亮」、負值代表「由亮到暗」時，下一層只能乘同一個權重，一個加分另一個就自動扣分，兩種特徵綁在一起（天使與魔鬼的比喻）。</li>
+        <li><strong>引入非線性</strong>：沒有激活函數時，疊再多層線性運算都能合併成一層。</li>
+        <li><strong>計算快、訓練穩定</strong>：只要比大小；正值區梯度永遠是 1，不像 Sigmoid／Tanh 會梯度消失。</li>
+      </ol>
+      <p>缺點：為了學負向特徵可能要多佔用 filter；<strong>Dying ReLU</strong>：神經元一直輸出負值時梯度為 0，永久停止學習（可改用 LeakyReLU、ELU）。</p>
+    </div></details>
+
+    <details class="qa-item"><summary>⭐ Q10. Pooling 的主要目的為何？</summary><div>
+      <p>Pooling（池化，又稱 Subsampling／Downsampling）的主要目的是<strong>縮小 feature map 的尺寸，在不丟失重要資訊的情況下減少後續的計算量與訓練參數</strong>。</p>
+      <ul>
+        <li>原因：<strong>相鄰像素通常具有相似的特徵</strong>，用一個值（Max Pooling 取最大值）代表一個區塊即可。</li>
+        <li>讓模型<strong>不受微小特徵差異（例如些微位移）影響</strong>。</li>
+        <li>常用設定：2×2、stride 2、no padding → 高寬減半、<strong>深度不變</strong>；Pooling <strong>沒有可訓練參數</strong>。</li>
+        <li>注意：stride 太大會丟失重要資訊。</li>
+      </ul>
+      <p>種類：Max Pooling（取最大）、Average Pooling（取平均）、Sum Pooling（加總）。</p>
+    </div></details>
+
+    <h4>全連接層、參數量與超參數（2.9～2.11）</h4>
+    <details class="qa-item"><summary>⭐ Q11. 在 CNN 中，Fully Connected Layer 扮演什麼角色？</summary><div>
+      <p>全連接層（Fully Connected Layer，又稱 Dense Layer）負責<strong>整合前面卷積層與池化層抽出的特徵，並據此完成分類</strong>。</p>
+      <ul>
+        <li>進入 FC 前先把多維 feature map <strong>展平（Flatten）</strong>成一維向量。</li>
+        <li>每個節點都和下一層每個節點相連，把各處偵測到的局部特徵組合起來做整體判斷。</li>
+        <li>最後一層節點數 = 類別數，接 <strong>Softmax</strong> 輸出各類別機率。</li>
+        <li>FC 通常是參數最多的部分（講義 MNIST 例子約佔 98%）。</li>
+      </ul>
+    </div></details>
+
+    <details class="qa-item"><summary>Q12. 卷積層和 FC 層的參數量怎麼算？以講義 MNIST CNN 為例。</summary><div>
+      $$\text{Conv}=(f\times f\times d+1)\times N_f,\qquad \text{FC}=(L+1)\times N$$
+      <p>\(d\) 是<strong>輸入深度</strong>，\(+1\) 是每個濾波器（節點）的 bias。</p>
+      <ul>
+        <li>Conv_1：輸入 28×28×1，32 個 3×3：\((9\times1+1)\times32=320\) → 26×26×32</li>
+        <li>Conv_2：輸入深度已是 32：\((9\times32+1)\times64=18{,}496\) → 24×24×64</li>
+        <li>Max Pool → 12×12×64，Flatten → 9,216（都是 0 參數）</li>
+        <li>FC 128：\((9{,}216+1)\times128=1{,}179{,}776\)；輸出 10 類：\((128+1)\times10=1{,}290\)</li>
+        <li>合計 <strong>1,199,882</strong>，FC 那層約佔 98%。</li>
+      </ul>
+      <p>易錯：RGB 輸入、16 個 3×3 → \((3\times3\times3+1)\times16=448\)。講義那頁寫成 160 是把深度當成 1 <span class="tag chk">待確認</span>。</p>
+    </div></details>
+
+    <details class="qa-item"><summary>⭐ Q13. 參數（Parameter）與超參數（Hyperparameter）的區別？</summary><div>
+      <ul>
+        <li><strong>參數</strong>：<strong>訓練過程中由模型自己學習</strong>的變數，又稱可學習參數或權重，例如 filter 的權重與 bias、FC 的權重與 bias，由梯度下降與反向傳播更新。</li>
+        <li><strong>超參數</strong>：<strong>訓練前由人手動設定</strong>、模型不會自己學的值，例如 filter 大小與數量、stride、padding、節點數、激活函數、learning rate、batch size、epoch 數、Dropout rate；通常看 Validation 結果調整。</li>
+        <li>沒有可訓練參數的層：ReLU、Max Pooling、Flatten。</li>
+      </ul>
+    </div></details>
+
+    <h4>為什麼 CNN 有用（2.12）</h4>
+    <details class="qa-item"><summary>⭐ Q14. 為什麼處理影像時 CNN 比一般全連接網路更有效？請說明兩項優勢。</summary><div>
+      <p>作答時寫出這些名詞：</p>
+      <ol>
+        <li><strong>參數共享（Parameter Sharing）</strong>：同一個 filter 的參數在整張圖不同位置重複使用，偵測相同的特徵，參數量和輸入圖片大小無關。</li>
+        <li><strong>連接稀疏性（Sparsity of Connections）</strong>：輸出的每個值只由輸入的一小塊像素（例如 3×3）計算，大幅減少參數量。例：28×28 的圖用全連接產生 26×26×32 = 21,632 個節點，要 \(784\times21{,}632=16{,}959{,}488\) 個參數；CNN 的 Conv_1 只要 320 個。參數少 → 訓練快、較不易 overfitting。</li>
+        <li><strong>不變性（Invariance）</strong>：特徵不論出現在圖片哪個位置都偵測得到；搭配 Pooling，對微小位移也不敏感。</li>
+      </ol>
+      <p>另可補充：CNN 直接在二維上卷積，<strong>保留空間結構</strong>（全連接要先攤平，上下左右相鄰的關係就消失了），並能<strong>自動學習特徵</strong>，層數越深組合出越複雜的特徵。</p>
+    </div></details>
+  </div>
+
   <h2 id="summary">1. 本章重點摘要</h2>
   <p>本章介紹卷積神經網路（Convolutional Neural Network, CNN），是現代電腦視覺的核心模型。CNN 用「濾波器（filter／kernel）」當作特徵偵測器，在圖上滑動做卷積運算得到特徵圖（feature map），再經過 ReLU 激活、池化（pooling）縮小尺寸，最後用全連接層整合特徵、Softmax 分類。本章重點是理解<strong>卷積的計算方式</strong>、<strong>padding 與 stride 對輸出尺寸的影響</strong>，以及<strong>如何計算每層的輸出尺寸與參數量</strong>。它延續 C1 的神經網路訓練觀念（激活函數、Softmax、反向傳播），並說明為什麼 CNN 比一般全連接神經網路更適合處理影像。</p>
 

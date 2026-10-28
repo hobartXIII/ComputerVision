@@ -126,6 +126,74 @@
     <p class="story-note">故事是幫助記憶的改寫，細節與數字以下方筆記為準。<span class="tag add">補充</span></p>
   </div>
 
+  <h2 id="qa">❓ 問答閱讀筆記</h2>
+  <div class="qa">
+    <p class="qa-lead">只列期中考範圍的觀念（ML 與 DL、SVM、Kernel Trick、KNN、PCA、Activation Function、Loss Function、Gradient Descent、Learning Rate、Optimizer），用「問題 → 答案」整理，老師的關鍵字用粗體。點問題看答案，先自己想再打開。推導不考，只留直覺。</p>
+
+    <h4>機器學習與深度學習（2.3）</h4>
+    <details class="qa-item"><summary>Q1. 機器學習（ML）和深度學習（DL）的差別是什麼？</summary><div>
+      <ul>
+        <li>關係：AI ⊃ ML ⊃ DL。ML 是「接觸越多資料、表現越好」的演算法；DL 是 ML 的子集，用<strong>多層神經網路</strong>從大量資料中學習。</li>
+        <li>關鍵差別在<strong>特徵擷取</strong>：ML 要<strong>人工擷取特徵</strong>，再交給分類模型；DL 由同一個神經網路<strong>同時做特徵擷取＋分類</strong>，特徵是模型自己學的。</li>
+        <li>ML 依資料分成監督式（有標籤）、非監督式（無標籤）、強化學習（靠回饋獎勵）。</li>
+      </ul>
+    </div></details>
+
+    <h4>SVM、Kernel Trick、KNN、PCA（2.4～2.6）</h4>
+    <details class="qa-item"><summary>Q2. SVM 的目標是什麼？缺點？</summary><div>
+      <p>支持向量機（Support Vector Machine, SVM）是監督式分類演算法，目標是找一個<strong>最佳超平面（hyperplane）</strong>區分不同類別，同時<strong>最大化間隔（Margin）</strong>：讓兩類資料點離超平面越遠越好，新資料進來時才能維持高準確率。</p>
+      <p>缺點：不適合大資料集（找超平面很耗時）；非線性資料處理有限（kernel 與調參難選）；原本為二分類設計，多分類要「一對一」或「一對多」轉換。</p>
+    </div></details>
+
+    <details class="qa-item"><summary>Q3. 什麼是核技巧（Kernel Trick）？</summary><div>
+      <p>當資料<strong>無法用一條線（超平面）切開</strong>（線性不可分）時，用 Kernel Trick 把資料<strong>投影到更高維的空間</strong>，在高維空間裡就能用超平面切開。</p>
+      <p>直覺例子：一維數線上「中間一類、兩邊另一類」切不開；加上 \(x^2\) 當第二維後，就能用一條水平線分開。<span class="tag add">補充</span></p>
+    </div></details>
+
+    <details class="qa-item"><summary>Q4. KNN 怎麼分類？缺點？</summary><div>
+      <p>K 最近鄰（K-Nearest Neighbors, KNN）以<strong>距離</strong>判斷類別：① 算新樣本和所有訓練樣本的距離 ② 取最近的 K 個鄰居 ③ <strong>多數決</strong>。K 通常設<strong>奇數</strong>，避免票數各半。距離可用歐幾里得或曼哈頓距離。</p>
+      <p>缺點：計算效率低（預測時要和所有樣本算距離）；<strong>高維度資料表現不佳</strong>（距離概念失效）；無法處理非線性關係。</p>
+    </div></details>
+
+    <details class="qa-item"><summary>Q5. PCA 的目的與限制？</summary><div>
+      <p>主成分分析（Principal Component Analysis, PCA）是<strong>降維</strong>技術：在保留主要資訊的同時減少特徵數量，把資料投影到<strong>變異性最大的方向</strong>（主成分）。</p>
+      <p>CV 應用：圖像降維（例如邊緣偵測只用灰階，資料剩 1/3，計算更快）、圖像去噪。限制：只能做<strong>線性降維</strong>，對非線性資料處理有限，可能遺失細節。</p>
+    </div></details>
+
+    <h4>神經網路的訓練（2.8～2.14）</h4>
+    <details class="qa-item"><summary>Q6. 為什麼需要激活函數（Activation Function）？</summary><div>
+      <p>為了<strong>引入非線性</strong>。沒有激活函數，疊再多層也只等於一層線性模型，學不出彎曲的決策邊界。</p>
+      <p>常見：Sigmoid（輸出 0～1，二元分類輸出層）、tanh、<strong>ReLU</strong>（計算快、正值區梯度為 1，比 Sigmoid 不容易梯度消失）、Leaky ReLU、ELU；多類別輸出層用 Softmax（機率加總為 1）。</p>
+    </div></details>
+
+    <details class="qa-item"><summary>Q7. 損失函數（Loss Function）的用途？分類和迴歸各用什麼？</summary><div>
+      <p>衡量<strong>預測值和真實值之間的差距</strong>，作為調整權重的依據；訓練目標就是把 Loss 降到最小。</p>
+      <ul>
+        <li>分類：<strong>交叉熵（Cross-Entropy）</strong>。例：正確類別機率 0.9 → \(-\ln0.9\approx0.105\)；機率越低，損失越大。</li>
+        <li>迴歸：<strong>均方誤差（MSE）</strong>或<strong>平均絕對誤差（MAE）</strong>。MSE 對大誤差罰得重；MAE 對離群值較不敏感。</li>
+      </ul>
+    </div></details>
+
+    <details class="qa-item"><summary>Q8. 梯度下降（Gradient Descent）怎麼更新權重？學習率（Learning Rate）太大、太小會怎樣？</summary><div>
+      $$w\leftarrow w-\alpha\,\frac{\partial L}{\partial w}$$
+      <p>反向傳播算出 Loss 對每個權重的梯度後，<strong>沿梯度的反方向</strong>更新權重，讓 Loss 一步步變小。學習率 \(\alpha\) 決定每一步走多大，是需要調整的<strong>超參數</strong>：</p>
+      <ul>
+        <li>太大：更新過快，可能<strong>跳過最佳解</strong>、震盪甚至發散。</li>
+        <li>太小：更新過慢，收斂很久，可能<strong>無法到達最佳解</strong>。</li>
+      </ul>
+    </div></details>
+
+    <details class="qa-item"><summary>Q9. 常見的優化器（Optimizer）有哪些？各有什麼特色？</summary><div>
+      <p>優化器根據訓練損失調整模型參數，是梯度下降的改良版：</p>
+      <ul>
+        <li><strong>SGD</strong>（隨機梯度下降）：每次用一筆或一個 batch 的資料算梯度；更新快，但波動、收斂不穩定，而這個波動可能幫助<strong>跳出 local minima</strong>。</li>
+        <li><strong>Momentum</strong>：加上慣性（上一步的移動），在平坦處或梯度為 0 的地方仍會前進，有機會衝過小山丘，也減少抖動。</li>
+        <li><strong>RMSProp</strong>：自動調整每個參數的學習率。</li>
+        <li><strong>Adam</strong>：<strong>結合 Momentum 與 RMSProp</strong>，同時考慮動量方向與自適應學習率，是常用的預設選擇。</li>
+      </ul>
+    </div></details>
+  </div>
+
   <h2 id="summary">1. 本章重點摘要</h2>
   <p>本章先說明電腦視覺的挑戰（角度、亮度、規模、遮擋雜亂等），以及影像在電腦中如何以 RGB 或灰階像素矩陣表示。接著介紹三個傳統機器學習方法：<strong>SVM（分類）、KNN（距離分類）、PCA（降維）</strong>，各自在電腦視覺的用途與缺點。後半進入深度學習：神經網路的結構、激活函數、輸出層（Sigmoid／Softmax）、損失函數、前向與反向傳播、梯度下降與優化器（SGD、Adam），最後是標籤編碼與評估指標。這章是下一章「卷積神經網路（CNN）」的基礎，CNN 的訓練流程完全沿用本章的神經網路觀念。</p>
 

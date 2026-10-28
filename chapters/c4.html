@@ -104,6 +104,166 @@
     <p class="story-note">故事是幫助記憶的改寫，細節與數字以下方筆記為準。<span class="tag add">補充</span></p>
   </div>
 
+  <h2 id="qa">❓ 問答閱讀筆記</h2>
+  <div class="qa">
+    <p class="qa-lead">依講義順序，把本章用「問題 → 答案」整理一次，答案長度以能直接寫在考卷上為準，老師的關鍵字用粗體。點問題看答案，先自己想再打開。講義標 (Skip) 的 LeNet、AlexNet、EfficientNet 不考，這裡不列；推導只留直覺，不用背。</p>
+
+    <h4>先複習：一層卷積的三個數字（2.3）</h4>
+    <details class="qa-item"><summary>Q1. 一層卷積的「參數量」和「運算量（乘法次數）」差在哪？</summary><div>
+      <ul>
+        <li><strong>參數量</strong> \(=(k\times k\times C_{in}+1)\times C_{out}\)：只和 filter 大小、輸入／輸出通道數有關，<strong>和圖片大小無關</strong>（同一個 filter 掃全圖，權重共享）。</li>
+        <li><strong>乘法次數</strong> \(=H\times W\times C_{out}\times(k\times k\times C_{in})\)：輸出有幾個數字 × 每個數字要乘幾次，<strong>圖越大越多</strong>。</li>
+      </ul>
+      <p>例（講義）：12×12×3 輸入、128 個 5×5、p0 s1 → 輸出 8×8×128；參數 \(76\times128=9{,}728\)；乘法 \(8\times8\times128\times75=614{,}400\)。</p>
+      <p>所以「參數少」和「運算少」是兩回事，這是 SqueezeNet 和 MobileNet 差別的關鍵。</p>
+    </div></details>
+
+    <h4>VGGNet（2.3）</h4>
+    <details class="qa-item"><summary>Q2. VGGNet 的設計重點是什麼？優缺點？</summary><div>
+      <ul>
+        <li>2014 年提出，ImageNet top-5 準確率 92.7%。VGG16 = 13 層 Conv ＋ 3 層 FC；VGG19 = 16 層 Conv ＋ 3 層 FC。</li>
+        <li>「典型 CNN」的範本：<strong>全部用 3×3 卷積</strong>，多層 Conv 後接 Pooling，filter 數量逐漸增加，最後接 FC。</li>
+        <li>優點：<strong>「深度」網路設計、規範的結構</strong>、準確率高。</li>
+        <li>缺點：<strong>計算需求大、參數冗餘</strong>，VGG16 約 1.38 億參數，訓練很慢；參數大多在 FC 層（約 89%）。</li>
+      </ul>
+    </div></details>
+
+    <details class="qa-item"><summary>Q3. VGG 為什麼全部用 3×3，而不用 5×5、7×7？</summary><div>
+      <p>兩層 3×3 疊起來看到的範圍（感受野）等於一個 5×5，三層等於 7×7，但權重比較少（18 對 25、27 對 49），而且每層後面都有 ReLU，<strong>多了幾次非線性</strong>。<span class="tag add">補充</span></p>
+    </div></details>
+
+    <h4>梯度消失與梯度爆炸、ResNet（2.5）</h4>
+    <details class="qa-item"><summary>Q4. 什麼是梯度消失（Vanishing Gradient）與梯度爆炸（Exploding Gradient）？</summary><div>
+      <p>反向傳播時，N 層網路要把 N 個導數<strong>連乘</strong>（連鎖律）。</p>
+      <ul>
+        <li>每層導數小於 1 → 越往前乘越小，<strong>指數消失</strong>，前面的層幾乎不更新 → 梯度消失。例：每層 0.5，20 層 → \(0.5^{20}\approx10^{-6}\)。</li>
+        <li>每層導數大於 1 → <strong>指數成長</strong>，更新一次就跳太遠 → 梯度爆炸。例：每層 1.5，20 層 → 約 3,325。</li>
+      </ul>
+      <p>結果：網路很深時反而更難訓練。改善方法：ReLU（C2）、Batch Normalization（C3）、ResNet 的捷徑連接、DenseNet 的串接。</p>
+    </div></details>
+
+    <details class="qa-item"><summary>Q5. ResNet 要解決什麼問題？殘差連接怎麼運作？</summary><div>
+      <p><strong>問題</strong>：一般 CNN 很深時效能反而下降（例如 50 層比 20 層還差），而且<strong>不是過擬合</strong>，是難以優化，原因之一是梯度消失／爆炸。</p>
+      <p><strong>做法</strong>：殘差連接（Residual／Skip Connection）把前面的輸入直接加到後面的輸出：</p>
+      $$H(x)=F(x)+x$$
+      <ul>
+        <li>堆疊的層只需學<strong>殘差</strong> \(F(x)=H(x)-x\)（小修正量），比從頭學整個 \(H(x)\) 容易。多出來的層若用不到，只要 \(F(x)\to0\) 就等於「什麼都不做」（恆等映射）。</li>
+        <li>反向傳播時梯度可以經由捷徑<strong>直接傳回前面的層</strong>（導數多了一個「+1」），緩解梯度消失。</li>
+        <li>講義比喻：傳統網路要學生每次從空白紙重畫；ResNet 先給原圖，只改需要改的地方。</li>
+      </ul>
+    </div></details>
+
+    <details class="qa-item"><summary>Q6. ResNet 的優缺點？</summary><div>
+      <ul>
+        <li>優點：能有效訓練<strong>深層網路</strong>（18～152 層，甚至 1202 層）、降低優化難度加快收斂、ImageNet 表現優於前代、廣泛當作 backbone（C5 最常用 ResNet-50）。使用 GAP，只需少量甚至不需要 FC 層。</li>
+        <li>缺點：運算量與記憶體需求大，不利部署在行動裝置；許多 block 學到的殘差很小，<strong>參數使用效率不佳</strong>（DenseNet 的動機）。</li>
+      </ul>
+    </div></details>
+
+    <h4>Inception Net（2.4）</h4>
+    <details class="qa-item"><summary>Q7. Inception 的核心想法是什麼？</summary><div>
+      <p>設計 CNN 時 filter size 最難選：小 kernel 擅長捕捉細節，大 kernel 擅長捕捉大範圍特徵。Inception 的想法是<strong>不必選</strong>：</p>
+      <ul>
+        <li>Inception module 在同一層<strong>並行使用 1×1、3×3、5×5 卷積與 max pooling</strong>，再把結果在通道方向<strong>串接（concatenate）</strong>，讓網路自己學要用哪個。</li>
+        <li>不同 kernel 大小對應不同感受野，可同時擷取<strong>多尺度特徵</strong>。</li>
+        <li>所有分支都用 same padding、stride 1，輸出寬高相同才能串接。</li>
+        <li>Inception V1 又叫 GoogLeNet（Google，2014 年 ILSVRC 分類冠軍）。</li>
+      </ul>
+    </div></details>
+
+    <details class="qa-item"><summary>Q8. 1×1 卷積（瓶頸層 Bottleneck Layer）的作用是什麼？省了多少？</summary><div>
+      <p>1×1 卷積不看鄰居（寬高不變），只在每個像素位置把所有通道加權相加，用來<strong>增減通道數</strong>。在昂貴的 3×3、5×5 卷積前先用它把通道壓少，就是瓶頸層，可以<strong>大幅降低運算量</strong>，只要壓縮比例合理，對準確率影響不大。</p>
+      <p>講義例：28×28×192 → 5×5 → 32 通道，直接做約 <strong>120M</strong> 次乘法；先 1×1 壓到 16（2.4M）再 5×5（10M），合計約 <strong>12.4M，約 1/10</strong>。</p>
+    </div></details>
+
+    <details class="qa-item"><summary>Q9. Inception 的輔助分類器（Auxiliary Classifier）做什麼？Inception 的優缺點？</summary><div>
+      <ul>
+        <li>輔助分類器接在網路中間，Total Loss = Main Loss ＋ \(w_1\)×Aux Loss1 ＋ \(w_2\)×Aux Loss2，讓深層網路<strong>仍可訓練</strong>；<strong>只在訓練時使用，推論時移除</strong>。</li>
+        <li>優點：多尺度特徵擷取、用 1×1 卷積高效利用運算資源、深層仍可訓練。</li>
+        <li>缺點：結構複雜、難移植到資源有限的設備、參數與架構選擇複雜。</li>
+      </ul>
+    </div></details>
+
+    <h4>Global Average Pooling（2.6）</h4>
+    <details class="qa-item"><summary>Q10. GAP 怎麼運作？對參數量與過擬合有什麼好處？</summary><div>
+      <p>GAP 把<strong>每張特徵圖取平均成一個數</strong>：7×7×512 → 1×1×512，用來取代 Flatten ＋ 大型 FC 層。</p>
+      <ul>
+        <li><strong>大幅減少參數</strong>：GAP 本身沒有可學習參數。例：7×7×512 展平 25,088 維接 FC 4096 要 102,764,544 個參數；GAP 後 512 維接 1000 類只要 513,000。</li>
+        <li><strong>降低過擬合、增強泛化</strong>：參數少、複雜度低，等於一種 Regularization。</li>
+        <li><strong>對輸入尺寸更靈活</strong>：FC 要求固定長度，GAP 不論特徵圖 7×7 還是 10×10 都輸出同樣長度。</li>
+      </ul>
+      <p>缺點：<strong>丟失空間位置資訊</strong>（只知道特徵強度、不知道在哪），不適合直接用在物件偵測、語意分割；小物體的訊號會被大片背景稀釋（有時改用 Global Max Pooling）。</p>
+    </div></details>
+
+    <h4>訓練效率 vs 計算成本（2.7）</h4>
+    <details class="qa-item"><summary>Q11. 「計算成本」和「訓練效率」有什麼不同？</summary><div>
+      <ul>
+        <li><strong>計算成本</strong>：完成一次運算（例如一個 batch 的前向＋反向傳播）要花多少資源。</li>
+        <li><strong>訓練效率</strong>：需要多少訓練步數（或資料量）才能達到目標性能。</li>
+        <li>總訓練成本 ≈ 計算成本 × 所需步數。</li>
+      </ul>
+      <p>直覺：通道數（寬度）或解析度加倍 → 運算量 ×4；層數（深度）加倍 → ×2。</p>
+    </div></details>
+
+    <h4>SqueezeNet（2.8）</h4>
+    <details class="qa-item"><summary>Q12. SqueezeNet 的目標與三個設計策略？</summary><div>
+      <p>目標：<strong>維持 AlexNet 等級的準確率，大幅縮小模型</strong>（參數約 AlexNet 的 1/50，壓縮後可小於 0.5MB）。小模型方便分散式訓練、遠端更新（例如自駕車）、部署在嵌入式系統。</p>
+      <ol>
+        <li>把部分 3×3 filter <strong>換成 1×1</strong>，每個 filter 參數變 1/9。</li>
+        <li><strong>減少輸入到 3×3 filter 的通道數</strong>。</li>
+        <li><strong>延後下採樣</strong>，讓卷積在較大的特徵圖上運算，維持準確率。</li>
+      </ol>
+      <p>策略一、二減少參數（靠 Fire module 實現），策略三在參數有限下保持準確率。另外移除龐大的 FC，最後用 1×1 卷積輸出 1000 通道再接 GAP。</p>
+    </div></details>
+
+    <details class="qa-item"><summary>Q13. Fire module 是什麼？SqueezeNet 的缺點？</summary><div>
+      <p>Fire module = <strong>squeeze layer（只有 1×1）→ expand layer（1×1 與 3×3 並行）</strong>。先用少量 1×1 把通道壓少，再展開；squeeze 的 filter 數約為 expand 的 1/8。</p>
+      <p>例（fire2）：輸入 96 通道、\(s_{1\times1}=16\)、\(e_{1\times1}=e_{3\times3}=64\) → 11,920 個參數；直接用 3×3 做 96 → 128 要 110,720，約多 9 倍。</p>
+      <p>缺點：準確率只有 AlexNet 水準，低於 VGG、ResNet；<strong>參數少不等於運算少</strong>，延後下採樣使運算量甚至高於 AlexNet。</p>
+    </div></details>
+
+    <h4>MobileNet（2.9）</h4>
+    <details class="qa-item"><summary>Q14. MobileNet 的 Depthwise Separable Convolution 是什麼？為什麼比較省？</summary><div>
+      <p>MobileNet（2017）目標是讓 CNN 能在<strong>手機、嵌入式裝置上即時執行</strong>。它把一般卷積拆成兩步：</p>
+      <ol>
+        <li><strong>Depthwise</strong>：每個通道各自用一個 k×k×1 的 kernel，只看空間、不混通道。</li>
+        <li><strong>Pointwise</strong>：用 1×1 卷積把通道做線性組合，只混通道。</li>
+      </ol>
+      <p>一般卷積一個 filter 同時做「看空間」和「混通道」兩件事，拆開後乘法少很多。講義例：12×12×3、5×5、輸出 128 通道，一般卷積 614,400 次 vs 4,800 ＋ 24,576 = 29,376 次，約 <strong>1/20</strong>；3×3 kernel 時約省 8～9 倍。</p>
+    </div></details>
+
+    <details class="qa-item"><summary>Q15. MobileNet 的兩個超參數 α、ρ 各控制什麼？</summary><div>
+      <ul>
+        <li><strong>Width Multiplier α</strong>（0～1）：每層通道數都乘 α；運算量與參數量約變 <strong>α² 倍</strong>（輸入、輸出通道各乘一次）。</li>
+        <li><strong>Resolution Multiplier ρ</strong>：縮小輸入解析度（224、192、160、128）；運算量約變 <strong>ρ² 倍，參數量不變</strong>（參數和圖片大小無關）。</li>
+      </ul>
+      <p>例：α = 0.5 → 約 0.25 倍；解析度 224 → 160 → 運算量約 0.51 倍。</p>
+    </div></details>
+
+    <details class="qa-item"><summary>Q16. MobileNet 的優缺點？</summary><div>
+      <ul>
+        <li>優點：約 420 萬參數（VGG16 的 1/32）、運算量約 VGG16 的 1/27、ImageNet 準確率接近 VGG16、可用 α、ρ 靈活調整。</li>
+        <li>缺點：準確率低於 ResNet，α 或解析度太小時下降明顯；運算量減少不一定等比例變快（depthwise 在 GPU 上硬體利用率差）；沒有捷徑連接，難以加深（MobileNetV2 改進）。</li>
+      </ul>
+    </div></details>
+
+    <h4>綜合比較</h4>
+    <details class="qa-item"><summary>Q17. 本章各模型各自想解決什麼問題？（一句話版）</summary><div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>模型</th><th>要解決的問題</th><th>關鍵做法</th></tr></thead>
+        <tbody>
+          <tr><td>VGGNet</td><td>怎麼把網路加深、提升準確率</td><td>規整地疊多層 3×3 ＋ Pooling</td></tr>
+          <tr><td>Inception</td><td>filter 大小難選、運算量大</td><td>多種 filter 並行再串接；1×1 瓶頸層</td></tr>
+          <tr><td>ResNet</td><td>太深反而變差、梯度消失</td><td>殘差連接 \(H(x)=F(x)+x\)</td></tr>
+          <tr><td>GAP</td><td>Flatten ＋ FC 參數太多、易過擬合</td><td>每張特徵圖取平均</td></tr>
+          <tr><td>SqueezeNet</td><td>模型太大（參數多）</td><td>Fire module（squeeze ＋ expand）</td></tr>
+          <tr><td>MobileNet</td><td>運算太多，手機跑不動</td><td>Depthwise Separable ＋ α、ρ</td></tr>
+          <tr><td>DenseNet（C4-2）</td><td>ResNet 參數效率不佳</td><td>Dense Block 通道串接</td></tr>
+        </tbody>
+      </table></div>
+    </div></details>
+  </div>
+
   <h2 id="summary">1. 本章重點摘要</h2>
   <p>本章介紹經典的 CNN 架構演進：從最早的 LeNet、AlexNet，到「越深越好」的 VGG，再到用多種 filter 並行、並用 1×1 卷積省運算的 Inception，以及用殘差連接（Skip Connection）解決深層網路訓練困難的殘差網路（Residual Network, ResNet）。後半轉向輕量化：SqueezeNet 用 Fire module 壓低<strong>參數量</strong>，MobileNet 用深度可分離卷積（Depthwise Separable Convolution）壓低<strong>運算量</strong>，EfficientNet 則用複合縮放（Compound Scaling）同時放大深度、寬度與解析度。這章把 C2 的 CNN 基礎與 C3 的改進技巧（BN、正則化）串成實際的經典模型，也是之後遷移學習、物件偵測等章節常用的骨幹網路（backbone）來源。</p>
   <div class="callout warn">

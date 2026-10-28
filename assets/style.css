@@ -321,3 +321,17 @@ footer { color: var(--text-2); font-size: .85rem; margin-top: 60px; }
   position: sticky; bottom: 0; z-index: 5; background: var(--bg); border-top: 1px solid var(--border);
   padding: 10px 0; display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; justify-content: space-between;
 }
+/* 每章的「問答閱讀筆記」 */
+.qa {
+  border: 1px solid var(--border); border-left: 4px solid var(--accent);
+  background: var(--surface); border-radius: var(--radius); padding: 14px 18px; margin: 1em 0 1.5em;
+}
+.qa .qa-lead { margin-top: 0; font-size: .92em; color: var(--text-2); }
+.qa h4 { font-size: 1rem; margin: 1.4em 0 .5em; padding-top: .8em; border-top: 1px dashed var(--border); }
+.qa-ctrl { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 4px; }
+details.qa-item { margin: 6px 0; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); }
+details.qa-item > summary { cursor: pointer; padding: 8px 12px; font-weight: 600; }
+details.qa-item[open] > summary { border-bottom: 1px solid var(--border); }
+details.qa-item > div { padding: 4px 14px 10px; background: var(--surface-2); border-radius: 0 0 8px 8px; }
+details.qa-item > div ul, details.qa-item > div ol { padding-left: 1.4em; }
+details.qa-item li { margin: .3em 0; }

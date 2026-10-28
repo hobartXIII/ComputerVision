@@ -112,6 +112,77 @@
     <p class="story-note">故事是幫助記憶的改寫，細節與數字以下方筆記為準。<span class="tag add">補充</span></p>
   </div>
 
+  <h2 id="qa">❓ 問答閱讀筆記</h2>
+  <div class="qa">
+    <p class="qa-lead">只列期中考範圍的觀念，用「問題 → 答案」整理，老師的關鍵字用粗體。點問題看答案，先自己想再打開。⭐ 是期中模擬考選填題問過的觀念。</p>
+
+    <h4>遷移學習與預訓練模型（2.1～2.2）</h4>
+    <details class="qa-item"><summary>Q1. 為什麼需要遷移學習（Transfer Learning）？原理是什麼？</summary><div>
+      <p>從頭訓練 CNN 需要<strong>大量標註資料、強大運算資源、足夠訓練時間</strong>，多數實際任務只有幾百到幾千張影像，很難滿足。</p>
+      <p>遷移學習借用在大型資料集（例如 ImageNet，約 120 萬張、1000 類）上訓練好的<strong>預訓練模型（Pretrained Model）</strong>。它的卷積層學到許多<strong>通用特徵</strong>（淺層的邊緣、色塊、紋理），也適用於新任務，所以能<strong>以較少的資料和較短的訓練時間</strong>取得好表現。兩種用法：特徵提取、微調。</p>
+    </div></details>
+
+    <h4>特徵提取與微調（2.3～2.5）</h4>
+    <details class="qa-item"><summary>Q2. 特徵提取（Feature Extraction）怎麼做？</summary><div>
+      <p>把預訓練網路分成<strong>卷積基底</strong>（擷取特徵）和<strong>分類層</strong>（對應原資料集的類別）：</p>
+      <ol>
+        <li><strong>凍結（freeze）卷積基底</strong>，訓練時權重不更新。</li>
+        <li>移除原本的分類層，<strong>換成新的分類層</strong>，輸出數量 = 新資料集的類別數。</li>
+        <li>在新資料上訓練，<strong>只有新分類層的權重會更新</strong>。</li>
+      </ol>
+      <p>優點：訓練快、需要的資料少、不會破壞預訓練權重。</p>
+    </div></details>
+
+    <details class="qa-item"><summary>Q3. 微調（Fine-tuning）和特徵提取差在哪？為什麼通常解凍「深層」？</summary><div>
+      <p>微調是在特徵提取之後，再<strong>解凍部分或全部預訓練層（通常是較深的層）</strong>，以<strong>很小的學習率</strong>再訓練幾個 epoch，讓特徵更貼近新資料，準確率通常更高。</p>
+      <p>CNN 的<strong>淺層學到通用特徵</strong>（邊緣、紋理），換任務也用得上；<strong>深層學到與原資料集相關的細節</strong>，才需要針對新資料調整。</p>
+    </div></details>
+
+    <details class="qa-item"><summary>⭐ Q4. 為什麼微調要先凍結、只訓練新分類層，再解凍後面幾層？</summary><div>
+      <p>因為新分類層是<strong>隨機初始化</strong>的，一開始幾乎亂猜，Loss 很大、<strong>梯度也很大</strong>；若整個模型一起訓練，大梯度會流進預訓練層，<strong>把學好的特徵破壞掉</strong>。</p>
+      <ol>
+        <li><strong>先凍結、只訓練新分類層</strong>：讓它先學會用現有特徵分類，Loss 降下來、梯度穩定。</li>
+        <li><strong>再解凍後面幾層、用很小的學習率</strong>（比初始訓練小一到兩個數量級）：輕輕調整深層。</li>
+      </ol>
+      <p>其他注意：小資料集時讓 <strong>BN 沿用預訓練的統計量</strong>（running mean／std），避免小 batch 估得不準打亂特徵。</p>
+    </div></details>
+
+    <h4>CV 常見的微調方式（2.6～2.13）</h4>
+    <details class="qa-item"><summary>Q5. Full Fine-tuning 的優缺點？</summary><div>
+      <p><strong>所有參數都微調</strong>。優點：適應能力最大，<strong>資料夠多時通常效果最好</strong>，domain 差異大時也能調整。缺點：<strong>計算成本與 GPU 記憶體需求高；資料少時容易 overfitting</strong>。實務建議：先訓練新 head，再解凍全部，用很小的學習率。</p>
+    </div></details>
+
+    <details class="qa-item"><summary>Q6. Partial／Selective Fine-tuning 和 Last-k Fine-tuning 是什麼？k 怎麼選？</summary><div>
+      <p><strong>Partial／Selective</strong>：只更新部分參數，例如依位置只解凍最後幾層，或依類型只更新 BN、bias。優點：成本比 Full 低、較不易 overfitting、保留通用特徵；缺點：要決定調哪些層，domain gap 大時凍太多會限制模型。</p>
+      <p><strong>Last-k</strong>：只解凍<strong>最後 k 個 layer／block</strong>。假設越靠近輸入越通用、越靠近輸出越 task-specific。</p>
+      <ul>
+        <li>新資料<strong>少</strong> → k 小（例如 1～2）；資料<strong>多</strong> → k 大。</li>
+        <li>和原資料<strong>相似</strong> → k 小；<strong>差異大</strong> → k 大。</li>
+      </ul>
+    </div></details>
+
+    <details class="qa-item"><summary>Q7. PEFT 是什麼？優缺點？</summary><div>
+      <p>Parameter-Efficient Fine-tuning：<strong>凍結大部分預訓練模型，只訓練非常少量的參數</strong>，常見方法有 LoRA、Adapter、VPT，主要用於 ViT、CLIP 等大型 Transformer。</p>
+      <p>優點：可訓練參數極少、GPU 記憶體較省、<strong>多個任務共用同一個 backbone</strong>，每個任務只存小模組。缺點：適應能力可能受限；Adapter、VPT 會增加推論成本（LoRA 不會）。</p>
+    </div></details>
+
+    <details class="qa-item"><summary>Q8. LoRA 怎麼運作？為什麼推論不會變慢？</summary><div>
+      $$h=W_0x+BAx$$
+      <ul>
+        <li><strong>凍結預訓練權重 \(W_0\)</strong>，只訓練兩個<strong>低秩</strong>小矩陣 \(B\)（\(d\times r\)）、\(A\)（\(r\times k\)），rank \(r\) 遠小於 \(d,k\)。</li>
+        <li>初始化 \(B=0\)，所以一開始 \(BA=0\)，模型和預訓練模型完全相同。</li>
+        <li>例：768×768 的層有 589,824 個參數；\(r=8\) 時 LoRA 只要 \(2\times768\times8=12{,}288\) 個，約 2%。</li>
+        <li>訓練完可把 \(BA\) <strong>合併回 \(W_0\)</strong>（\(W=W_0+BA\)），推論只算一次，<strong>不增加計算量</strong>。</li>
+        <li>限制：r 太小學不夠、太大失去省參數的優勢；插入哪些層會影響效果。</li>
+      </ul>
+    </div></details>
+
+    <details class="qa-item"><summary>Q9. Regularized Fine-tuning 與 L2-SP 是什麼？和一般 L2（weight decay）差在哪？</summary><div>
+      <p><strong>Regularized Fine-tuning</strong>：參數可以動，但<strong>不要離預訓練模型太遠</strong>，降低 overfitting、保留預訓練知識；但來源與目標差太多時可能反而有害，成本也不比 Full 低。</p>
+      <p><strong>L2-SP</strong>：在 Loss 加上 \(\frac{\alpha}{2}\lVert w-w^0\rVert^2\)，把權重<strong>拉向預訓練值 \(w^0\)</strong>；一般 L2 是 \(\frac{\alpha}{2}\lVert w\rVert^2\)，把權重<strong>拉向 0</strong>。新的分類 head 沒有 \(w^0\)，用一般 L2。小資料集上更穩定，但所有參數仍需訓練。</p>
+    </div></details>
+  </div>
+
   <h2 id="summary">1. 本章重點摘要</h2>
   <p>從頭訓練 CNN 需要大量標註資料、強大運算資源與長時間，多數實際任務只有幾百到幾千張影像，做不到。遷移學習（Transfer Learning）借用在 ImageNet 等大型資料集上預訓練好的模型：淺層學到的邊緣、色塊、紋理等通用特徵也適用於新任務。用法分兩種：<strong>特徵提取</strong>（凍結卷積基底、只訓練新的分類層）與<strong>微調</strong>（在特徵提取之後，解凍部分或全部層，用很小的學習率再訓練）。</p>
   <p>後半介紹 CV 常見的四種微調方式：Full Fine-tuning（全部可改）、Partial／Selective Fine-tuning（例如 Last-k，只解凍最後 \(k\) 個 block）、參數高效微調（Parameter-Efficient Fine-tuning, PEFT，例如低秩適應 LoRA 只訓練小矩陣 \(BA\)）、Regularized Fine-tuning（例如 L2-SP，懲罰權重離預訓練值 \(w^0\) 太遠）。這章直接建立在 <a href="c4.html">C4</a> 的經典模型（ResNet、VGG 等作為 backbone）與 <a href="c3.html">C3</a> 的 BN、L2 正則化之上。</p>

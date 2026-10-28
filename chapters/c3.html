@@ -119,6 +119,115 @@
     <p class="story-note">故事是幫助記憶的改寫，細節與數字以下方筆記為準。<span class="tag add">補充</span></p>
   </div>
 
+  <h2 id="qa">❓ 問答閱讀筆記</h2>
+  <div class="qa">
+    <p class="qa-lead">只列期中考範圍的觀念，用「問題 → 答案」整理，老師的關鍵字用粗體。點問題看答案，先自己想再打開。⭐ 是期中模擬考出過的題目。</p>
+
+    <h4>資料集與評估（2.1～2.4）</h4>
+    <details class="qa-item"><summary>⭐ Q1. Training、Validation、Test 資料集各自扮演什麼角色？</summary><div>
+      <ul>
+        <li><strong>Training set</strong>：讓模型<strong>學習參數</strong>，每個 epoch 用梯度下降與反向傳播更新權重。</li>
+        <li><strong>Validation set</strong>：<strong>訓練期間</strong>公正評估模型（每個 epoch 結束算 loss 與 accuracy），用來<strong>調整超參數、挑選最佳模型、判斷 overfitting 或 Early Stopping</strong>，不用來更新權重。</li>
+        <li><strong>Test set</strong>：模型<strong>從未看過</strong>的資料，<strong>訓練全部結束後只用一次</strong>，評估最終的泛化能力。</li>
+      </ul>
+      <p>注意：Test 不能拿來調模型，否則評估結果會過度樂觀。</p>
+    </div></details>
+
+    <details class="qa-item"><summary>Q2. Loss 和 Accuracy 曲線怎麼看？為什麼還需要混淆矩陣（Confusion Matrix）？</summary><div>
+      <ul>
+        <li>Training loss 一直下降、Validation loss 卻開始上升（或兩者 Accuracy 差距拉大）→ 開始 <strong>overfitting</strong>。</li>
+        <li>Accuracy 只有一個數字，看不出模型在<strong>每個類別</strong>的對錯。混淆矩陣列出「真實 vs 預測」的每一格，能找出表現較差的類別、容易把誰誤認成誰（例：MNIST 的 4 常被判成 9）。</li>
+      </ul>
+    </div></details>
+
+    <details class="qa-item"><summary>⭐ Q3. Precision、Recall、Accuracy 各代表什麼意義？</summary><div>
+      <ul>
+        <li><strong>Accuracy</strong>：所有樣本中預測正確的比例 \(\dfrac{TP+TN}{TP+TN+FP+FN}\)。</li>
+        <li><strong>Precision</strong>：<strong>被預測為正的</strong>樣本中真的是正的比例（預測為陽性的可信度）\(\dfrac{TP}{TP+FP}\)。</li>
+        <li><strong>Recall</strong>（＝ Sensitivity、TPR）：<strong>實際為正的</strong>樣本中被正確找出的比例（有沒有漏抓）\(\dfrac{TP}{TP+FN}\)。</li>
+      </ul>
+      <p>類別不平衡時 Accuracy 可能很高但模型不好，要搭配 Precision 與 Recall；兩者通常有取捨，例如疾病篩檢重視 Recall，避免漏掉病人。F1 是兩者的調和平均。</p>
+      <p>講義 COVID 例：TP=90、FN=10、FP=5、TN=40 → Accuracy ≈ 0.897、Precision ≈ 0.947、Recall = 0.9。</p>
+    </div></details>
+
+    <h4>Overfitting 與正則化（2.5～2.10）</h4>
+    <details class="qa-item"><summary>Q4. 什麼是過度擬合（Overfitting）？怎麼改善？</summary><div>
+      <p>模型在訓練資料表現很好，在新資料表現很差：把訓練資料的雜訊和細節也背起來，<strong>泛化能力差</strong>。</p>
+      <p>改善：增加資料（含資料擴增）、降低模型複雜度、正則化（L1／L2、Dropout、Early Stopping、Batch Normalization）。</p>
+    </div></details>
+
+    <details class="qa-item"><summary>⭐ Q5. L1 與 L2 正則化的主要差異是什麼？</summary><div>
+      <p>兩者都在 Loss 加上 Penalty，迫使模型使用較小的權重，強度由 \(\lambda\) 控制：</p>
+      $$L_{L1}=L+\lambda\sum_j|\theta_j|,\qquad L_{L2}=L+\lambda\sum_j\theta_j^2$$
+      <div class="table-wrap"><table>
+        <thead><tr><th></th><th>L1（Lasso）</th><th>L2（Ridge）</th></tr></thead>
+        <tbody>
+          <tr><td>Penalty</td><td>權重<strong>絕對值</strong>總和</td><td>權重<strong>平方</strong>總和</td></tr>
+          <tr><td>效果</td><td>優先把不重要特徵的權重<strong>降為 0</strong></td><td>把<strong>所有權重一起變小</strong>，大權重罰更重</td></tr>
+          <tr><td>結果</td><td>稀疏，有<strong>特徵選取</strong>效果</td><td>權重小而平滑，避免少數節點主導</td></tr>
+        </tbody>
+      </table></div>
+      <p>共同注意：\(\lambda\) 太大，權重被壓得過小，會 Underfitting。</p>
+    </div></details>
+
+    <details class="qa-item"><summary>⭐ Q6. Dropout 是什麼技術？運作原理？為什麼有助於提升表現？</summary><div>
+      <p>Dropout 是<strong>正則化（Regularization）技術</strong>，用來防止 Overfitting。</p>
+      <ol>
+        <li>訓練時，每個 mini-batch <strong>隨機關閉</strong>某一層的部分節點（比例由 Dropout Rate 控制，例如 0.5）。</li>
+        <li>前向與反向傳遞只經過開著的節點，也只更新它們的權重。</li>
+        <li>下一個 mini-batch 恢復所有節點，再重新隨機關閉一批。</li>
+        <li><strong>測試（推論）時不關閉，使用所有節點</strong>。</li>
+      </ol>
+      <p>為什麼有效：每次訓練的都是不同的子網路，模型<strong>不能依賴少數特定節點</strong>，被迫學到更可靠、更具代表性的特徵，泛化較好（效果類似許多子網路的集成 <span class="tag add">補充</span>）。代價：收斂較慢，要搭配更多 epoch。</p>
+    </div></details>
+
+    <details class="qa-item"><summary>Q7. Early Stopping 怎麼運作？</summary><div>
+      <p>每個 epoch 看 Validation loss，<strong>連續 P 個 epoch（patience）沒有進步就停止訓練</strong>，並<strong>取回 Validation loss 最低那一輪的權重</strong>。好處是不用事先決定 epoch 數、在 overfitting 之前停下。</p>
+      <p>例：P = 3，Val loss 0.50 / 0.40 / 0.35 / 0.36 / 0.37 / 0.38 → 第 6 個 epoch 停，取回第 3 個 epoch 的權重。</p>
+    </div></details>
+
+    <details class="qa-item"><summary>Q8. Batch Normalization（BN）在做什麼？訓練和推論有什麼不同？</summary><div>
+      <ul>
+        <li>對每個 mini-batch <strong>計算 mean 與標準差並標準化</strong>，再用可學習的 \(\gamma\)（縮放）、\(\beta\)（平移）做 \(y=\gamma\hat{x}+\beta\)。CNN 中每個 channel 各有一組。</li>
+        <li>通常放在 Conv 與 Activation 之間，<strong>穩定每一層輸入的分布</strong>（緩解 Internal Covariate Shift）。</li>
+        <li>效果：訓練更穩定、<strong>可以用較大的學習率、收斂較快</strong>，也有輕微的正則化效果。</li>
+        <li>訓練時用當下 batch 的統計量；<strong>推論時改用訓練中以移動平均累積的 running mean／running STD</strong>（推論時 batch 可能只有一張）。</li>
+      </ul>
+    </div></details>
+
+    <h4>資料擴增（2.11）</h4>
+    <details class="qa-item"><summary>Q9. 資料擴增（Data Augmentation）為什麼有用？基本方法有哪些？</summary><div>
+      <p>Overfitting 的原因之一是訓練資料不夠；資料擴增對訓練資料做變換，<strong>增加資料的多樣性</strong>，等於讓模型每次看到不同版本的圖片，減少 overfitting、提升泛化。</p>
+      <p>基本方法：翻轉、亮度與對比、旋轉、縮放、裁切、扭曲。<strong>一般只對訓練資料做</strong>，通常在 Data Loader 搬資料時即時產生。</p>
+    </div></details>
+
+    <details class="qa-item"><summary>Q10. 遮擋類：CutOut、Random Erasing、Hide-and-Seek、GridMask 差在哪？</summary><div>
+      <p>共同目的：遮住一部分，<strong>強迫模型用多個特徵判斷</strong>，不只盯著最明顯的地方。</p>
+      <ul>
+        <li><strong>CutOut</strong>：遮住一塊<strong>固定大小的正方形</strong>，填 0（黑色）。</li>
+        <li><strong>Random Erasing</strong>：矩形的<strong>長寬比與面積都隨機</strong>，填<strong>隨機數值</strong>，比 CutOut 更多變化。</li>
+        <li><strong>Hide-and-Seek</strong>：切成 S×S 網格，<strong>每格依機率獨立遮掉</strong>；主要區域被遮時會學次要區域，但可能一次遮太多或太少。</li>
+        <li><strong>GridMask</strong>：<strong>規律、等間距</strong>的網格遮擋，平衡「過度保留」與「過度刪除」。</li>
+      </ul>
+    </div></details>
+
+    <details class="qa-item"><summary>Q11. 混合類 MixUp、CutMix，組合類 Copy-Paste、Mosaic 各怎麼做？</summary><div>
+      <ul>
+        <li><strong>MixUp</strong>：兩張圖<strong>整張線性混合</strong>，標籤也按比例混合。例：\(\lambda=0.7\) → 標籤「狗 0.7、貓 0.3」。</li>
+        <li><strong>CutMix</strong>：A 圖<strong>挖一塊換成 B 圖</strong>，標籤<strong>依面積比例</strong>混合。例：32×32 貼 16×16 → B 佔 0.25。</li>
+        <li><strong>Copy-Paste</strong>：把物件<strong>連同 mask 貼到另一張圖</strong>，可同步更新 mask、bbox。</li>
+        <li><strong>Mosaic</strong>：<strong>多張（常見 4 張）拼成一張</strong>，一張圖就看到不同背景、尺度、位置。</li>
+      </ul>
+    </div></details>
+
+    <details class="qa-item"><summary>Q12. Adaptive Data Augmentation 和 Targeted Data Generation 是什麼？</summary><div>
+      <ul>
+        <li><strong>Adaptive Data Augmentation</strong>：依訓練中的 <strong>loss／梯度回饋，動態調整擴增的種類與強度</strong>，讓樣本維持適當的挑戰性（擴增參數往讓 loss 變大的方向更新）。</li>
+        <li><strong>Targeted Data Generation（TDG）</strong>：不是平均增加資料，而是<strong>找出模型容易誤判的子群（subgroup）</strong>，針對它生成標註正確的合成樣本，把資料花在模型的弱點上。</li>
+      </ul>
+    </div></details>
+  </div>
+
   <h2 id="summary">1. 本章重點摘要</h2>
   <p>本章處理「模型訓練好之後，怎麼知道它好不好、不好又該怎麼改」。前半講<strong>評估</strong>：訓練集、驗證集、測試集（Training／Validation／Test）三種資料集的角色，以及準確率（Accuracy）不夠用時要看的混淆矩陣（Confusion Matrix）、精確率（Precision）、召回率（Recall）、F1 等指標。後半講<strong>改進</strong>：過度擬合（Overfitting）的成因，以及四種正則化（Regularization）方法：L1／L2、Dropout、提早停止（Early Stopping）、批次正規化（Batch Normalization, BN），還有各式資料擴增（Data Augmentation）。這章延續 C1 的評估指標與 C2 的 CNN，是把模型從「能跑」推到「好用」的工具箱。</p>
 
