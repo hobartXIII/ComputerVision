@@ -90,6 +90,9 @@
     nav.append(el('a', {
       href: prefix + 'chapters/quiz.html', text: '題庫', title: '期中模擬題庫', class: current === 'quiz' ? 'active' : '',
     }));
+    nav.append(el('a', {
+      href: prefix + 'chapters/exam.html', text: '考題', title: '期中考題問答', class: current === 'exam' ? 'active' : '',
+    }));
     const themeBtn = el('button', { class: 'icon-btn', type: 'button', title: '切換深色／淺色' });
     const label = () => { themeBtn.textContent = isDark() ? '☀ 淺色' : '☾ 深色'; };
     label();

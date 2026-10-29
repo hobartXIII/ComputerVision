@@ -56,6 +56,9 @@ chapters/c<n>.js      該章的互動元件，每個元件一個 IIFE，對應 H
 chapters/quiz.html    期中模擬題庫（練習、模擬考、錯題本），見下方「期中模擬題庫」
 chapters/quiz.js      題庫的畫面與作答邏輯
 chapters/quiz-data.js 題庫資料 window.QUIZ_DATA（選擇 210 題、問答 85 題）
+chapters/exam.html    考題問答（題目 → 輸入框 → 正確答案），見下方「考題問答」
+chapters/exam.js      考題問答的畫面；輸入的答案存在 localStorage `cv-exam-input`
+chapters/exam-data.js 考題問答資料 window.EXAM_DATA（68 題）
 ```
 
 - 所有 script 都用 `defer` 載入，順序是 KaTeX → `highlighter.js` → `common.js` → `c<n>.js`；樣式是 `style.css` → `highlighter.css`。新增頁面時兩個都要加。不能用 ES modules，因為用 `file://` 直接開啟時會被擋。
@@ -181,6 +184,12 @@ C3 門檻元件的分數是依常態分位數排列產生的，讓門檻 0.5 剛
 - 題目原稿是專案根目錄的 `mock-exam-mcq.md`、`mock-exam-short.md`（只在本機、不 commit，`midterm-mock-exam.md`、`midterm-review.md` 也一樣，commit 時不要用 `git add .`）。原稿改了之後要重新轉成 `quiz-data.js`；也可以直接改 `quiz-data.js`，但原稿就不會同步。
 - C1～C5 選擇題正確答案的位置已平衡成 A、B、C、D 各 50 題，C0 的 10 題是 A 3、B 2、C 3、D 2；改題目時盡量維持。
 - 驗證：模擬考抽 10 題選擇、答對 5 題 → 顯示 50 分；390px 寬度不橫向捲動（問答解答裡的表格包在 `.table-wrap`），淺色、深色都看。
+
+## 考題問答
+
+- `chapters/exam.html`：使用者 2026-10-29 要求的「考題分頁」，把 C1～C5 要考的內容整理成問答題，格式是題目 → 輸入框（Please Input）→ 按「正確答案」顯示答案；可依章節篩選（C4-2 併入 C4）。頁首「考題」連結在 `buildTopbar()`，首頁有入口卡片。
+- 題目改寫自各章「❓ 問答閱讀筆記」，用考卷問法（「請說明…」「…的主要目的為何？」）；答案是**完整句子**，不要摘要成關鍵字。使用者貼的範例題（ML vs DL、SVM vs KNN、PCA、Forward Propagation、Precision／Recall／Accuracy、SqueezeNet 縮小模型的好處等）題目與答案照抄。(Skip) 的內容與太難的推導不出。
+- 資料格式：`{ ch, q, a }`，`a` 是純文字（用 `textContent` 顯示、`white-space: pre-line`），換行就是分段，不寫 HTML 也不寫 KaTeX。
 
 ## 新增一章的流程
 
