@@ -131,6 +131,10 @@
         <li><strong>Test set</strong>：模型<strong>從未看過</strong>的資料，<strong>訓練全部結束後只用一次</strong>，評估最終的泛化能力。</li>
       </ul>
       <p>注意：Test 不能拿來調模型，否則評估結果會過度樂觀。</p>
+      <div class="qa-plain">
+        <p><strong>💬 白話</strong>：Training 是課本、Validation 是模擬考、Test 是正式考試；正式考試只考一次，不能考完再回去改。</p>
+        <p><strong>🔢 例子</strong> <span class="tag add">補充</span>：10,000 張圖分成 7,000 張訓練、1,500 張驗證、1,500 張測試。</p>
+      </div>
     </div></details>
 
     <details class="qa-item"><summary>Q2. Loss 和 Accuracy 曲線怎麼看？為什麼還需要混淆矩陣（Confusion Matrix）？</summary><div>
@@ -154,6 +158,10 @@
     <details class="qa-item"><summary>Q4. 什麼是過度擬合（Overfitting）？怎麼改善？</summary><div>
       <p>模型在訓練資料表現很好，在新資料表現很差：把訓練資料的雜訊和細節也背起來，<strong>泛化能力差</strong>。</p>
       <p>改善：增加資料（含資料擴增）、降低模型複雜度、正則化（L1／L2、Dropout、Early Stopping、Batch Normalization）。</p>
+      <div class="qa-plain">
+        <p><strong>💬 白話</strong>：就像只背考古題：考古題全對，換一份新題目就不會了。</p>
+        <p><strong>🔢 例子</strong> <span class="tag add">補充</span>：訓練準確率 99%、測試準確率只有 70%，差距很大 → Overfitting。</p>
+      </div>
     </div></details>
 
     <details class="qa-item"><summary>⭐ Q5. L1 與 L2 正則化的主要差異是什麼？</summary><div>
@@ -168,6 +176,10 @@
         </tbody>
       </table></div>
       <p>共同注意：\(\lambda\) 太大，權重被壓得過小，會 Underfitting。</p>
+      <div class="qa-plain">
+        <p><strong>💬 白話</strong>：L1 像「用一個權重就扣一份錢」，不重要的乾脆不用（變 0）；L2 像「權重越大扣越多」，大家都變小但不會歸零。</p>
+        <p><strong>🔢 例子</strong>：權重 (3, −0.1, 0)、λ = 0.01：L1 懲罰 = 0.01 × (3 + 0.1 + 0) = 0.031；L2 懲罰 = 0.01 × (9 + 0.01 + 0) = 0.0901。大權重 3 在 L2 被平方後懲罰特別重。</p>
+      </div>
     </div></details>
 
     <details class="qa-item"><summary>⭐ Q6. Dropout 是什麼技術？運作原理？為什麼有助於提升表現？</summary><div>
@@ -179,6 +191,10 @@
         <li><strong>測試（推論）時不關閉，使用所有節點</strong>。</li>
       </ol>
       <p>為什麼有效：每次訓練的都是不同的子網路，模型<strong>不能依賴少數特定節點</strong>，被迫學到更可靠、更具代表性的特徵，泛化較好（效果類似許多子網路的集成 <span class="tag add">補充</span>）。代價：收斂較慢，要搭配更多 epoch。</p>
+      <div class="qa-plain">
+        <p><strong>💬 白話</strong>：每次練習隨機讓一半的隊員休息，整隊就不能只靠某幾個王牌。</p>
+        <p><strong>🔢 例子</strong>：某層有 6 個節點、Dropout Rate 0.5 → 每個 mini-batch 隨機關掉 3 個，下一個 mini-batch 換另一批；測試時 6 個全開。</p>
+      </div>
     </div></details>
 
     <details class="qa-item"><summary>Q7. Early Stopping 怎麼運作？</summary><div>
@@ -193,12 +209,20 @@
         <li>效果：訓練更穩定、<strong>可以用較大的學習率、收斂較快</strong>，也有輕微的正則化效果。</li>
         <li>訓練時用當下 batch 的統計量；<strong>推論時改用訓練中以移動平均累積的 running mean／running STD</strong>（推論時 batch 可能只有一張）。</li>
       </ul>
+      <div class="qa-plain">
+        <p><strong>💬 白話</strong>：先把每一批資料「拉回平均 0、標準差 1」，再讓模型自己學要不要放大或移動。</p>
+        <p><strong>🔢 例子</strong>：一個 batch 為 (2, 4, 6, 8)：平均 5、標準差約 2.236 → 標準化 x̂ ≈ (−1.342, −0.447, 0.447, 1.342)；γ = 2、β = 1 → y ≈ (−1.683, 0.106, 1.894, 3.683)。</p>
+      </div>
     </div></details>
 
     <h4>資料擴增（2.11）</h4>
     <details class="qa-item"><summary>Q9. 資料擴增（Data Augmentation）為什麼有用？基本方法有哪些？</summary><div>
       <p>Overfitting 的原因之一是訓練資料不夠；資料擴增對訓練資料做變換，<strong>增加資料的多樣性</strong>，等於讓模型每次看到不同版本的圖片，減少 overfitting、提升泛化。</p>
       <p>基本方法：翻轉、亮度與對比、旋轉、縮放、裁切、扭曲。<strong>一般只對訓練資料做</strong>，通常在 Data Loader 搬資料時即時產生。</p>
+      <div class="qa-plain">
+        <p><strong>💬 白話</strong>：同一張照片翻一翻、轉一轉、調亮一點，對模型來說就像多了好幾張新照片。</p>
+        <p><strong>🔢 例子</strong> <span class="tag add">補充</span>：1,000 張訓練圖，每張每個 epoch 隨機做翻轉＋旋轉＋亮度調整，模型每次看到的都是不同版本，相當於看過遠多於 1,000 張的變化。</p>
+      </div>
     </div></details>
 
     <details class="qa-item"><summary>Q10. 遮擋類：CutOut、Random Erasing、Hide-and-Seek、GridMask 差在哪？</summary><div>
@@ -225,6 +249,10 @@
         <li><strong>Adaptive Data Augmentation</strong>：依訓練中的 <strong>loss／梯度回饋，動態調整擴增的種類與強度</strong>，讓樣本維持適當的挑戰性（擴增參數往讓 loss 變大的方向更新）。</li>
         <li><strong>Targeted Data Generation（TDG）</strong>：不是平均增加資料，而是<strong>找出模型容易誤判的子群（subgroup）</strong>，針對它生成標註正確的合成樣本，把資料花在模型的弱點上。</li>
       </ul>
+      <div class="qa-plain">
+        <p><strong>💬 白話</strong>：Adaptive 是「模型覺得太簡單就加難度」；TDG 是「哪裡常錯就專門多練那裡」。</p>
+        <p><strong>🔢 例子</strong> <span class="tag add">補充</span>：模型在「夜間拍的貓」常判錯，TDG 就專門生成一批標註正確的夜間貓圖補進訓練資料。</p>
+      </div>
     </div></details>
   </div>
 

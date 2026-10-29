@@ -15,6 +15,15 @@
     box.value = inputs[d.id] || '';
     box.addEventListener('input', () => { const v = load(); v[d.id] = box.value; save(v); });
     const ans = el('div', { class: 'ex-ans', hidden: '' }, [el('p', { class: 'ex-ans-text', text: d.a })]);
+    if (d.f) {
+      // 公式列在答案下方，作答時用文字說明即可
+      const math = el('div', { class: 'ex-f-math', text: d.f });
+      CV.tex(math, d.f, true);
+      ans.append(el('div', { class: 'ex-formula' }, [
+        el('p', { class: 'ex-f-head', text: '📐 公式（參考，作答用文字說明即可）' }), math,
+        d.fn ? el('p', { class: 'ex-f-note', text: d.fn }) : null,
+      ]));
+    }
     const btn = el('button', { class: 'btn', type: 'button', text: '正確答案', 'aria-expanded': 'false' });
     btn.addEventListener('click', () => {
       ans.hidden = !ans.hidden;

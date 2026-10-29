@@ -1,5 +1,5 @@
 /* 期中考題問答：依各章「❓ 問答閱讀筆記」改寫成考卷問法，答案寫成可以直接寫在考卷上的完整句子
-   ch 是篩選用的章（C4-2 併入 c4），at 是題目放在哪一段內容整理下面（章:問答閱讀筆記的第幾題，見 exam-content.js），答案是純文字，換行用 \n */
+   ch 是篩選用的章（C4-2 併入 c4），at 是題目放在哪一段內容整理下面（章:問答閱讀筆記的第幾題，見 exam-content.js），答案是純文字，換行用 \n；f 是列在答案下方的公式（TeX，選填），fn 是公式的白話符號說明 */
 window.EXAM_DATA = [
   /* ---------- C1 視覺機器學習模型 ---------- */
   { ch: 'c1', at: 'c1:1', q: `請說明傳統 Machine Learning 與 Deep Learning 在特徵擷取與分類流程上的差異。`,
@@ -21,7 +21,9 @@ window.EXAM_DATA = [
   { ch: 'c1', at: 'c1:7', q: `請說明 Loss Function 的用途，並說明分類問題與迴歸問題各常用哪些 Loss Function。`,
     a: `Loss Function 用來衡量預測值與真實值之間的差距，作為調整權重的依據，訓練的目標就是把 Loss 降到最小。分類問題常用交叉熵（Cross-Entropy），正確類別的預測機率越低，損失越大；迴歸問題常用均方誤差（MSE）或平均絕對誤差（MAE），MSE 對大誤差的懲罰較重，MAE 對離群值較不敏感。` },
   { ch: 'c1', at: 'c1:8', q: `請說明 Gradient Descent 如何更新權重，並說明 Learning Rate 太大或太小會造成什麼問題。`,
-    a: `反向傳播算出 Loss 對每個權重的梯度後，沿著梯度的反方向更新權重：w ← w − α·∂L/∂w，讓 Loss 一步步變小。Learning Rate α 決定每一步走多大，是需要調整的超參數。Learning Rate 太大時更新過快，可能跳過最佳解、產生震盪甚至發散；太小時更新過慢，收斂很久，可能無法到達最佳解。` },
+    a: `反向傳播算出 Loss 對每個權重的梯度後，沿著梯度的反方向更新權重，也就是「往 Loss 下降的方向走一步」，讓 Loss 一步步變小。Learning Rate 決定每一步走多大，是需要調整的超參數。Learning Rate 太大時更新過快，可能跳過最佳解、產生震盪甚至發散；太小時更新過慢，收斂很久，可能無法到達最佳解。
+例：權重 3、梯度 2、Learning Rate 0.1，新的權重 = 3 − 0.1 × 2 = 2.8；若 Learning Rate 改成 10，權重會一步跳到 −17，就是跳過最佳解。`,
+    f: "w \\leftarrow w-\\alpha\\,\\frac{\\partial L}{\\partial w}", fn: `新的權重 ＝ 舊的權重 − 學習率 α × 梯度（Loss 對這個權重的變化率）。` },
   { ch: 'c1', at: 'c1:9', q: `請說明 SGD、Momentum、RMSProp 與 Adam 這幾種 Optimizer 的特色。`,
     a: `Optimizer 根據訓練損失調整模型參數，是梯度下降的改良版。SGD（隨機梯度下降）每次用一筆或一個 batch 的資料計算梯度，更新快但波動大、收斂不穩定，而這個波動可能幫助跳出 local minima。Momentum 加上慣性（上一步的移動），在平坦處或梯度為 0 的地方仍會前進，有機會衝過小山丘，也能減少抖動。RMSProp 會自動調整每個參數的學習率。Adam 結合 Momentum 與 RMSProp，同時考慮動量方向與自適應學習率，是常用的預設選擇。` },
 
@@ -75,11 +77,14 @@ Conv_2：輸入深度已變成 32，(3×3×32 + 1) × 64 = 18,496，輸出 24×2
   { ch: 'c3', at: 'c3:2', q: `如何從 Loss 與 Accuracy 曲線判斷 Overfitting？為什麼除了 Accuracy 還需要 Confusion Matrix？`,
     a: `Training loss 持續下降、Validation loss 卻開始上升（或 Training 與 Validation 的 Accuracy 差距拉大）時，表示模型開始 Overfitting。Accuracy 只有一個數字，看不出模型在每個類別上的表現；Confusion Matrix 列出「真實類別 vs 預測類別」的每一格，能找出表現較差的類別，以及模型容易把哪一類誤認成哪一類（例如 MNIST 的 4 常被判成 9）。` },
   { ch: 'c3', at: 'c3:3', q: `請根據 Confusion Matrix 解釋 Precision、Recall 與 Accuracy 的意義，並寫出三者的計算公式。`,
-    a: `Precision 表示模型預測為 Positive 的結果中，真正為 Positive 的比例，公式為 TP/(TP+FP)。Recall 表示實際為 Positive 的資料中，模型成功辨識出的比例，公式為 TP/(TP+FN)。Accuracy 表示所有預測中正確預測的比例，公式為 (TP+TN)/(TP+FP+FN+TN)。` },
+    a: `Precision 表示模型預測為 Positive 的結果中，真正為 Positive 的比例，公式為 TP/(TP+FP)。Recall 表示實際為 Positive 的資料中，模型成功辨識出的比例，公式為 TP/(TP+FN)。Accuracy 表示所有預測中正確預測的比例，公式為 (TP+TN)/(TP+FP+FN+TN)。`,
+    f: "\\begin{gathered}\\text{Precision}=\\frac{TP}{TP+FP} \\\\ \\text{Recall}=\\frac{TP}{TP+FN} \\\\ \\text{Accuracy}=\\frac{TP+TN}{TP+FP+FN+TN}\\end{gathered}", fn: `TP：真的是 Positive 也猜對；FP：其實是 Negative 卻猜成 Positive；FN：其實是 Positive 卻漏掉；TN：Negative 也猜對。` },
   { ch: 'c3', at: 'c3:4', q: `什麼是 Overfitting？有哪些改善方法？`,
     a: `Overfitting 是模型在訓練資料上表現很好，在新資料上表現很差，因為模型把訓練資料中的雜訊與細節也背了起來，泛化能力差。改善方法包括：增加資料（含資料擴增）、降低模型複雜度，以及使用正則化技術，例如 L1／L2 正則化、Dropout、Early Stopping、Batch Normalization。` },
   { ch: 'c3', at: 'c3:5', q: `L1 與 L2 正則化的主要差異是什麼？`,
-    a: `兩者都在 Loss 加上 Penalty，迫使模型使用較小的權重，強度由 λ 控制。L1（Lasso）的 Penalty 是權重絕對值的總和（L + λΣ|θ|），會優先把不重要特徵的權重降為 0，結果較稀疏，具有特徵選取的效果。L2（Ridge）的 Penalty 是權重平方的總和（L + λΣθ²），會讓所有權重一起變小，大權重被懲罰得更重，結果權重小而平滑，避免少數節點主導。共同要注意的是 λ 太大時權重被壓得過小，會造成 Underfitting。` },
+    a: `兩者都在 Loss 加上 Penalty，迫使模型使用較小的權重，強度由 λ 控制。L1（Lasso）的 Penalty 是權重絕對值的總和，會優先把不重要特徵的權重降為 0，結果較稀疏，具有特徵選取的效果。L2（Ridge）的 Penalty 是權重平方的總和，會讓所有權重一起變小，大權重被懲罰得更重，結果權重小而平滑，避免少數節點主導。共同要注意的是 λ 太大時權重被壓得過小，會造成 Underfitting。
+例：權重 3、−0.1、0，λ = 0.01。L1 懲罰 = 0.01 × (3 + 0.1 + 0) = 0.031；L2 懲罰 = 0.01 × (9 + 0.01 + 0) = 0.0901，大權重 3 平方後被罰得特別重。`,
+    f: "\\begin{gathered}L_{L1}=L+\\lambda\\sum_j|\\theta_j| \\\\ L_{L2}=L+\\lambda\\sum_j\\theta_j^2\\end{gathered}", fn: `L 是原本的 Loss，θ 是每個權重，λ 是懲罰強度；L1 加的是絕對值總和，L2 加的是平方總和。` },
   { ch: 'c3', at: 'c3:6', q: `Dropout 是什麼技術？請說明它的運作原理，以及為什麼有助於提升模型表現。`,
     a: `Dropout 是正則化（Regularization）技術，用來防止 Overfitting。運作原理：
 (1) 訓練時，每個 mini-batch 隨機關閉某一層的部分節點，比例由 Dropout Rate 控制（例如 0.5）。
@@ -90,7 +95,9 @@ Conv_2：輸入深度已變成 32，(3×3×32 + 1) × 64 = 18,496，輸出 24×2
   { ch: 'c3', at: 'c3:7', q: `請說明 Early Stopping 的運作方式與好處。`,
     a: `Early Stopping 在每個 epoch 結束時觀察 Validation loss，若連續 P 個 epoch（patience）都沒有進步，就停止訓練，並取回 Validation loss 最低那一輪的權重。好處是不需要事先決定 epoch 數，並能在模型開始 Overfitting 之前停下來。例如 P = 3，Validation loss 依序為 0.50、0.40、0.35、0.36、0.37、0.38，會在第 6 個 epoch 停止，並取回第 3 個 epoch 的權重。` },
   { ch: 'c3', at: 'c3:8', q: `請說明 Batch Normalization 的做法與效果，以及訓練與推論時有什麼不同。`,
-    a: `Batch Normalization 對每個 mini-batch 計算平均值（mean）與標準差並進行標準化，再用可學習的 γ（縮放）與 β（平移）計算 y = γx̂ + β；在 CNN 中每個 channel 各有一組。它通常放在 Conv 與 Activation 之間，用來穩定每一層輸入的分布（緩解 Internal Covariate Shift）。效果是訓練更穩定、可以使用較大的 Learning Rate、收斂較快，也有輕微的正則化效果。訓練時使用當下 batch 的統計量；推論時改用訓練過程中以移動平均累積的 running mean 與 running STD，因為推論時 batch 可能只有一張圖。` },
+    a: `Batch Normalization 對每個 mini-batch 計算平均值與標準差，把資料標準化成平均 0、標準差 1，再用兩個可學習的參數做縮放與平移，讓模型自己決定要不要放大或移動；在 CNN 中每個 channel 各有一組。它通常放在 Conv 與 Activation 之間，用來穩定每一層輸入的分布（緩解 Internal Covariate Shift）。效果是訓練更穩定、可以使用較大的 Learning Rate、收斂較快，也有輕微的正則化效果。訓練時使用當下 batch 的統計量；推論時改用訓練過程中以移動平均累積的 running mean 與 running STD，因為推論時 batch 可能只有一張圖。
+例：一個 batch 是 2、4、6、8，平均 5，標準化後約為 −1.34、−0.45、0.45、1.34。`,
+    f: "\\begin{gathered}\\hat{x}=\\frac{x-\\mu}{\\sigma} \\\\ y=\\gamma\\hat{x}+\\beta\\end{gathered}", fn: `μ、σ 是這個 batch 的平均與標準差；先標準化成 x̂，再用可學習的 γ 放大、β 平移。` },
   { ch: 'c3', at: 'c3:9', q: `資料擴增（Data Augmentation）為什麼能改善模型？基本的資料擴增方法有哪些？`,
     a: `Overfitting 的原因之一是訓練資料不足。資料擴增對訓練資料做各種變換，增加資料的多樣性，等於讓模型每次看到不同版本的圖片，可以減少 Overfitting、提升泛化能力。基本方法包括翻轉、調整亮度與對比、旋轉、縮放、裁切、扭曲。資料擴增一般只對訓練資料做，通常在 Data Loader 搬資料時即時產生。` },
   { ch: 'c3', at: 'c3:10', q: `請比較 CutOut、Random Erasing、Hide-and-Seek 與 GridMask 這四種遮擋式資料擴增的差異。`,
@@ -119,7 +126,9 @@ Conv_2：輸入深度已變成 32，(3×3×32 + 1) × 64 = 18,496，輸出 24×2
   { ch: 'c4', at: 'c4:9', q: `請說明 Inception 中輔助分類器（Auxiliary Classifier）的作用，以及 Inception 的優缺點。`,
     a: `輔助分類器接在網路中間，Total Loss = Main Loss + w₁ × Aux Loss1 + w₂ × Aux Loss2，讓很深的網路仍然可以訓練；輔助分類器只在訓練時使用，推論時會移除。Inception 的優點是能擷取多尺度特徵、用 1×1 卷積有效利用運算資源，深層網路仍可訓練；缺點是結構複雜、難以移植到資源有限的設備，參數與架構的選擇也較複雜。` },
   { ch: 'c4', at: 'c4:5', q: `ResNet 要解決什麼問題？請說明殘差連接（Residual Connection）的運作方式。`,
-    a: `一般 CNN 層數很深時效能反而下降（例如 50 層比 20 層還差），這不是 Overfitting，而是網路難以優化，原因之一是梯度消失或梯度爆炸。ResNet 使用殘差連接（Skip Connection），把前面的輸入直接加到後面的輸出：H(x) = F(x) + x。堆疊的層只需要學習殘差 F(x) = H(x) − x，也就是小的修正量，比從頭學習整個 H(x) 容易；多出來的層若用不到，只要 F(x) 趨近 0，就等於恆等映射（什麼都不做）。反向傳播時，梯度也可以經由捷徑直接傳回前面的層，緩解梯度消失。` },
+    a: `一般 CNN 層數很深時效能反而下降（例如 50 層比 20 層還差），這不是 Overfitting，而是網路難以優化，原因之一是梯度消失或梯度爆炸。ResNet 使用殘差連接（Skip Connection），把這一段的輸入直接加到輸出上。這樣中間的層只需要學習「要在輸入上修改多少」（殘差），比從頭學出整個輸出容易；多出來的層若用不到，只要殘差學成 0，輸出就等於輸入（恆等映射），不會讓效果變差。反向傳播時，梯度也可以經由捷徑直接傳回前面的層，緩解梯度消失。
+例：輸入是 5、理想輸出是 5.2，一般網路要學出整個 5.2，ResNet 只要學出 0.2 這個修正量。`,
+    f: "H(x)=F(x)+x", fn: `x 是輸入，H(x) 是這一段想要的輸出，F(x) 是中間的層要學的殘差（修正量）。` },
   { ch: 'c4', at: 'c4:6', q: `請說明 ResNet 的優缺點。`,
     a: `優點：能有效訓練深層網路（18～152 層，甚至 1202 層），降低優化難度、加快收斂，在 ImageNet 上表現優於前代模型，被廣泛當作 backbone；並使用 Global Average Pooling，只需要少量甚至不需要全連接層。缺點：運算量與記憶體需求大，不利於部署在行動裝置上；許多 block 學到的殘差很小，參數使用效率不佳。` },
   { ch: 'c4', at: 'c4:10', q: `請說明 Global Average Pooling（GAP）的運作方式，以及它對參數量與 Overfitting 的好處。`,
@@ -149,16 +158,22 @@ Conv_2：輸入深度已變成 32，(3×3×32 + 1) × 64 = 18,496，輸出 24×2
 
   /* ---------- C4-2 DenseNet ---------- */
   { ch: 'c4', at: 'c4-2:2', q: `ResNet 的捷徑連接有什麼限制？DenseNet 如何改進？`,
-    a: `ResNet 以逐元素相加 y = F(x) + x 合併特徵，雖能緩解梯度消失，但有兩個限制：(1) 以相加合併時，前面層的特徵與新特徵混在一起，後面的層無法分別取用；(2) 許多層的貢獻很小，卻各自擁有一組參數，參數使用效率不高。DenseNet 改用通道串接（concatenation），讓每一層都能直接取用前面所有層的 Feature Map，特徵可以重複利用，每一層只需要學習少量的新特徵，因此能以較少的參數量達到與 ResNet 相近的準確率。` },
+    a: `ResNet 用逐元素相加把捷徑和新特徵合併，雖能緩解梯度消失，但有兩個限制：(1) 相加之後，前面層的特徵與新特徵混在一起，後面的層無法分別取用；(2) 許多層的貢獻很小，卻各自擁有一組參數，參數使用效率不高。DenseNet 改用通道串接（concatenation），讓每一層都能直接取用前面所有層的 Feature Map，特徵可以重複利用，每一層只需要學習少量的新特徵，因此能以較少的參數量達到與 ResNet 相近的準確率。
+例：原本特徵是 (1, 2)、新特徵是 (3, −1)。相加得到 (4, 1)，看不出原本是什麼；串接得到 (1, 2, 3, −1)，全部保留。`,
+    f: "\\begin{gathered}\\text{ResNet：}\\ y=F(x)+x \\\\ \\text{DenseNet：}\\ [x,\\,F(x)]\\end{gathered}", fn: `相加會把兩個特徵混成一個；串接 [ , ] 是把兩組通道並排放在一起，原本的特徵都保留。` },
   { ch: 'c4', at: 'c4-2:3', q: `請說明 Dense Block 的運作方式，以及增長率（growth rate）k 的意義。`,
-    a: `在同一個 Dense Block 中，每一層都接收前面所有層的 Feature Map 作為輸入（通道串接），每一層的輸出也直接連到後面所有層，梯度可以走捷徑傳回淺層。每一層只輸出 k 個新的 Feature Map，k 稱為增長率，所以每一層可以很「窄」。同一個 Block 內 Feature Map 的長寬不變，串接才能進行。第 L 層的輸入通道數為 k₀ + k(L − 1)，Block 的輸出通道數為 k₀ + kL；例如 k₀ = 64、k = 32、6 層，各層輸入為 64、96、128、160、192、224，Block 輸出為 64 + 6 × 32 = 256。Dense Block 中每一層的順序是 BN → ReLU → 3×3 Conv（pre-activation）。` },
+    a: `在同一個 Dense Block 中，每一層都接收前面所有層的 Feature Map 作為輸入（通道串接），每一層的輸出也直接連到後面所有層，梯度可以走捷徑傳回淺層。每一層只輸出 k 個新的 Feature Map，k 稱為增長率，所以每一層可以很「窄」，通道數每經過一層就增加 k。同一個 Block 內 Feature Map 的長寬不變，串接才能進行。Dense Block 中每一層的順序是 BN → ReLU → 3×3 Conv。
+例：輸入 64 個通道、k = 32、共 6 層，各層的輸入依序是 64、96、128、160、192、224 個通道，Block 輸出 64 + 6 × 32 = 256 個通道。`,
+    f: "\\begin{gathered}C^{(L)}_{in}=k_0+k\\,(L-1) \\\\ C_{\\text{block out}}=k_0+k\\,L\\end{gathered}", fn: `k₀ 是進入 Block 的通道數，k 是增長率，L 是第幾層；每多一層，通道數就多 k。` },
   { ch: 'c4', at: 'c4-2:6', q: `請說明 DenseNet-B 的 Bottleneck Layer、過渡層（Transition Layer）的作用，以及什麼是 DenseNet-BC。`,
     a: `串接讓輸入通道越來越多，3×3 卷積的成本越來越高，因此 DenseNet-B 在 3×3 卷積前先加上 BN → ReLU → 1×1 Conv，把通道壓到 4k 再做 3×3 卷積，降低計算量與參數。Dense Block 內長寬不能改變，所以降採樣要在 Block 之間由過渡層負責，過渡層由 BN → 1×1 Conv → 2×2 Average Pooling 組成：Average Pooling 讓長寬減半，1×1 Conv 用壓縮因子 θ（0 < θ ≤ 1，論文使用 0.5）減少通道數，避免通道無限增長，例如 56×56×256 經過 θ = 0.5 的過渡層變成 28×28×128。同時使用 Bottleneck（B）與壓縮（C）的版本稱為 DenseNet-BC。` },
   { ch: 'c4', at: 'c4-2:8', q: `為什麼 DenseNet 比 ResNet 省參數？請說明 DenseNet 的優缺點。`,
     a: `(1) 特徵重用：每一層都能直接使用前面所有層的特徵，不必重複學習相似的特徵，因此每一層可以很窄。(2) 增長率 k 限制每層的輸出：ResNet 為了相加，輸出通道必須與輸入相同，各層較寬；DenseNet 每層只新增 k 個 Feature Map。(3) DenseNet-BC 再以 Bottleneck 與過渡層壓縮通道。結果在相近的錯誤率下，DenseNet 需要的參數量與計算量都比 ResNet 少（DenseNet-121 約 8.0M，ResNet-50 約 25.6M）。
 優點：緩解梯度消失、促進特徵重用、參數量較少。缺點：記憶體需求高，因為要保存同一區塊內所有先前層的輸出；實際執行速度不一定較快，FLOPs 雖然較少，但大量的串接與記憶體存取會拖慢訓練與推論。` },
   { ch: 'c4', at: 'c4-2:9', q: `DenseNet 與 ResNet 在合併特徵的方式上，有何不同？`,
-    a: `ResNet 以逐元素相加 F(x) + x 合併特徵，輸入與輸出的形狀必須完全相同，每個 block 有一條捷徑，每層較寬以承載全部資訊。DenseNet 以通道串接 [x₀, x₁, …] 合併特徵，只要長寬相同、通道數可以不同，每一層都連到後面所有層（L 層共有 L(L+1)/2 條連接），每層只新增 k 個 Feature Map，因此較窄。兩者的共同點是梯度都能經由捷徑傳回淺層，緩解梯度消失。` },
+    a: `ResNet 以逐元素相加合併特徵，輸入與輸出的形狀必須完全相同，每個 block 有一條捷徑，每層較寬以承載全部資訊。DenseNet 以通道串接合併特徵，只要長寬相同、通道數可以不同，每一層都連到後面所有層，每層只新增 k 個 Feature Map，因此較窄。兩者的共同點是梯度都能經由捷徑傳回淺層，緩解梯度消失。
+例：原本特徵 (1, 2)、新特徵 (3, −1)：ResNet 相加得到 (4, 1)；DenseNet 串接得到 (1, 2, 3, −1)。`,
+    f: "\\begin{gathered}\\text{ResNet：}\\ y=F(x)+x \\\\ \\text{DenseNet：}\\ x_L=H_L([x_0,x_1,\\dots,x_{L-1}])\\end{gathered}", fn: `ResNet 把兩個同形狀的特徵逐元素相加；DenseNet 把前面所有層的輸出 x₀…x_{L−1} 在通道方向串接起來，再交給第 L 層處理。` },
 
   /* ---------- C5 遷移學習與微調 ---------- */
   { ch: 'c5', at: 'c5:1', q: `為什麼需要遷移學習（Transfer Learning）？請說明它的原理。`,
@@ -176,7 +191,11 @@ Conv_2：輸入深度已變成 32，(3×3×32 + 1) × 64 = 18,496，輸出 24×2
   { ch: 'c5', at: 'c5:7', q: `什麼是 PEFT（Parameter-Efficient Fine-tuning）？請說明它的優缺點。`,
     a: `PEFT 凍結大部分的預訓練模型，只訓練非常少量的參數，常見方法有 LoRA、Adapter、VPT，主要用於 ViT、CLIP 等大型 Transformer。優點是可訓練參數極少、GPU 記憶體較省，多個任務可以共用同一個 backbone，每個任務只需要儲存小模組。缺點是適應能力可能受限；Adapter、VPT 會增加推論成本，LoRA 則不會。` },
   { ch: 'c5', at: 'c5:8', q: `請說明 LoRA 的運作方式，以及為什麼使用 LoRA 推論時不會變慢。`,
-    a: `LoRA 凍結預訓練權重 W₀，只訓練兩個低秩的小矩陣 B（d×r）與 A（r×k），輸出為 h = W₀x + BAx，其中 rank r 遠小於 d 與 k。初始化時 B = 0，所以一開始 BA = 0，模型與預訓練模型完全相同。例如 768×768 的層有 589,824 個參數，r = 8 時 LoRA 只需要 2 × 768 × 8 = 12,288 個參數，約 2%。訓練完成後可以把 BA 合併回 W₀（W = W₀ + BA），推論時只需計算一次，因此不會增加計算量。限制是 r 太小學不夠、太大則失去節省參數的優勢，插入哪些層也會影響效果。` },
+    a: `LoRA 凍結預訓練的原始權重不動，在旁邊加上兩個很小的矩陣（低秩矩陣），只訓練這兩個小矩陣，兩者相乘的結果就是對原始權重的「修正量」。一開始修正量設為 0，所以模型和預訓練模型完全相同。訓練完成後，可以把修正量直接加回原始權重合併成一個矩陣，推論時只需計算一次，因此不會增加計算量。限制是 rank 太小學不夠、太大則失去節省參數的優勢，插入哪些層也會影響效果。
+例：一層 768×768 的權重有 589,824 個參數；rank = 8 時，兩個小矩陣是 768×8 和 8×768，合計只有 12,288 個參數，約 2%。`,
+    f: "\\begin{gathered}h=W_0x+BAx \\\\ W=W_0+BA\\end{gathered}", fn: `W₀ 是凍結的原始權重；B（d×r）和 A（r×k）是要訓練的兩個小矩陣，r 是 rank；訓練完把 BA 加回 W₀ 合併成 W。` },
   { ch: 'c5', at: 'c5:9', q: `什麼是 Regularized Fine-tuning？請說明 L2-SP 與一般 L2 正則化（weight decay）的差異。`,
-    a: `Regularized Fine-tuning 允許參數變動，但不讓它們離預訓練模型太遠，以降低 Overfitting、保留預訓練的知識；但來源與目標差異太大時可能反而有害，成本也不比 Full Fine-tuning 低。L2-SP 在 Loss 加上 (α/2)‖w − w⁰‖²，把權重拉向預訓練值 w⁰；一般 L2 正則化是 (α/2)‖w‖²，把權重拉向 0。新的分類 head 沒有預訓練值 w⁰，所以使用一般 L2。L2-SP 在小資料集上較穩定，但所有參數仍然需要訓練。` },
+    a: `Regularized Fine-tuning 允許參數變動，但不讓它們離預訓練模型太遠，以降低 Overfitting、保留預訓練的知識；但來源與目標差異太大時可能反而有害，成本也不比 Full Fine-tuning 低。L2-SP 在 Loss 加上一項懲罰：權重離「預訓練值」越遠，罰得越多，所以權重會被拉回預訓練值附近；一般 L2 正則化（weight decay）則是權重離「0」越遠罰得越多，把權重往 0 拉。新的分類 head 沒有預訓練值，所以使用一般 L2。L2-SP 在小資料集上較穩定，但所有參數仍然需要訓練。
+例：某兩個權重的預訓練值是 (2, 1)，只看新資料時最好的值是 (3, 3)，懲罰強度設 1。L2-SP 的結果落在兩者中間 (2.5, 2)，保留了預訓練的知識；一般 L2 則把結果往 0 拉成 (1.5, 1.5)。`,
+    f: "\\begin{gathered}\\text{L2-SP：}\\ L+\\frac{\\alpha}{2}\\lVert w-w^0\\rVert^2 \\\\ \\text{一般 L2：}\\ L+\\frac{\\alpha}{2}\\lVert w\\rVert^2\\end{gathered}", fn: `w 是目前的權重，w⁰ 是預訓練的權重，α 是懲罰強度；‖ ‖² 是「距離的平方」，L2-SP 量的是離預訓練值多遠，一般 L2 量的是離 0 多遠。` },
 ];

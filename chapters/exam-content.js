@@ -11,7 +11,7 @@ window.EXAM_CONTENT = [
      {
       "at": "c1:1",
       "label": "機器學習（ML）與深度學習（DL）",
-      "html": "<ul>\n<li>關係：AI ⊃ ML ⊃ DL。ML 是「接觸越多資料、表現越好」的演算法；DL 是 ML 的子集，用<strong>多層神經網路</strong>從大量資料中學習。</li>\n<li>關鍵差別在<strong>特徵擷取</strong>：ML 要<strong>人工擷取特徵</strong>，再交給分類模型；DL 由同一個神經網路<strong>同時做特徵擷取＋分類</strong>，特徵是模型自己學的。</li>\n<li>ML 依資料分成監督式（有標籤）、非監督式（無標籤）、強化學習（靠回饋獎勵）。</li>\n</ul>"
+      "html": "<ul>\n<li>關係：AI ⊃ ML ⊃ DL。ML 是「接觸越多資料、表現越好」的演算法；DL 是 ML 的子集，用<strong>多層神經網路</strong>從大量資料中學習。</li>\n<li>關鍵差別在<strong>特徵擷取</strong>：ML 要<strong>人工擷取特徵</strong>，再交給分類模型；DL 由同一個神經網路<strong>同時做特徵擷取＋分類</strong>，特徵是模型自己學的。</li>\n<li>ML 依資料分成監督式（有標籤）、非監督式（無標籤）、強化學習（靠回饋獎勵）。</li>\n</ul>\n<div class=\"qa-plain\">\n<p><strong>💬 白話</strong>：ML 像是老師先告訴你「看顏色、看形狀」再判斷；DL 是直接給你看一大堆照片，讓你自己歸納出要看哪裡。</p>\n<p><strong>🔢 例子</strong> <span class=\"tag add\">補充</span>：判斷蘋果：ML 要人先算好「紅色像素比例 0.8、圓度 0.9」這種特徵再丟給 SVM；DL 直接把 224×224×3 = 150,528 個像素值丟進神經網路，特徵由網路自己學。</p>\n</div>"
      }
     ]
    },
@@ -21,22 +21,22 @@ window.EXAM_CONTENT = [
      {
       "at": "c1:2",
       "label": "支持向量機（SVM）",
-      "html": "<p>支持向量機（Support Vector Machine, SVM）是監督式分類演算法，目標是找一個<strong>最佳超平面（hyperplane）</strong>區分不同類別，同時<strong>最大化間隔（Margin）</strong>：讓兩類資料點離超平面越遠越好，新資料進來時才能維持高準確率。</p>\n<p>缺點：不適合大資料集（找超平面很耗時）；非線性資料處理有限（kernel 與調參難選）；原本為二分類設計，多分類要「一對一」或「一對多」轉換。</p>"
+      "html": "<p>支持向量機（Support Vector Machine, SVM）是監督式分類演算法，目標是找一個<strong>最佳超平面（hyperplane）</strong>區分不同類別，同時<strong>最大化間隔（Margin）</strong>：讓兩類資料點離超平面越遠越好，新資料進來時才能維持高準確率。</p>\n<p>缺點：不適合大資料集（找超平面很耗時）；非線性資料處理有限（kernel 與調參難選）；原本為二分類設計，多分類要「一對一」或「一對多」轉換。</p>\n<div class=\"qa-plain\">\n<p><strong>💬 白話</strong>：在兩群點中間畫一條「馬路」，SVM 要把馬路拓到最寬，馬路中線就是超平面，路寬就是 Margin。</p>\n<p><strong>🔢 例子</strong> <span class=\"tag add\">補充</span>：兩條候選分界線都能把貓狗分開：A 線離最近的點 0.5、B 線離最近的點 2。SVM 選 B，因為新資料稍微偏一點也不會跑到另一邊。</p>\n</div>"
      },
      {
       "at": "c1:3",
       "label": "核技巧（Kernel Trick）",
-      "html": "<p>當資料<strong>無法用一條線（超平面）切開</strong>（線性不可分）時，用 Kernel Trick 把資料<strong>投影到更高維的空間</strong>，在高維空間裡就能用超平面切開。</p>\n<p>直覺例子：一維數線上「中間一類、兩邊另一類」切不開；加上 \\(x^2\\) 當第二維後，就能用一條水平線分開。<span class=\"tag add\">補充</span></p>"
+      "html": "<p>當資料<strong>無法用一條線（超平面）切開</strong>（線性不可分）時，用 Kernel Trick 把資料<strong>投影到更高維的空間</strong>，在高維空間裡就能用超平面切開。</p>\n<p>直覺例子：一維數線上「中間一類、兩邊另一類」切不開；加上 \\(x^2\\) 當第二維後，就能用一條水平線分開。<span class=\"tag add\">補充</span></p>\n<div class=\"qa-plain\">\n<p><strong>💬 白話</strong>：平面上切不開，就把資料「抬高」一個維度，在高處就能用一刀切開。</p>\n<p><strong>🔢 例子</strong> <span class=\"tag add\">補充</span>：一維資料：A 類在 x = −0.5、0、0.5，B 類在 x = −2、2，一條線切不開。加上 x² 當第二維：A 類的 x² 是 0.25、0、0.25，B 類是 4、4，用「x² = 1」這條水平線就分開了。</p>\n</div>"
      },
      {
       "at": "c1:4",
       "label": "K 最近鄰（KNN）",
-      "html": "<p>K 最近鄰（K-Nearest Neighbors, KNN）以<strong>距離</strong>判斷類別：① 算新樣本和所有訓練樣本的距離 ② 取最近的 K 個鄰居 ③ <strong>多數決</strong>。K 通常設<strong>奇數</strong>，避免票數各半。距離可用歐幾里得或曼哈頓距離。</p>\n<p>缺點：計算效率低（預測時要和所有樣本算距離）；<strong>高維度資料表現不佳</strong>（距離概念失效）；無法處理非線性關係。</p>"
+      "html": "<p>K 最近鄰（K-Nearest Neighbors, KNN）以<strong>距離</strong>判斷類別：① 算新樣本和所有訓練樣本的距離 ② 取最近的 K 個鄰居 ③ <strong>多數決</strong>。K 通常設<strong>奇數</strong>，避免票數各半。距離可用歐幾里得或曼哈頓距離。</p>\n<p>缺點：計算效率低（預測時要和所有樣本算距離）；<strong>高維度資料表現不佳</strong>（距離概念失效）；無法處理非線性關係。</p>\n<div class=\"qa-plain\">\n<p><strong>💬 白話</strong>：想知道新同學屬於哪一群，就看離他最近的 K 個人大多是哪一群。</p>\n<p><strong>🔢 例子</strong> <span class=\"tag add\">補充</span>：K = 3，新樣本最近的三個鄰居是貓（距離 1.0）、貓（1.4）、狗（1.8），2 票對 1 票 → 判成貓。若 K = 2 可能 1 比 1 平手，所以 K 取奇數。</p>\n</div>"
      },
      {
       "at": "c1:5",
       "label": "主成分分析（PCA）",
-      "html": "<p>主成分分析（Principal Component Analysis, PCA）是<strong>降維</strong>技術：在保留主要資訊的同時減少特徵數量，把資料投影到<strong>變異性最大的方向</strong>（主成分）。</p>\n<p>CV 應用：圖像降維（例如邊緣偵測只用灰階，資料剩 1/3，計算更快）、圖像去噪。限制：只能做<strong>線性降維</strong>，對非線性資料處理有限，可能遺失細節。</p>"
+      "html": "<p>主成分分析（Principal Component Analysis, PCA）是<strong>降維</strong>技術：在保留主要資訊的同時減少特徵數量，把資料投影到<strong>變異性最大的方向</strong>（主成分）。</p>\n<p>CV 應用：圖像降維（例如邊緣偵測只用灰階，資料剩 1/3，計算更快）、圖像去噪。限制：只能做<strong>線性降維</strong>，對非線性資料處理有限，可能遺失細節。</p>\n<div class=\"qa-plain\">\n<p><strong>💬 白話</strong>：把資料轉到「最能看出差異」的方向，只留前面幾個方向，就能用更少的數字描述同一件事。</p>\n<p><strong>🔢 例子</strong> <span class=\"tag add\">補充</span>：一群點 (1, 1.1)、(2, 1.9)、(3, 3.2) 幾乎排在 y = x 這條線上，PCA 把這條斜線當第一主成分，每個點只要記「沿著線走多遠」一個數字，2 維變 1 維，資訊幾乎沒丟。</p>\n</div>"
      }
     ]
    },
@@ -46,7 +46,7 @@ window.EXAM_CONTENT = [
      {
       "at": "c1:6",
       "label": "激活函數（Activation Function）",
-      "html": "<p>為了<strong>引入非線性</strong>。沒有激活函數，疊再多層也只等於一層線性模型，學不出彎曲的決策邊界。</p>\n<p>常見：Sigmoid（輸出 0～1，二元分類輸出層）、tanh、<strong>ReLU</strong>（計算快、正值區梯度為 1，比 Sigmoid 不容易梯度消失）、Leaky ReLU、ELU；多類別輸出層用 Softmax（機率加總為 1）。</p>"
+      "html": "<p>為了<strong>引入非線性</strong>。沒有激活函數，疊再多層也只等於一層線性模型，學不出彎曲的決策邊界。</p>\n<p>常見：Sigmoid（輸出 0～1，二元分類輸出層）、tanh、<strong>ReLU</strong>（計算快、正值區梯度為 1，比 Sigmoid 不容易梯度消失）、Leaky ReLU、ELU；多類別輸出層用 Softmax（機率加總為 1）。</p>\n<div class=\"qa-plain\">\n<p><strong>💬 白話</strong>：Activation Function 是每個神經元的「開關曲線」，讓網路能畫出彎的分界線，而不只是直線。</p>\n<p><strong>🔢 例子</strong>：輸入 x = −2：ReLU 輸出 0、Sigmoid 輸出 0.119、tanh 輸出 −0.964、Leaky ReLU 輸出 −0.2。</p>\n</div>"
      },
      {
       "at": "c1:7",
@@ -56,12 +56,12 @@ window.EXAM_CONTENT = [
      {
       "at": "c1:8",
       "label": "梯度下降（Gradient Descent）與學習率（Learning Rate）",
-      "html": "$$w\\leftarrow w-\\alpha\\,\\frac{\\partial L}{\\partial w}$$\n<p>反向傳播算出 Loss 對每個權重的梯度後，<strong>沿梯度的反方向</strong>更新權重，讓 Loss 一步步變小。學習率 \\(\\alpha\\) 決定每一步走多大，是需要調整的<strong>超參數</strong>：</p>\n<ul>\n<li>太大：更新過快，可能<strong>跳過最佳解</strong>、震盪甚至發散。</li>\n<li>太小：更新過慢，收斂很久，可能<strong>無法到達最佳解</strong>。</li>\n</ul>"
+      "html": "$$w\\leftarrow w-\\alpha\\,\\frac{\\partial L}{\\partial w}$$\n<p>反向傳播算出 Loss 對每個權重的梯度後，<strong>沿梯度的反方向</strong>更新權重，讓 Loss 一步步變小。學習率 \\(\\alpha\\) 決定每一步走多大，是需要調整的<strong>超參數</strong>：</p>\n<ul>\n<li>太大：更新過快，可能<strong>跳過最佳解</strong>、震盪甚至發散。</li>\n<li>太小：更新過慢，收斂很久，可能<strong>無法到達最佳解</strong>。</li>\n</ul>\n<div class=\"qa-plain\">\n<p><strong>💬 白話</strong>：梯度告訴你「往哪邊是上坡」，往反方向走一步就是下坡；學習率是每步的步幅。</p>\n<p><strong>🔢 例子</strong> <span class=\"tag add\">補充</span>：w = 3、梯度 ∂L/∂w = 2、α = 0.1 → 新的 w = 3 − 0.1 × 2 = 2.8。若 α = 10，w 會變成 3 − 20 = −17，一步跳太遠，就是「跳過最佳解」。</p>\n</div>"
      },
      {
       "at": "c1:9",
       "label": "優化器（Optimizer）",
-      "html": "<p>優化器根據訓練損失調整模型參數，是梯度下降的改良版：</p>\n<ul>\n<li><strong>SGD</strong>（隨機梯度下降）：每次用一筆或一個 batch 的資料算梯度；更新快，但波動、收斂不穩定，而這個波動可能幫助<strong>跳出 local minima</strong>。</li>\n<li><strong>Momentum</strong>：加上慣性（上一步的移動），在平坦處或梯度為 0 的地方仍會前進，有機會衝過小山丘，也減少抖動。</li>\n<li><strong>RMSProp</strong>：自動調整每個參數的學習率。</li>\n<li><strong>Adam</strong>：<strong>結合 Momentum 與 RMSProp</strong>，同時考慮動量方向與自適應學習率，是常用的預設選擇。</li>\n</ul>"
+      "html": "<p>優化器根據訓練損失調整模型參數，是梯度下降的改良版：</p>\n<ul>\n<li><strong>SGD</strong>（隨機梯度下降）：每次用一筆或一個 batch 的資料算梯度；更新快，但波動、收斂不穩定，而這個波動可能幫助<strong>跳出 local minima</strong>。</li>\n<li><strong>Momentum</strong>：加上慣性（上一步的移動），在平坦處或梯度為 0 的地方仍會前進，有機會衝過小山丘，也減少抖動。</li>\n<li><strong>RMSProp</strong>：自動調整每個參數的學習率。</li>\n<li><strong>Adam</strong>：<strong>結合 Momentum 與 RMSProp</strong>，同時考慮動量方向與自適應學習率，是常用的預設選擇。</li>\n</ul>\n<div class=\"qa-plain\">\n<p><strong>💬 白話</strong>：SGD 像蒙眼摸著坡下山；Momentum 像推著有慣性的球下山；RMSProp 會在陡的方向自動放小步；Adam 兩個都用。</p>\n<p><strong>🔢 例子</strong> <span class=\"tag add\">補充</span>：Momentum：上一步移動 −0.5，這一步梯度剛好是 0（平地），一般 GD 會停住，Momentum 仍會帶著慣性繼續往前走一段。</p>\n</div>"
      }
     ]
    }
@@ -78,7 +78,7 @@ window.EXAM_CONTENT = [
      {
       "at": "c2:1",
       "label": "濾波器是特徵偵測器",
-      "html": "<p>人分辨貓狗靠的是鬍鬚、臉型、眼睛等<strong>特徵</strong>。CNN 讓模型<strong>自己學會偵測</strong>這些特徵，不需要人工設計。</p>\n<ul>\n<li>每一個<strong>濾波器（Filter／Kernel）</strong>就是一個特徵偵測器，專門找一種形狀（例如上邊、左邊、垂直邊緣）。</li>\n<li>濾波器裡的數字一開始是隨機的，用反向傳播與梯度下降學出來（C1）。</li>\n</ul>"
+      "html": "<p>人分辨貓狗靠的是鬍鬚、臉型、眼睛等<strong>特徵</strong>。CNN 讓模型<strong>自己學會偵測</strong>這些特徵，不需要人工設計。</p>\n<ul>\n<li>每一個<strong>濾波器（Filter／Kernel）</strong>就是一個特徵偵測器，專門找一種形狀（例如上邊、左邊、垂直邊緣）。</li>\n<li>濾波器裡的數字一開始是隨機的，用反向傳播與梯度下降學出來（C1）。</li>\n</ul>\n<div class=\"qa-plain\">\n<p><strong>💬 白話</strong>：一個 Filter 就像一個只會找某一種東西的放大鏡，例如專找「直線邊緣」，放大鏡上的數字是訓練學來的。</p>\n</div>"
      },
      {
       "at": "c2:2",
@@ -128,12 +128,12 @@ window.EXAM_CONTENT = [
      {
       "at": "c2:9",
       "label": "ReLU",
-      "html": "<p>\\(\\text{ReLU}(x)=\\max(0,x)\\)：負數變 0、正數保留。講義給三個理由：</p>\n<ol>\n<li><strong>正負意義分開處理</strong>：正值代表「由暗到亮」、負值代表「由亮到暗」時，下一層只能乘同一個權重，一個加分另一個就自動扣分，兩種特徵綁在一起（天使與魔鬼的比喻）。</li>\n<li><strong>引入非線性</strong>：沒有激活函數時，疊再多層線性運算都能合併成一層。</li>\n<li><strong>計算快、訓練穩定</strong>：只要比大小；正值區梯度永遠是 1，不像 Sigmoid／Tanh 會梯度消失。</li>\n</ol>\n<p>缺點：為了學負向特徵可能要多佔用 filter；<strong>Dying ReLU</strong>：神經元一直輸出負值時梯度為 0，永久停止學習（可改用 LeakyReLU、ELU）。</p>"
+      "html": "<p>\\(\\text{ReLU}(x)=\\max(0,x)\\)：負數變 0、正數保留。講義給三個理由：</p>\n<ol>\n<li><strong>正負意義分開處理</strong>：正值代表「由暗到亮」、負值代表「由亮到暗」時，下一層只能乘同一個權重，一個加分另一個就自動扣分，兩種特徵綁在一起（天使與魔鬼的比喻）。</li>\n<li><strong>引入非線性</strong>：沒有激活函數時，疊再多層線性運算都能合併成一層。</li>\n<li><strong>計算快、訓練穩定</strong>：只要比大小；正值區梯度永遠是 1，不像 Sigmoid／Tanh 會梯度消失。</li>\n</ol>\n<p>缺點：為了學負向特徵可能要多佔用 filter；<strong>Dying ReLU</strong>：神經元一直輸出負值時梯度為 0，永久停止學習（可改用 LeakyReLU、ELU）。</p>\n<div class=\"qa-plain\">\n<p><strong>💬 白話</strong>：ReLU 就是「負的歸零、正的照留」。</p>\n<p><strong>🔢 例子</strong>：卷積輸出一列是 (−3, 2, 0.5, −1) → ReLU 後變成 (0, 2, 0.5, 0)。</p>\n</div>"
      },
      {
       "at": "c2:10",
       "label": "Pooling",
-      "html": "<p>Pooling（池化，又稱 Subsampling／Downsampling）的主要目的是<strong>縮小 feature map 的尺寸，在不丟失重要資訊的情況下減少後續的計算量與訓練參數</strong>。</p>\n<ul>\n<li>原因：<strong>相鄰像素通常具有相似的特徵</strong>，用一個值（Max Pooling 取最大值）代表一個區塊即可。</li>\n<li>讓模型<strong>不受微小特徵差異（例如些微位移）影響</strong>。</li>\n<li>常用設定：2×2、stride 2、no padding → 高寬減半、<strong>深度不變</strong>；Pooling <strong>沒有可訓練參數</strong>。</li>\n<li>注意：stride 太大會丟失重要資訊。</li>\n</ul>\n<p>種類：Max Pooling（取最大）、Average Pooling（取平均）、Sum Pooling（加總）。</p>"
+      "html": "<p>Pooling（池化，又稱 Subsampling／Downsampling）的主要目的是<strong>縮小 feature map 的尺寸，在不丟失重要資訊的情況下減少後續的計算量與訓練參數</strong>。</p>\n<ul>\n<li>原因：<strong>相鄰像素通常具有相似的特徵</strong>，用一個值（Max Pooling 取最大值）代表一個區塊即可。</li>\n<li>讓模型<strong>不受微小特徵差異（例如些微位移）影響</strong>。</li>\n<li>常用設定：2×2、stride 2、no padding → 高寬減半、<strong>深度不變</strong>；Pooling <strong>沒有可訓練參數</strong>。</li>\n<li>注意：stride 太大會丟失重要資訊。</li>\n</ul>\n<p>種類：Max Pooling（取最大）、Average Pooling（取平均）、Sum Pooling（加總）。</p>\n<div class=\"qa-plain\">\n<p><strong>💬 白話</strong>：把相鄰的一小格合成一個代表值，圖變小，但重要的特徵還在。</p>\n<p><strong>🔢 例子</strong> <span class=\"tag add\">補充</span>：2×2 區塊 [[1, 3], [2, 4]]：Max Pooling 取 4、Average Pooling 取 2.5、Sum Pooling 取 10。4×4 的 Feature Map 用 2×2、stride 2 → 變成 2×2，深度不變。</p>\n</div>"
      }
     ]
    },
@@ -143,7 +143,7 @@ window.EXAM_CONTENT = [
      {
       "at": "c2:11",
       "label": "全連接層（Fully Connected Layer）",
-      "html": "<p>全連接層（Fully Connected Layer，又稱 Dense Layer）負責<strong>整合前面卷積層與池化層抽出的特徵，並據此完成分類</strong>。</p>\n<ul>\n<li>進入 FC 前先把多維 feature map <strong>展平（Flatten）</strong>成一維向量。</li>\n<li>每個節點都和下一層每個節點相連，把各處偵測到的局部特徵組合起來做整體判斷。</li>\n<li>最後一層節點數 = 類別數，接 <strong>Softmax</strong> 輸出各類別機率。</li>\n<li>FC 通常是參數最多的部分（講義 MNIST 例子約佔 98%）。</li>\n</ul>"
+      "html": "<p>全連接層（Fully Connected Layer，又稱 Dense Layer）負責<strong>整合前面卷積層與池化層抽出的特徵，並據此完成分類</strong>。</p>\n<ul>\n<li>進入 FC 前先把多維 feature map <strong>展平（Flatten）</strong>成一維向量。</li>\n<li>每個節點都和下一層每個節點相連，把各處偵測到的局部特徵組合起來做整體判斷。</li>\n<li>最後一層節點數 = 類別數，接 <strong>Softmax</strong> 輸出各類別機率。</li>\n<li>FC 通常是參數最多的部分（講義 MNIST 例子約佔 98%）。</li>\n</ul>\n<div class=\"qa-plain\">\n<p><strong>💬 白話</strong>：前面的卷積層負責「找零件」，FC 層負責「看零件組合判斷是什麼」。</p>\n<p><strong>🔢 例子</strong>：講義 MNIST CNN：12×12×64 展平成 9,216 個數 → FC 128 個節點 → 輸出 10 個節點 → Softmax 得到 0～9 各自的機率。</p>\n</div>"
      },
      {
       "at": "c2:12",
@@ -153,7 +153,7 @@ window.EXAM_CONTENT = [
      {
       "at": "c2:13",
       "label": "參數（Parameter）與超參數（Hyperparameter）",
-      "html": "<ul>\n<li><strong>參數</strong>：<strong>訓練過程中由模型自己學習</strong>的變數，又稱可學習參數或權重，例如 filter 的權重與 bias、FC 的權重與 bias，由梯度下降與反向傳播更新。</li>\n<li><strong>超參數</strong>：<strong>訓練前由人手動設定</strong>、模型不會自己學的值，例如 filter 大小與數量、stride、padding、節點數、激活函數、learning rate、batch size、epoch 數、Dropout rate；通常看 Validation 結果調整。</li>\n<li>沒有可訓練參數的層：ReLU、Max Pooling、Flatten。</li>\n</ul>"
+      "html": "<ul>\n<li><strong>參數</strong>：<strong>訓練過程中由模型自己學習</strong>的變數，又稱可學習參數或權重，例如 filter 的權重與 bias、FC 的權重與 bias，由梯度下降與反向傳播更新。</li>\n<li><strong>超參數</strong>：<strong>訓練前由人手動設定</strong>、模型不會自己學的值，例如 filter 大小與數量、stride、padding、節點數、激活函數、learning rate、batch size、epoch 數、Dropout rate；通常看 Validation 結果調整。</li>\n<li>沒有可訓練參數的層：ReLU、Max Pooling、Flatten。</li>\n</ul>\n<div class=\"qa-plain\">\n<p><strong>💬 白話</strong>：參數是模型自己學的「答案」，超參數是人在開始前決定的「規則」。</p>\n<p><strong>🔢 例子</strong>：同一個 Conv 層：3×3 大小、32 個 Filter、stride 1 是超參數（人設定）；那 320 個權重與 bias 是參數（訓練學出來）。</p>\n</div>"
      }
     ]
    },
@@ -180,7 +180,7 @@ window.EXAM_CONTENT = [
      {
       "at": "c3:1",
       "label": "Training／Validation／Test",
-      "html": "<ul>\n<li><strong>Training set</strong>：讓模型<strong>學習參數</strong>，每個 epoch 用梯度下降與反向傳播更新權重。</li>\n<li><strong>Validation set</strong>：<strong>訓練期間</strong>公正評估模型（每個 epoch 結束算 loss 與 accuracy），用來<strong>調整超參數、挑選最佳模型、判斷 overfitting 或 Early Stopping</strong>，不用來更新權重。</li>\n<li><strong>Test set</strong>：模型<strong>從未看過</strong>的資料，<strong>訓練全部結束後只用一次</strong>，評估最終的泛化能力。</li>\n</ul>\n<p>注意：Test 不能拿來調模型，否則評估結果會過度樂觀。</p>"
+      "html": "<ul>\n<li><strong>Training set</strong>：讓模型<strong>學習參數</strong>，每個 epoch 用梯度下降與反向傳播更新權重。</li>\n<li><strong>Validation set</strong>：<strong>訓練期間</strong>公正評估模型（每個 epoch 結束算 loss 與 accuracy），用來<strong>調整超參數、挑選最佳模型、判斷 overfitting 或 Early Stopping</strong>，不用來更新權重。</li>\n<li><strong>Test set</strong>：模型<strong>從未看過</strong>的資料，<strong>訓練全部結束後只用一次</strong>，評估最終的泛化能力。</li>\n</ul>\n<p>注意：Test 不能拿來調模型，否則評估結果會過度樂觀。</p>\n<div class=\"qa-plain\">\n<p><strong>💬 白話</strong>：Training 是課本、Validation 是模擬考、Test 是正式考試；正式考試只考一次，不能考完再回去改。</p>\n<p><strong>🔢 例子</strong> <span class=\"tag add\">補充</span>：10,000 張圖分成 7,000 張訓練、1,500 張驗證、1,500 張測試。</p>\n</div>"
      },
      {
       "at": "c3:2",
@@ -200,17 +200,17 @@ window.EXAM_CONTENT = [
      {
       "at": "c3:4",
       "label": "過度擬合（Overfitting）",
-      "html": "<p>模型在訓練資料表現很好，在新資料表現很差：把訓練資料的雜訊和細節也背起來，<strong>泛化能力差</strong>。</p>\n<p>改善：增加資料（含資料擴增）、降低模型複雜度、正則化（L1／L2、Dropout、Early Stopping、Batch Normalization）。</p>"
+      "html": "<p>模型在訓練資料表現很好，在新資料表現很差：把訓練資料的雜訊和細節也背起來，<strong>泛化能力差</strong>。</p>\n<p>改善：增加資料（含資料擴增）、降低模型複雜度、正則化（L1／L2、Dropout、Early Stopping、Batch Normalization）。</p>\n<div class=\"qa-plain\">\n<p><strong>💬 白話</strong>：就像只背考古題：考古題全對，換一份新題目就不會了。</p>\n<p><strong>🔢 例子</strong> <span class=\"tag add\">補充</span>：訓練準確率 99%、測試準確率只有 70%，差距很大 → Overfitting。</p>\n</div>"
      },
      {
       "at": "c3:5",
       "label": "L1 與 L2 正則化",
-      "html": "<p>兩者都在 Loss 加上 Penalty，迫使模型使用較小的權重，強度由 \\(\\lambda\\) 控制：</p>\n$$L_{L1}=L+\\lambda\\sum_j|\\theta_j|,\\qquad L_{L2}=L+\\lambda\\sum_j\\theta_j^2$$\n<div class=\"table-wrap\"><table>\n<thead><tr><th></th><th>L1（Lasso）</th><th>L2（Ridge）</th></tr></thead>\n<tbody>\n<tr><td>Penalty</td><td>權重<strong>絕對值</strong>總和</td><td>權重<strong>平方</strong>總和</td></tr>\n<tr><td>效果</td><td>優先把不重要特徵的權重<strong>降為 0</strong></td><td>把<strong>所有權重一起變小</strong>，大權重罰更重</td></tr>\n<tr><td>結果</td><td>稀疏，有<strong>特徵選取</strong>效果</td><td>權重小而平滑，避免少數節點主導</td></tr>\n</tbody>\n</table></div>\n<p>共同注意：\\(\\lambda\\) 太大，權重被壓得過小，會 Underfitting。</p>"
+      "html": "<p>兩者都在 Loss 加上 Penalty，迫使模型使用較小的權重，強度由 \\(\\lambda\\) 控制：</p>\n$$L_{L1}=L+\\lambda\\sum_j|\\theta_j|,\\qquad L_{L2}=L+\\lambda\\sum_j\\theta_j^2$$\n<div class=\"table-wrap\"><table>\n<thead><tr><th></th><th>L1（Lasso）</th><th>L2（Ridge）</th></tr></thead>\n<tbody>\n<tr><td>Penalty</td><td>權重<strong>絕對值</strong>總和</td><td>權重<strong>平方</strong>總和</td></tr>\n<tr><td>效果</td><td>優先把不重要特徵的權重<strong>降為 0</strong></td><td>把<strong>所有權重一起變小</strong>，大權重罰更重</td></tr>\n<tr><td>結果</td><td>稀疏，有<strong>特徵選取</strong>效果</td><td>權重小而平滑，避免少數節點主導</td></tr>\n</tbody>\n</table></div>\n<p>共同注意：\\(\\lambda\\) 太大，權重被壓得過小，會 Underfitting。</p>\n<div class=\"qa-plain\">\n<p><strong>💬 白話</strong>：L1 像「用一個權重就扣一份錢」，不重要的乾脆不用（變 0）；L2 像「權重越大扣越多」，大家都變小但不會歸零。</p>\n<p><strong>🔢 例子</strong>：權重 (3, −0.1, 0)、λ = 0.01：L1 懲罰 = 0.01 × (3 + 0.1 + 0) = 0.031；L2 懲罰 = 0.01 × (9 + 0.01 + 0) = 0.0901。大權重 3 在 L2 被平方後懲罰特別重。</p>\n</div>"
      },
      {
       "at": "c3:6",
       "label": "Dropout",
-      "html": "<p>Dropout 是<strong>正則化（Regularization）技術</strong>，用來防止 Overfitting。</p>\n<ol>\n<li>訓練時，每個 mini-batch <strong>隨機關閉</strong>某一層的部分節點（比例由 Dropout Rate 控制，例如 0.5）。</li>\n<li>前向與反向傳遞只經過開著的節點，也只更新它們的權重。</li>\n<li>下一個 mini-batch 恢復所有節點，再重新隨機關閉一批。</li>\n<li><strong>測試（推論）時不關閉，使用所有節點</strong>。</li>\n</ol>\n<p>為什麼有效：每次訓練的都是不同的子網路，模型<strong>不能依賴少數特定節點</strong>，被迫學到更可靠、更具代表性的特徵，泛化較好（效果類似許多子網路的集成 <span class=\"tag add\">補充</span>）。代價：收斂較慢，要搭配更多 epoch。</p>"
+      "html": "<p>Dropout 是<strong>正則化（Regularization）技術</strong>，用來防止 Overfitting。</p>\n<ol>\n<li>訓練時，每個 mini-batch <strong>隨機關閉</strong>某一層的部分節點（比例由 Dropout Rate 控制，例如 0.5）。</li>\n<li>前向與反向傳遞只經過開著的節點，也只更新它們的權重。</li>\n<li>下一個 mini-batch 恢復所有節點，再重新隨機關閉一批。</li>\n<li><strong>測試（推論）時不關閉，使用所有節點</strong>。</li>\n</ol>\n<p>為什麼有效：每次訓練的都是不同的子網路，模型<strong>不能依賴少數特定節點</strong>，被迫學到更可靠、更具代表性的特徵，泛化較好（效果類似許多子網路的集成 <span class=\"tag add\">補充</span>）。代價：收斂較慢，要搭配更多 epoch。</p>\n<div class=\"qa-plain\">\n<p><strong>💬 白話</strong>：每次練習隨機讓一半的隊員休息，整隊就不能只靠某幾個王牌。</p>\n<p><strong>🔢 例子</strong>：某層有 6 個節點、Dropout Rate 0.5 → 每個 mini-batch 隨機關掉 3 個，下一個 mini-batch 換另一批；測試時 6 個全開。</p>\n</div>"
      },
      {
       "at": "c3:7",
@@ -220,7 +220,7 @@ window.EXAM_CONTENT = [
      {
       "at": "c3:8",
       "label": "Batch Normalization（BN）",
-      "html": "<ul>\n<li>對每個 mini-batch <strong>計算 mean 與標準差並標準化</strong>，再用可學習的 \\(\\gamma\\)（縮放）、\\(\\beta\\)（平移）做 \\(y=\\gamma\\hat{x}+\\beta\\)。CNN 中每個 channel 各有一組。</li>\n<li>通常放在 Conv 與 Activation 之間，<strong>穩定每一層輸入的分布</strong>（緩解 Internal Covariate Shift）。</li>\n<li>效果：訓練更穩定、<strong>可以用較大的學習率、收斂較快</strong>，也有輕微的正則化效果。</li>\n<li>訓練時用當下 batch 的統計量；<strong>推論時改用訓練中以移動平均累積的 running mean／running STD</strong>（推論時 batch 可能只有一張）。</li>\n</ul>"
+      "html": "<ul>\n<li>對每個 mini-batch <strong>計算 mean 與標準差並標準化</strong>，再用可學習的 \\(\\gamma\\)（縮放）、\\(\\beta\\)（平移）做 \\(y=\\gamma\\hat{x}+\\beta\\)。CNN 中每個 channel 各有一組。</li>\n<li>通常放在 Conv 與 Activation 之間，<strong>穩定每一層輸入的分布</strong>（緩解 Internal Covariate Shift）。</li>\n<li>效果：訓練更穩定、<strong>可以用較大的學習率、收斂較快</strong>，也有輕微的正則化效果。</li>\n<li>訓練時用當下 batch 的統計量；<strong>推論時改用訓練中以移動平均累積的 running mean／running STD</strong>（推論時 batch 可能只有一張）。</li>\n</ul>\n<div class=\"qa-plain\">\n<p><strong>💬 白話</strong>：先把每一批資料「拉回平均 0、標準差 1」，再讓模型自己學要不要放大或移動。</p>\n<p><strong>🔢 例子</strong>：一個 batch 為 (2, 4, 6, 8)：平均 5、標準差約 2.236 → 標準化 x̂ ≈ (−1.342, −0.447, 0.447, 1.342)；γ = 2、β = 1 → y ≈ (−1.683, 0.106, 1.894, 3.683)。</p>\n</div>"
      }
     ]
    },
@@ -230,7 +230,7 @@ window.EXAM_CONTENT = [
      {
       "at": "c3:9",
       "label": "資料擴增（Data Augmentation）",
-      "html": "<p>Overfitting 的原因之一是訓練資料不夠；資料擴增對訓練資料做變換，<strong>增加資料的多樣性</strong>，等於讓模型每次看到不同版本的圖片，減少 overfitting、提升泛化。</p>\n<p>基本方法：翻轉、亮度與對比、旋轉、縮放、裁切、扭曲。<strong>一般只對訓練資料做</strong>，通常在 Data Loader 搬資料時即時產生。</p>"
+      "html": "<p>Overfitting 的原因之一是訓練資料不夠；資料擴增對訓練資料做變換，<strong>增加資料的多樣性</strong>，等於讓模型每次看到不同版本的圖片，減少 overfitting、提升泛化。</p>\n<p>基本方法：翻轉、亮度與對比、旋轉、縮放、裁切、扭曲。<strong>一般只對訓練資料做</strong>，通常在 Data Loader 搬資料時即時產生。</p>\n<div class=\"qa-plain\">\n<p><strong>💬 白話</strong>：同一張照片翻一翻、轉一轉、調亮一點，對模型來說就像多了好幾張新照片。</p>\n<p><strong>🔢 例子</strong> <span class=\"tag add\">補充</span>：1,000 張訓練圖，每張每個 epoch 隨機做翻轉＋旋轉＋亮度調整，模型每次看到的都是不同版本，相當於看過遠多於 1,000 張的變化。</p>\n</div>"
      },
      {
       "at": "c3:10",
@@ -245,7 +245,7 @@ window.EXAM_CONTENT = [
      {
       "at": "c3:12",
       "label": "Adaptive Data Augmentation 與 Targeted Data Generation",
-      "html": "<ul>\n<li><strong>Adaptive Data Augmentation</strong>：依訓練中的 <strong>loss／梯度回饋，動態調整擴增的種類與強度</strong>，讓樣本維持適當的挑戰性（擴增參數往讓 loss 變大的方向更新）。</li>\n<li><strong>Targeted Data Generation（TDG）</strong>：不是平均增加資料，而是<strong>找出模型容易誤判的子群（subgroup）</strong>，針對它生成標註正確的合成樣本，把資料花在模型的弱點上。</li>\n</ul>"
+      "html": "<ul>\n<li><strong>Adaptive Data Augmentation</strong>：依訓練中的 <strong>loss／梯度回饋，動態調整擴增的種類與強度</strong>，讓樣本維持適當的挑戰性（擴增參數往讓 loss 變大的方向更新）。</li>\n<li><strong>Targeted Data Generation（TDG）</strong>：不是平均增加資料，而是<strong>找出模型容易誤判的子群（subgroup）</strong>，針對它生成標註正確的合成樣本，把資料花在模型的弱點上。</li>\n</ul>\n<div class=\"qa-plain\">\n<p><strong>💬 白話</strong>：Adaptive 是「模型覺得太簡單就加難度」；TDG 是「哪裡常錯就專門多練那裡」。</p>\n<p><strong>🔢 例子</strong> <span class=\"tag add\">補充</span>：模型在「夜間拍的貓」常判錯，TDG 就專門生成一批標註正確的夜間貓圖補進訓練資料。</p>\n</div>"
      }
     ]
    }
@@ -272,7 +272,7 @@ window.EXAM_CONTENT = [
      {
       "at": "c4:2",
       "label": "VGGNet 的設計與優缺點",
-      "html": "<ul>\n<li>2014 年提出，ImageNet top-5 準確率 92.7%。VGG16 = 13 層 Conv ＋ 3 層 FC；VGG19 = 16 層 Conv ＋ 3 層 FC。</li>\n<li>「典型 CNN」的範本：<strong>全部用 3×3 卷積</strong>，多層 Conv 後接 Pooling，filter 數量逐漸增加，最後接 FC。</li>\n<li>優點：<strong>「深度」網路設計、規範的結構</strong>、準確率高。</li>\n<li>缺點：<strong>計算需求大、參數冗餘</strong>，VGG16 約 1.38 億參數，訓練很慢；參數大多在 FC 層（約 89%）。</li>\n</ul>"
+      "html": "<ul>\n<li>2014 年提出，ImageNet top-5 準確率 92.7%。VGG16 = 13 層 Conv ＋ 3 層 FC；VGG19 = 16 層 Conv ＋ 3 層 FC。</li>\n<li>「典型 CNN」的範本：<strong>全部用 3×3 卷積</strong>，多層 Conv 後接 Pooling，filter 數量逐漸增加，最後接 FC。</li>\n<li>優點：<strong>「深度」網路設計、規範的結構</strong>、準確率高。</li>\n<li>缺點：<strong>計算需求大、參數冗餘</strong>，VGG16 約 1.38 億參數，訓練很慢；參數大多在 FC 層（約 89%）。</li>\n</ul>\n<div class=\"qa-plain\">\n<p><strong>💬 白話</strong>：VGG 就是「一直疊 3×3 卷積、偶爾縮小圖」的規律積木，簡單但很重。</p>\n<p><strong>🔢 例子</strong>：VGG16 共 138,357,544 個參數，其中約 89% 在最後的 FC 層。</p>\n</div>"
      },
      {
       "at": "c4:3",
@@ -292,7 +292,7 @@ window.EXAM_CONTENT = [
      {
       "at": "c4:5",
       "label": "ResNet 與殘差連接",
-      "html": "<p><strong>問題</strong>：一般 CNN 很深時效能反而下降（例如 50 層比 20 層還差），而且<strong>不是過擬合</strong>，是難以優化，原因之一是梯度消失／爆炸。</p>\n<p><strong>做法</strong>：殘差連接（Residual／Skip Connection）把前面的輸入直接加到後面的輸出：</p>\n$$H(x)=F(x)+x$$\n<ul>\n<li>堆疊的層只需學<strong>殘差</strong> \\(F(x)=H(x)-x\\)（小修正量），比從頭學整個 \\(H(x)\\) 容易。多出來的層若用不到，只要 \\(F(x)\\to0\\) 就等於「什麼都不做」（恆等映射）。</li>\n<li>反向傳播時梯度可以經由捷徑<strong>直接傳回前面的層</strong>（導數多了一個「+1」），緩解梯度消失。</li>\n<li>講義比喻：傳統網路要學生每次從空白紙重畫；ResNet 先給原圖，只改需要改的地方。</li>\n</ul>"
+      "html": "<p><strong>問題</strong>：一般 CNN 很深時效能反而下降（例如 50 層比 20 層還差），而且<strong>不是過擬合</strong>，是難以優化，原因之一是梯度消失／爆炸。</p>\n<p><strong>做法</strong>：殘差連接（Residual／Skip Connection）把前面的輸入直接加到後面的輸出：</p>\n$$H(x)=F(x)+x$$\n<ul>\n<li>堆疊的層只需學<strong>殘差</strong> \\(F(x)=H(x)-x\\)（小修正量），比從頭學整個 \\(H(x)\\) 容易。多出來的層若用不到，只要 \\(F(x)\\to0\\) 就等於「什麼都不做」（恆等映射）。</li>\n<li>反向傳播時梯度可以經由捷徑<strong>直接傳回前面的層</strong>（導數多了一個「+1」），緩解梯度消失。</li>\n<li>講義比喻：傳統網路要學生每次從空白紙重畫；ResNet 先給原圖，只改需要改的地方。</li>\n</ul>\n<div class=\"qa-plain\">\n<p><strong>💬 白話</strong>：與其每層從零畫一張新圖，不如拿上一層的圖，只畫「要修改的地方」。</p>\n<p><strong>🔢 例子</strong> <span class=\"tag add\">補充</span>：某一層的輸入 x = 5、理想輸出 H(x) = 5.2：一般網路要學出整個 5.2；ResNet 只要學 F(x) = 0.2。若這層沒用，F(x) = 0，輸出就直接等於輸入 5。</p>\n</div>"
      },
      {
       "at": "c4:6",
@@ -307,7 +307,7 @@ window.EXAM_CONTENT = [
      {
       "at": "c4:7",
       "label": "Inception 的核心想法",
-      "html": "<p>設計 CNN 時 filter size 最難選：小 kernel 擅長捕捉細節，大 kernel 擅長捕捉大範圍特徵。Inception 的想法是<strong>不必選</strong>：</p>\n<ul>\n<li>Inception module 在同一層<strong>並行使用 1×1、3×3、5×5 卷積與 max pooling</strong>，再把結果在通道方向<strong>串接（concatenate）</strong>，讓網路自己學要用哪個。</li>\n<li>不同 kernel 大小對應不同感受野，可同時擷取<strong>多尺度特徵</strong>。</li>\n<li>所有分支都用 same padding、stride 1，輸出寬高相同才能串接。</li>\n<li>Inception V1 又叫 GoogLeNet（Google，2014 年 ILSVRC 分類冠軍）。</li>\n</ul>"
+      "html": "<p>設計 CNN 時 filter size 最難選：小 kernel 擅長捕捉細節，大 kernel 擅長捕捉大範圍特徵。Inception 的想法是<strong>不必選</strong>：</p>\n<ul>\n<li>Inception module 在同一層<strong>並行使用 1×1、3×3、5×5 卷積與 max pooling</strong>，再把結果在通道方向<strong>串接（concatenate）</strong>，讓網路自己學要用哪個。</li>\n<li>不同 kernel 大小對應不同感受野，可同時擷取<strong>多尺度特徵</strong>。</li>\n<li>所有分支都用 same padding、stride 1，輸出寬高相同才能串接。</li>\n<li>Inception V1 又叫 GoogLeNet（Google，2014 年 ILSVRC 分類冠軍）。</li>\n</ul>\n<div class=\"qa-plain\">\n<p><strong>💬 白話</strong>：不知道用多大的放大鏡好，就 1×1、3×3、5×5 和 pooling 一起用，結果疊在一起，讓網路自己挑。</p>\n<p><strong>🔢 例子</strong>：Inception 3a：輸入 28×28×192，四個分支各輸出 64、128、32、32 個通道，串接後是 28×28×(64 + 128 + 32 + 32) = 28×28×256。</p>\n</div>"
      },
      {
       "at": "c4:8",
@@ -317,7 +317,7 @@ window.EXAM_CONTENT = [
      {
       "at": "c4:9",
       "label": "輔助分類器與 Inception 的優缺點",
-      "html": "<ul>\n<li>輔助分類器接在網路中間，Total Loss = Main Loss ＋ \\(w_1\\)×Aux Loss1 ＋ \\(w_2\\)×Aux Loss2，讓深層網路<strong>仍可訓練</strong>；<strong>只在訓練時使用，推論時移除</strong>。</li>\n<li>優點：多尺度特徵擷取、用 1×1 卷積高效利用運算資源、深層仍可訓練。</li>\n<li>缺點：結構複雜、難移植到資源有限的設備、參數與架構選擇複雜。</li>\n</ul>"
+      "html": "<ul>\n<li>輔助分類器接在網路中間，Total Loss = Main Loss ＋ \\(w_1\\)×Aux Loss1 ＋ \\(w_2\\)×Aux Loss2，讓深層網路<strong>仍可訓練</strong>；<strong>只在訓練時使用，推論時移除</strong>。</li>\n<li>優點：多尺度特徵擷取、用 1×1 卷積高效利用運算資源、深層仍可訓練。</li>\n<li>缺點：結構複雜、難移植到資源有限的設備、參數與架構選擇複雜。</li>\n</ul>\n<div class=\"qa-plain\">\n<p><strong>💬 白話</strong>：在網路中間加幾個「小考」，讓前面的層也能直接收到錯誤訊號；正式考試（推論）時就拿掉。</p>\n<p><strong>🔢 例子</strong> <span class=\"tag add\">補充</span>：權重設 0.3：Main Loss 1.0、Aux Loss1 0.8、Aux Loss2 0.9 → Total = 1.0 + 0.3 × 0.8 + 0.3 × 0.9 = 1.51。</p>\n</div>"
      }
     ]
    },
@@ -337,7 +337,7 @@ window.EXAM_CONTENT = [
      {
       "at": "c4:11",
       "label": "計算成本與訓練效率",
-      "html": "<ul>\n<li><strong>計算成本</strong>：完成一次運算（例如一個 batch 的前向＋反向傳播）要花多少資源。</li>\n<li><strong>訓練效率</strong>：需要多少訓練步數（或資料量）才能達到目標性能。</li>\n<li>總訓練成本 ≈ 計算成本 × 所需步數。</li>\n</ul>\n<p>直覺：通道數（寬度）或解析度加倍 → 運算量 ×4；層數（深度）加倍 → ×2。</p>"
+      "html": "<ul>\n<li><strong>計算成本</strong>：完成一次運算（例如一個 batch 的前向＋反向傳播）要花多少資源。</li>\n<li><strong>訓練效率</strong>：需要多少訓練步數（或資料量）才能達到目標性能。</li>\n<li>總訓練成本 ≈ 計算成本 × 所需步數。</li>\n</ul>\n<p>直覺：通道數（寬度）或解析度加倍 → 運算量 ×4；層數（深度）加倍 → ×2。</p>\n<div class=\"qa-plain\">\n<p><strong>💬 白話</strong>：計算成本是「每一步多貴」，訓練效率是「要走幾步」，兩個相乘才是總花費。</p>\n<p><strong>🔢 例子</strong> <span class=\"tag add\">補充</span>：模型 A 每步 1 單位、要 1,000 步 → 1,000；模型 B 每步 2 單位、只要 400 步 → 800。B 每步較貴，總成本反而較低。</p>\n</div>"
      }
     ]
    },
@@ -372,7 +372,7 @@ window.EXAM_CONTENT = [
      {
       "at": "c4:16",
       "label": "MobileNet 的優缺點",
-      "html": "<ul>\n<li>優點：約 420 萬參數（VGG16 的 1/32）、運算量約 VGG16 的 1/27、ImageNet 準確率接近 VGG16、可用 α、ρ 靈活調整。</li>\n<li>缺點：準確率低於 ResNet，α 或解析度太小時下降明顯；運算量減少不一定等比例變快（depthwise 在 GPU 上硬體利用率差）；沒有捷徑連接，難以加深（MobileNetV2 改進）。</li>\n</ul>"
+      "html": "<ul>\n<li>優點：約 420 萬參數（VGG16 的 1/32）、運算量約 VGG16 的 1/27、ImageNet 準確率接近 VGG16、可用 α、ρ 靈活調整。</li>\n<li>缺點：準確率低於 ResNet，α 或解析度太小時下降明顯；運算量減少不一定等比例變快（depthwise 在 GPU 上硬體利用率差）；沒有捷徑連接，難以加深（MobileNetV2 改進）。</li>\n</ul>\n<div class=\"qa-plain\">\n<p><strong>💬 白話</strong>：MobileNet 是「省電模式」的 CNN：犧牲一點準確率，換手機也跑得動。</p>\n<p><strong>🔢 例子</strong>：約 420 萬個參數，VGG16 約 1.38 億，差約 32 倍。</p>\n</div>"
      }
     ]
    },
@@ -399,7 +399,7 @@ window.EXAM_CONTENT = [
      {
       "at": "c4-2:1",
       "label": "DenseNet",
-      "html": "<p>DenseNet（Densely Connected Convolutional Networks），2016 年提出，獲 CVPR 2017 最佳論文獎。在 ImageNet 上能以<strong>較少的參數量，達到與 ResNet 相近的準確率</strong>。</p>"
+      "html": "<p>DenseNet（Densely Connected Convolutional Networks），2016 年提出，獲 CVPR 2017 最佳論文獎。在 ImageNet 上能以<strong>較少的參數量，達到與 ResNet 相近的準確率</strong>。</p>\n<div class=\"qa-plain\">\n<p><strong>💬 白話</strong>：DenseNet 是「用更少的參數做到跟 ResNet 差不多準」的網路。</p>\n<p><strong>🔢 例子</strong>：DenseNet-121 約 8.0M 個參數，ResNet-50 約 25.6M，準確率相近。</p>\n</div>"
      },
      {
       "at": "c4-2:2",
@@ -419,7 +419,7 @@ window.EXAM_CONTENT = [
      {
       "at": "c4-2:4",
       "label": "Dense Block 組成層的順序",
-      "html": "<p><strong>BN → ReLU → 3×3 Conv</strong>，輸出 \\(k\\) 個特徵圖。這種「先正規化與激活，再卷積」的順序叫 <strong>pre-activation</strong>，和常見的 Conv → BN → ReLU 不同。</p>"
+      "html": "<p><strong>BN → ReLU → 3×3 Conv</strong>，輸出 \\(k\\) 個特徵圖。這種「先正規化與激活，再卷積」的順序叫 <strong>pre-activation</strong>，和常見的 Conv → BN → ReLU 不同。</p>\n<div class=\"qa-plain\">\n<p><strong>💬 白話</strong>：先把資料整理好（BN）、篩掉負的（ReLU），再做卷積。</p>\n</div>"
      }
     ]
    },
@@ -429,7 +429,7 @@ window.EXAM_CONTENT = [
      {
       "at": "c4-2:5",
       "label": "DenseNet-B 的 Bottleneck Layer",
-      "html": "<p>串接讓輸入通道越來越多，3×3 卷積越來越貴。所以在 3×3 前先加 <strong>BN → ReLU → 1×1 Conv</strong>，把通道壓到 \\(4k\\) 再做 3×3，<strong>降低計算量與參數</strong>（DenseNet-121 從約 10.9M 降到約 8.0M）。加了 bottleneck 的版本叫 <strong>DenseNet-B</strong>。</p>\n<p>和 Inception 的瓶頸層是同一個想法：先用 1×1 壓通道，再做昂貴的卷積。</p>"
+      "html": "<p>串接讓輸入通道越來越多，3×3 卷積越來越貴。所以在 3×3 前先加 <strong>BN → ReLU → 1×1 Conv</strong>，把通道壓到 \\(4k\\) 再做 3×3，<strong>降低計算量與參數</strong>（DenseNet-121 從約 10.9M 降到約 8.0M）。加了 bottleneck 的版本叫 <strong>DenseNet-B</strong>。</p>\n<p>和 Inception 的瓶頸層是同一個想法：先用 1×1 壓通道，再做昂貴的卷積。</p>\n<div class=\"qa-plain\">\n<p><strong>💬 白話</strong>：輸入通道太多時，先用 1×1 卷積「壓縮」成少一點的通道，再做比較貴的 3×3 卷積。</p>\n<p><strong>🔢 例子</strong>：輸入 992 個通道、k = 32：直接 3×3 要 992 × 9 × 32 = 285,696 個權重；先 1×1 壓到 4k = 128（992 × 128 = 126,976）再 3×3（128 × 9 × 32 = 36,864），合計 163,840，約 0.57 倍。</p>\n</div>"
      },
      {
       "at": "c4-2:6",
@@ -449,7 +449,7 @@ window.EXAM_CONTENT = [
      {
       "at": "c4-2:8",
       "label": "DenseNet 的優缺點",
-      "html": "<ul>\n<li>優點：<strong>緩解梯度消失、促進特徵重用、參數量較少</strong>。</li>\n<li>缺點：<strong>記憶體需求高</strong>（要保存同一區塊內所有先前層的輸出）；<strong>實際執行速度不一定較快</strong>（FLOPs 較少，但大量串接與記憶體存取會拖慢訓練與推論）。</li>\n</ul>"
+      "html": "<ul>\n<li>優點：<strong>緩解梯度消失、促進特徵重用、參數量較少</strong>。</li>\n<li>缺點：<strong>記憶體需求高</strong>（要保存同一區塊內所有先前層的輸出）；<strong>實際執行速度不一定較快</strong>（FLOPs 較少，但大量串接與記憶體存取會拖慢訓練與推論）。</li>\n</ul>\n<div class=\"qa-plain\">\n<p><strong>💬 白話</strong>：每一層都要記得前面所有層的輸出，就像開會時每個人的發言都要留著，桌上的資料會越堆越多。</p>\n<p><strong>🔢 例子</strong> <span class=\"tag add\">補充</span>：6 層的 Dense Block（k₀ = 64、k = 32），最後一層要同時讀 224 個通道的特徵圖，前面每一層的輸出都得留在記憶體裡。</p>\n</div>"
      },
      {
       "at": "c4-2:9",
@@ -471,7 +471,7 @@ window.EXAM_CONTENT = [
      {
       "at": "c5:1",
       "label": "遷移學習（Transfer Learning）",
-      "html": "<p>從頭訓練 CNN 需要<strong>大量標註資料、強大運算資源、足夠訓練時間</strong>，多數實際任務只有幾百到幾千張影像，很難滿足。</p>\n<p>遷移學習借用在大型資料集（例如 ImageNet，約 120 萬張、1000 類）上訓練好的<strong>預訓練模型（Pretrained Model）</strong>。它的卷積層學到許多<strong>通用特徵</strong>（淺層的邊緣、色塊、紋理），也適用於新任務，所以能<strong>以較少的資料和較短的訓練時間</strong>取得好表現。兩種用法：特徵提取、微調。</p>"
+      "html": "<p>從頭訓練 CNN 需要<strong>大量標註資料、強大運算資源、足夠訓練時間</strong>，多數實際任務只有幾百到幾千張影像，很難滿足。</p>\n<p>遷移學習借用在大型資料集（例如 ImageNet，約 120 萬張、1000 類）上訓練好的<strong>預訓練模型（Pretrained Model）</strong>。它的卷積層學到許多<strong>通用特徵</strong>（淺層的邊緣、色塊、紋理），也適用於新任務，所以能<strong>以較少的資料和較短的訓練時間</strong>取得好表現。兩種用法：特徵提取、微調。</p>\n<div class=\"qa-plain\">\n<p><strong>💬 白話</strong>：就像學過騎腳踏車的人學機車比較快，模型在 ImageNet 學會的「看邊緣、看紋理」可以直接拿來用。</p>\n<p><strong>🔢 例子</strong> <span class=\"tag add\">補充</span>：要辨識 10 種水果病害、只有 500 張照片：從頭訓練很難學好；拿 ImageNet 預訓練的 ResNet-50 來改，就能用這 500 張得到不錯的結果。</p>\n</div>"
      }
     ]
    },
@@ -481,17 +481,17 @@ window.EXAM_CONTENT = [
      {
       "at": "c5:2",
       "label": "特徵提取（Feature Extraction）",
-      "html": "<p>把預訓練網路分成<strong>卷積基底</strong>（擷取特徵）和<strong>分類層</strong>（對應原資料集的類別）：</p>\n<ol>\n<li><strong>凍結（freeze）卷積基底</strong>，訓練時權重不更新。</li>\n<li>移除原本的分類層，<strong>換成新的分類層</strong>，輸出數量 = 新資料集的類別數。</li>\n<li>在新資料上訓練，<strong>只有新分類層的權重會更新</strong>。</li>\n</ol>\n<p>優點：訓練快、需要的資料少、不會破壞預訓練權重。</p>"
+      "html": "<p>把預訓練網路分成<strong>卷積基底</strong>（擷取特徵）和<strong>分類層</strong>（對應原資料集的類別）：</p>\n<ol>\n<li><strong>凍結（freeze）卷積基底</strong>，訓練時權重不更新。</li>\n<li>移除原本的分類層，<strong>換成新的分類層</strong>，輸出數量 = 新資料集的類別數。</li>\n<li>在新資料上訓練，<strong>只有新分類層的權重會更新</strong>。</li>\n</ol>\n<p>優點：訓練快、需要的資料少、不會破壞預訓練權重。</p>\n<div class=\"qa-plain\">\n<p><strong>💬 白話</strong>：把預訓練模型當成「現成的特徵擷取器」，只換最後的分類頭、只訓練分類頭。</p>\n<p><strong>🔢 例子</strong>：ResNet-50 換成 10 類的新分類層：2,048 × 10 + 10 = 20,490 個參數要訓練，其餘約 2,350 萬個全部凍結。</p>\n</div>"
      },
      {
       "at": "c5:3",
       "label": "微調（Fine-tuning）",
-      "html": "<p>微調是在特徵提取之後，再<strong>解凍部分或全部預訓練層（通常是較深的層）</strong>，以<strong>很小的學習率</strong>再訓練幾個 epoch，讓特徵更貼近新資料，準確率通常更高。</p>\n<p>CNN 的<strong>淺層學到通用特徵</strong>（邊緣、紋理），換任務也用得上；<strong>深層學到與原資料集相關的細節</strong>，才需要針對新資料調整。</p>"
+      "html": "<p>微調是在特徵提取之後，再<strong>解凍部分或全部預訓練層（通常是較深的層）</strong>，以<strong>很小的學習率</strong>再訓練幾個 epoch，讓特徵更貼近新資料，準確率通常更高。</p>\n<p>CNN 的<strong>淺層學到通用特徵</strong>（邊緣、紋理），換任務也用得上；<strong>深層學到與原資料集相關的細節</strong>，才需要針對新資料調整。</p>\n<div class=\"qa-plain\">\n<p><strong>💬 白話</strong>：淺層看的是邊緣、紋理這種到哪都通用的東西，不用改；深層看的是「狗耳朵」這種跟原任務有關的東西，才需要調整。</p>\n<p><strong>🔢 例子</strong>：Last-k 取 k = 1：只解凍 ResNet-50 的最後一個 block，加上新分類層，可訓練參數 14,985,226 個（約 63.7%）。</p>\n</div>"
      },
      {
       "at": "c5:4",
       "label": "先凍結再解凍的原因",
-      "html": "<p>因為新分類層是<strong>隨機初始化</strong>的，一開始幾乎亂猜，Loss 很大、<strong>梯度也很大</strong>；若整個模型一起訓練，大梯度會流進預訓練層，<strong>把學好的特徵破壞掉</strong>。</p>\n<ol>\n<li><strong>先凍結、只訓練新分類層</strong>：讓它先學會用現有特徵分類，Loss 降下來、梯度穩定。</li>\n<li><strong>再解凍後面幾層、用很小的學習率</strong>（比初始訓練小一到兩個數量級）：輕輕調整深層。</li>\n</ol>\n<p>其他注意：小資料集時讓 <strong>BN 沿用預訓練的統計量</strong>（running mean／std），避免小 batch 估得不準打亂特徵。</p>"
+      "html": "<p>因為新分類層是<strong>隨機初始化</strong>的，一開始幾乎亂猜，Loss 很大、<strong>梯度也很大</strong>；若整個模型一起訓練，大梯度會流進預訓練層，<strong>把學好的特徵破壞掉</strong>。</p>\n<ol>\n<li><strong>先凍結、只訓練新分類層</strong>：讓它先學會用現有特徵分類，Loss 降下來、梯度穩定。</li>\n<li><strong>再解凍後面幾層、用很小的學習率</strong>（比初始訓練小一到兩個數量級）：輕輕調整深層。</li>\n</ol>\n<p>其他注意：小資料集時讓 <strong>BN 沿用預訓練的統計量</strong>（running mean／std），避免小 batch 估得不準打亂特徵。</p>\n<div class=\"qa-plain\">\n<p><strong>💬 白話</strong>：新來的分類層一開始在亂猜，誤差很大；這時讓整個模型一起改，等於讓新手亂改老手的筆記。先讓新手跟上，再讓老手小幅修正。</p>\n<p><strong>🔢 例子</strong> <span class=\"tag add\">補充</span>：初始學習率 0.001 訓練新分類層，解凍後改用 0.00001～0.0001（小一到兩個數量級）微調深層。</p>\n</div>"
      }
     ]
    },
@@ -501,7 +501,7 @@ window.EXAM_CONTENT = [
      {
       "at": "c5:5",
       "label": "Full Fine-tuning",
-      "html": "<p><strong>所有參數都微調</strong>。優點：適應能力最大，<strong>資料夠多時通常效果最好</strong>，domain 差異大時也能調整。缺點：<strong>計算成本與 GPU 記憶體需求高；資料少時容易 overfitting</strong>。實務建議：先訓練新 head，再解凍全部，用很小的學習率。</p>"
+      "html": "<p><strong>所有參數都微調</strong>。優點：適應能力最大，<strong>資料夠多時通常效果最好</strong>，domain 差異大時也能調整。缺點：<strong>計算成本與 GPU 記憶體需求高；資料少時容易 overfitting</strong>。實務建議：先訓練新 head，再解凍全部，用很小的學習率。</p>\n<div class=\"qa-plain\">\n<p><strong>💬 白話</strong>：全部參數都重新調整，最有彈性，但也最貴、最容易背答案。</p>\n<p><strong>🔢 例子</strong>：ResNet-50 加 10 類：Full Fine-tuning 要訓練 23,528,522 個參數，記憶體約 376.5 MB；特徵提取只要約 94.4 MB。</p>\n</div>"
      },
      {
       "at": "c5:6",
@@ -511,7 +511,7 @@ window.EXAM_CONTENT = [
      {
       "at": "c5:7",
       "label": "PEFT",
-      "html": "<p>Parameter-Efficient Fine-tuning：<strong>凍結大部分預訓練模型，只訓練非常少量的參數</strong>，常見方法有 LoRA、Adapter、VPT，主要用於 ViT、CLIP 等大型 Transformer。</p>\n<p>優點：可訓練參數極少、GPU 記憶體較省、<strong>多個任務共用同一個 backbone</strong>，每個任務只存小模組。缺點：適應能力可能受限；Adapter、VPT 會增加推論成本（LoRA 不會）。</p>"
+      "html": "<p>Parameter-Efficient Fine-tuning：<strong>凍結大部分預訓練模型，只訓練非常少量的參數</strong>，常見方法有 LoRA、Adapter、VPT，主要用於 ViT、CLIP 等大型 Transformer。</p>\n<p>優點：可訓練參數極少、GPU 記憶體較省、<strong>多個任務共用同一個 backbone</strong>，每個任務只存小模組。缺點：適應能力可能受限；Adapter、VPT 會增加推論成本（LoRA 不會）。</p>\n<div class=\"qa-plain\">\n<p><strong>💬 白話</strong>：大模型本體不動，每個任務只加一個小外掛，換任務就換外掛。</p>\n<p><strong>🔢 例子</strong>：ViT-B 做 10 個任務：每個任務都存一份 Full Fine-tuning 的模型約 860M 個參數；用 PEFT 共用 backbone、每個任務只存小模組，總共約 91.9M。</p>\n</div>"
      },
      {
       "at": "c5:8",
@@ -521,7 +521,7 @@ window.EXAM_CONTENT = [
      {
       "at": "c5:9",
       "label": "Regularized Fine-tuning 與 L2-SP",
-      "html": "<p><strong>Regularized Fine-tuning</strong>：參數可以動，但<strong>不要離預訓練模型太遠</strong>，降低 overfitting、保留預訓練知識；但來源與目標差太多時可能反而有害，成本也不比 Full 低。</p>\n<p><strong>L2-SP</strong>：在 Loss 加上 \\(\\frac{\\alpha}{2}\\lVert w-w^0\\rVert^2\\)，把權重<strong>拉向預訓練值 \\(w^0\\)</strong>；一般 L2 是 \\(\\frac{\\alpha}{2}\\lVert w\\rVert^2\\)，把權重<strong>拉向 0</strong>。新的分類 head 沒有 \\(w^0\\)，用一般 L2。小資料集上更穩定，但所有參數仍需訓練。</p>"
+      "html": "<p><strong>Regularized Fine-tuning</strong>：參數可以動，但<strong>不要離預訓練模型太遠</strong>，降低 overfitting、保留預訓練知識；但來源與目標差太多時可能反而有害，成本也不比 Full 低。</p>\n<p><strong>L2-SP</strong>：在 Loss 加上 \\(\\frac{\\alpha}{2}\\lVert w-w^0\\rVert^2\\)，把權重<strong>拉向預訓練值 \\(w^0\\)</strong>；一般 L2 是 \\(\\frac{\\alpha}{2}\\lVert w\\rVert^2\\)，把權重<strong>拉向 0</strong>。新的分類 head 沒有 \\(w^0\\)，用一般 L2。小資料集上更穩定，但所有參數仍需訓練。</p>\n<div class=\"qa-plain\">\n<p><strong>💬 白話</strong>：一般 L2 是用橡皮筋把權重綁在「0」；L2-SP 是把橡皮筋綁在「預訓練的權重」上，可以動，但被往原本的位置拉回去。α 越大，橡皮筋越緊。</p>\n<p><strong>🔢 例子</strong> <span class=\"tag add\">補充</span>：某兩個權重的預訓練值 w⁰ = (2, 1)，只看新資料時最好的權重是 w* = (3, 3)，α = 1。L2-SP 的結果落在兩者中間：((3 + 1 × 2) ÷ 2, (3 + 1 × 1) ÷ 2) = (2.5, 2)，權重往預訓練值靠。一般 L2 是往 0 拉：(3 ÷ 2, 3 ÷ 2) = (1.5, 1.5)，連原本學好的知識也一起被壓小。</p>\n</div>"
      }
     ]
    }

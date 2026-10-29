@@ -337,6 +337,10 @@ footer { color: var(--text-2); font-size: .85rem; margin-top: 60px; }
 .ex-input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
 .ex-ans { margin-top: 10px; padding: 10px 14px; border-left: 4px solid var(--accent); background: var(--surface-2); border-radius: 8px; font-size: .95rem; }
 .ex-ans-text { margin: 0; white-space: pre-line; }
+.ex-formula { margin-top: 10px; padding-top: 8px; border-top: 1px dashed var(--border); }
+.ex-f-head { margin: 0; font-size: .85rem; font-weight: 600; color: var(--text-2); }
+.ex-f-math { overflow-x: auto; overflow-y: hidden; padding: 4px 0; }
+.ex-f-note { margin: 0; font-size: .9rem; color: var(--text-2); }
 .qz-score { font-size: 1.6rem; font-weight: 700; font-variant-numeric: tabular-nums; }
 .qz-sticky {
   position: sticky; bottom: 0; z-index: 5; background: var(--bg); border-top: 1px solid var(--border);
@@ -356,3 +360,6 @@ details.qa-item[open] > summary { border-bottom: 1px solid var(--border); }
 details.qa-item > div { padding: 4px 14px 10px; background: var(--surface-2); border-radius: 0 0 8px 8px; }
 details.qa-item > div ul, details.qa-item > div ol { padding-left: 1.4em; }
 details.qa-item li { margin: .3em 0; }
+/* 問答閱讀筆記裡的白話說明＋數值例子（考題頁的內容整理也會用到） */
+.qa-plain { margin: 10px 0 4px; padding: 8px 12px; border-radius: 8px; border: 1px dashed var(--border); background: var(--surface); }
+.qa-plain p { margin: .3em 0; }

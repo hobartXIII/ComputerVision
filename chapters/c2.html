@@ -128,6 +128,9 @@
         <li>每一個<strong>濾波器（Filter／Kernel）</strong>就是一個特徵偵測器，專門找一種形狀（例如上邊、左邊、垂直邊緣）。</li>
         <li>濾波器裡的數字一開始是隨機的，用反向傳播與梯度下降學出來（C1）。</li>
       </ul>
+      <div class="qa-plain">
+        <p><strong>💬 白話</strong>：一個 Filter 就像一個只會找某一種東西的放大鏡，例如專找「直線邊緣」，放大鏡上的數字是訓練學來的。</p>
+      </div>
     </div></details>
 
     <details class="qa-item"><summary>Q2. 卷積（Convolution）怎麼算？輸出叫什麼？</summary><div>
@@ -183,6 +186,10 @@
         <li><strong>計算快、訓練穩定</strong>：只要比大小；正值區梯度永遠是 1，不像 Sigmoid／Tanh 會梯度消失。</li>
       </ol>
       <p>缺點：為了學負向特徵可能要多佔用 filter；<strong>Dying ReLU</strong>：神經元一直輸出負值時梯度為 0，永久停止學習（可改用 LeakyReLU、ELU）。</p>
+      <div class="qa-plain">
+        <p><strong>💬 白話</strong>：ReLU 就是「負的歸零、正的照留」。</p>
+        <p><strong>🔢 例子</strong>：卷積輸出一列是 (−3, 2, 0.5, −1) → ReLU 後變成 (0, 2, 0.5, 0)。</p>
+      </div>
     </div></details>
 
     <details class="qa-item"><summary>⭐ Q10. Pooling 的主要目的為何？</summary><div>
@@ -194,6 +201,10 @@
         <li>注意：stride 太大會丟失重要資訊。</li>
       </ul>
       <p>種類：Max Pooling（取最大）、Average Pooling（取平均）、Sum Pooling（加總）。</p>
+      <div class="qa-plain">
+        <p><strong>💬 白話</strong>：把相鄰的一小格合成一個代表值，圖變小，但重要的特徵還在。</p>
+        <p><strong>🔢 例子</strong> <span class="tag add">補充</span>：2×2 區塊 [[1, 3], [2, 4]]：Max Pooling 取 4、Average Pooling 取 2.5、Sum Pooling 取 10。4×4 的 Feature Map 用 2×2、stride 2 → 變成 2×2，深度不變。</p>
+      </div>
     </div></details>
 
     <h4>全連接層、參數量與超參數（2.9～2.11）</h4>
@@ -205,6 +216,10 @@
         <li>最後一層節點數 = 類別數，接 <strong>Softmax</strong> 輸出各類別機率。</li>
         <li>FC 通常是參數最多的部分（講義 MNIST 例子約佔 98%）。</li>
       </ul>
+      <div class="qa-plain">
+        <p><strong>💬 白話</strong>：前面的卷積層負責「找零件」，FC 層負責「看零件組合判斷是什麼」。</p>
+        <p><strong>🔢 例子</strong>：講義 MNIST CNN：12×12×64 展平成 9,216 個數 → FC 128 個節點 → 輸出 10 個節點 → Softmax 得到 0～9 各自的機率。</p>
+      </div>
     </div></details>
 
     <details class="qa-item"><summary>Q12. 卷積層和 FC 層的參數量怎麼算？以講義 MNIST CNN 為例。</summary><div>
@@ -226,6 +241,10 @@
         <li><strong>超參數</strong>：<strong>訓練前由人手動設定</strong>、模型不會自己學的值，例如 filter 大小與數量、stride、padding、節點數、激活函數、learning rate、batch size、epoch 數、Dropout rate；通常看 Validation 結果調整。</li>
         <li>沒有可訓練參數的層：ReLU、Max Pooling、Flatten。</li>
       </ul>
+      <div class="qa-plain">
+        <p><strong>💬 白話</strong>：參數是模型自己學的「答案」，超參數是人在開始前決定的「規則」。</p>
+        <p><strong>🔢 例子</strong>：同一個 Conv 層：3×3 大小、32 個 Filter、stride 1 是超參數（人設定）；那 320 個權重與 bias 是參數（訓練學出來）。</p>
+      </div>
     </div></details>
 
     <h4>為什麼 CNN 有用（2.12）</h4>

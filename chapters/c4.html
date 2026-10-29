@@ -126,6 +126,10 @@
         <li>優點：<strong>「深度」網路設計、規範的結構</strong>、準確率高。</li>
         <li>缺點：<strong>計算需求大、參數冗餘</strong>，VGG16 約 1.38 億參數，訓練很慢；參數大多在 FC 層（約 89%）。</li>
       </ul>
+      <div class="qa-plain">
+        <p><strong>💬 白話</strong>：VGG 就是「一直疊 3×3 卷積、偶爾縮小圖」的規律積木，簡單但很重。</p>
+        <p><strong>🔢 例子</strong>：VGG16 共 138,357,544 個參數，其中約 89% 在最後的 FC 層。</p>
+      </div>
     </div></details>
 
     <details class="qa-item"><summary>Q3. VGG 為什麼全部用 3×3，而不用 5×5、7×7？</summary><div>
@@ -151,6 +155,10 @@
         <li>反向傳播時梯度可以經由捷徑<strong>直接傳回前面的層</strong>（導數多了一個「+1」），緩解梯度消失。</li>
         <li>講義比喻：傳統網路要學生每次從空白紙重畫；ResNet 先給原圖，只改需要改的地方。</li>
       </ul>
+      <div class="qa-plain">
+        <p><strong>💬 白話</strong>：與其每層從零畫一張新圖，不如拿上一層的圖，只畫「要修改的地方」。</p>
+        <p><strong>🔢 例子</strong> <span class="tag add">補充</span>：某一層的輸入 x = 5、理想輸出 H(x) = 5.2：一般網路要學出整個 5.2；ResNet 只要學 F(x) = 0.2。若這層沒用，F(x) = 0，輸出就直接等於輸入 5。</p>
+      </div>
     </div></details>
 
     <details class="qa-item"><summary>Q6. ResNet 的優缺點？</summary><div>
@@ -169,6 +177,10 @@
         <li>所有分支都用 same padding、stride 1，輸出寬高相同才能串接。</li>
         <li>Inception V1 又叫 GoogLeNet（Google，2014 年 ILSVRC 分類冠軍）。</li>
       </ul>
+      <div class="qa-plain">
+        <p><strong>💬 白話</strong>：不知道用多大的放大鏡好，就 1×1、3×3、5×5 和 pooling 一起用，結果疊在一起，讓網路自己挑。</p>
+        <p><strong>🔢 例子</strong>：Inception 3a：輸入 28×28×192，四個分支各輸出 64、128、32、32 個通道，串接後是 28×28×(64 + 128 + 32 + 32) = 28×28×256。</p>
+      </div>
     </div></details>
 
     <details class="qa-item"><summary>Q8. 1×1 卷積（瓶頸層 Bottleneck Layer）的作用是什麼？省了多少？</summary><div>
@@ -182,6 +194,10 @@
         <li>優點：多尺度特徵擷取、用 1×1 卷積高效利用運算資源、深層仍可訓練。</li>
         <li>缺點：結構複雜、難移植到資源有限的設備、參數與架構選擇複雜。</li>
       </ul>
+      <div class="qa-plain">
+        <p><strong>💬 白話</strong>：在網路中間加幾個「小考」，讓前面的層也能直接收到錯誤訊號；正式考試（推論）時就拿掉。</p>
+        <p><strong>🔢 例子</strong> <span class="tag add">補充</span>：權重設 0.3：Main Loss 1.0、Aux Loss1 0.8、Aux Loss2 0.9 → Total = 1.0 + 0.3 × 0.8 + 0.3 × 0.9 = 1.51。</p>
+      </div>
     </div></details>
 
     <h4>Global Average Pooling（2.6）</h4>
@@ -203,6 +219,10 @@
         <li>總訓練成本 ≈ 計算成本 × 所需步數。</li>
       </ul>
       <p>直覺：通道數（寬度）或解析度加倍 → 運算量 ×4；層數（深度）加倍 → ×2。</p>
+      <div class="qa-plain">
+        <p><strong>💬 白話</strong>：計算成本是「每一步多貴」，訓練效率是「要走幾步」，兩個相乘才是總花費。</p>
+        <p><strong>🔢 例子</strong> <span class="tag add">補充</span>：模型 A 每步 1 單位、要 1,000 步 → 1,000；模型 B 每步 2 單位、只要 400 步 → 800。B 每步較貴，總成本反而較低。</p>
+      </div>
     </div></details>
 
     <h4>SqueezeNet（2.8）</h4>
@@ -245,6 +265,10 @@
         <li>優點：約 420 萬參數（VGG16 的 1/32）、運算量約 VGG16 的 1/27、ImageNet 準確率接近 VGG16、可用 α、ρ 靈活調整。</li>
         <li>缺點：準確率低於 ResNet，α 或解析度太小時下降明顯；運算量減少不一定等比例變快（depthwise 在 GPU 上硬體利用率差）；沒有捷徑連接，難以加深（MobileNetV2 改進）。</li>
       </ul>
+      <div class="qa-plain">
+        <p><strong>💬 白話</strong>：MobileNet 是「省電模式」的 CNN：犧牲一點準確率，換手機也跑得動。</p>
+        <p><strong>🔢 例子</strong>：約 420 萬個參數，VGG16 約 1.38 億，差約 32 倍。</p>
+      </div>
     </div></details>
 
     <h4>綜合比較</h4>

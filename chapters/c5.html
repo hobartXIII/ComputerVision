@@ -120,6 +120,10 @@
     <details class="qa-item"><summary>Q1. 為什麼需要遷移學習（Transfer Learning）？原理是什麼？</summary><div>
       <p>從頭訓練 CNN 需要<strong>大量標註資料、強大運算資源、足夠訓練時間</strong>，多數實際任務只有幾百到幾千張影像，很難滿足。</p>
       <p>遷移學習借用在大型資料集（例如 ImageNet，約 120 萬張、1000 類）上訓練好的<strong>預訓練模型（Pretrained Model）</strong>。它的卷積層學到許多<strong>通用特徵</strong>（淺層的邊緣、色塊、紋理），也適用於新任務，所以能<strong>以較少的資料和較短的訓練時間</strong>取得好表現。兩種用法：特徵提取、微調。</p>
+      <div class="qa-plain">
+        <p><strong>💬 白話</strong>：就像學過騎腳踏車的人學機車比較快，模型在 ImageNet 學會的「看邊緣、看紋理」可以直接拿來用。</p>
+        <p><strong>🔢 例子</strong> <span class="tag add">補充</span>：要辨識 10 種水果病害、只有 500 張照片：從頭訓練很難學好；拿 ImageNet 預訓練的 ResNet-50 來改，就能用這 500 張得到不錯的結果。</p>
+      </div>
     </div></details>
 
     <h4>特徵提取與微調（2.3～2.5）</h4>
@@ -131,11 +135,19 @@
         <li>在新資料上訓練，<strong>只有新分類層的權重會更新</strong>。</li>
       </ol>
       <p>優點：訓練快、需要的資料少、不會破壞預訓練權重。</p>
+      <div class="qa-plain">
+        <p><strong>💬 白話</strong>：把預訓練模型當成「現成的特徵擷取器」，只換最後的分類頭、只訓練分類頭。</p>
+        <p><strong>🔢 例子</strong>：ResNet-50 換成 10 類的新分類層：2,048 × 10 + 10 = 20,490 個參數要訓練，其餘約 2,350 萬個全部凍結。</p>
+      </div>
     </div></details>
 
     <details class="qa-item"><summary>Q3. 微調（Fine-tuning）和特徵提取差在哪？為什麼通常解凍「深層」？</summary><div>
       <p>微調是在特徵提取之後，再<strong>解凍部分或全部預訓練層（通常是較深的層）</strong>，以<strong>很小的學習率</strong>再訓練幾個 epoch，讓特徵更貼近新資料，準確率通常更高。</p>
       <p>CNN 的<strong>淺層學到通用特徵</strong>（邊緣、紋理），換任務也用得上；<strong>深層學到與原資料集相關的細節</strong>，才需要針對新資料調整。</p>
+      <div class="qa-plain">
+        <p><strong>💬 白話</strong>：淺層看的是邊緣、紋理這種到哪都通用的東西，不用改；深層看的是「狗耳朵」這種跟原任務有關的東西，才需要調整。</p>
+        <p><strong>🔢 例子</strong>：Last-k 取 k = 1：只解凍 ResNet-50 的最後一個 block，加上新分類層，可訓練參數 14,985,226 個（約 63.7%）。</p>
+      </div>
     </div></details>
 
     <details class="qa-item"><summary>⭐ Q4. 為什麼微調要先凍結、只訓練新分類層，再解凍後面幾層？</summary><div>
@@ -145,11 +157,19 @@
         <li><strong>再解凍後面幾層、用很小的學習率</strong>（比初始訓練小一到兩個數量級）：輕輕調整深層。</li>
       </ol>
       <p>其他注意：小資料集時讓 <strong>BN 沿用預訓練的統計量</strong>（running mean／std），避免小 batch 估得不準打亂特徵。</p>
+      <div class="qa-plain">
+        <p><strong>💬 白話</strong>：新來的分類層一開始在亂猜，誤差很大；這時讓整個模型一起改，等於讓新手亂改老手的筆記。先讓新手跟上，再讓老手小幅修正。</p>
+        <p><strong>🔢 例子</strong> <span class="tag add">補充</span>：初始學習率 0.001 訓練新分類層，解凍後改用 0.00001～0.0001（小一到兩個數量級）微調深層。</p>
+      </div>
     </div></details>
 
     <h4>CV 常見的微調方式（2.6～2.13）</h4>
     <details class="qa-item"><summary>Q5. Full Fine-tuning 的優缺點？</summary><div>
       <p><strong>所有參數都微調</strong>。優點：適應能力最大，<strong>資料夠多時通常效果最好</strong>，domain 差異大時也能調整。缺點：<strong>計算成本與 GPU 記憶體需求高；資料少時容易 overfitting</strong>。實務建議：先訓練新 head，再解凍全部，用很小的學習率。</p>
+      <div class="qa-plain">
+        <p><strong>💬 白話</strong>：全部參數都重新調整，最有彈性，但也最貴、最容易背答案。</p>
+        <p><strong>🔢 例子</strong>：ResNet-50 加 10 類：Full Fine-tuning 要訓練 23,528,522 個參數，記憶體約 376.5 MB；特徵提取只要約 94.4 MB。</p>
+      </div>
     </div></details>
 
     <details class="qa-item"><summary>Q6. Partial／Selective Fine-tuning 和 Last-k Fine-tuning 是什麼？k 怎麼選？</summary><div>
@@ -164,6 +184,10 @@
     <details class="qa-item"><summary>Q7. PEFT 是什麼？優缺點？</summary><div>
       <p>Parameter-Efficient Fine-tuning：<strong>凍結大部分預訓練模型，只訓練非常少量的參數</strong>，常見方法有 LoRA、Adapter、VPT，主要用於 ViT、CLIP 等大型 Transformer。</p>
       <p>優點：可訓練參數極少、GPU 記憶體較省、<strong>多個任務共用同一個 backbone</strong>，每個任務只存小模組。缺點：適應能力可能受限；Adapter、VPT 會增加推論成本（LoRA 不會）。</p>
+      <div class="qa-plain">
+        <p><strong>💬 白話</strong>：大模型本體不動，每個任務只加一個小外掛，換任務就換外掛。</p>
+        <p><strong>🔢 例子</strong>：ViT-B 做 10 個任務：每個任務都存一份 Full Fine-tuning 的模型約 860M 個參數；用 PEFT 共用 backbone、每個任務只存小模組，總共約 91.9M。</p>
+      </div>
     </div></details>
 
     <details class="qa-item"><summary>Q8. LoRA 怎麼運作？為什麼推論不會變慢？</summary><div>
@@ -180,6 +204,10 @@
     <details class="qa-item"><summary>Q9. Regularized Fine-tuning 與 L2-SP 是什麼？和一般 L2（weight decay）差在哪？</summary><div>
       <p><strong>Regularized Fine-tuning</strong>：參數可以動，但<strong>不要離預訓練模型太遠</strong>，降低 overfitting、保留預訓練知識；但來源與目標差太多時可能反而有害，成本也不比 Full 低。</p>
       <p><strong>L2-SP</strong>：在 Loss 加上 \(\frac{\alpha}{2}\lVert w-w^0\rVert^2\)，把權重<strong>拉向預訓練值 \(w^0\)</strong>；一般 L2 是 \(\frac{\alpha}{2}\lVert w\rVert^2\)，把權重<strong>拉向 0</strong>。新的分類 head 沒有 \(w^0\)，用一般 L2。小資料集上更穩定，但所有參數仍需訓練。</p>
+      <div class="qa-plain">
+        <p><strong>💬 白話</strong>：一般 L2 是用橡皮筋把權重綁在「0」；L2-SP 是把橡皮筋綁在「預訓練的權重」上，可以動，但被往原本的位置拉回去。α 越大，橡皮筋越緊。</p>
+        <p><strong>🔢 例子</strong> <span class="tag add">補充</span>：某兩個權重的預訓練值 w⁰ = (2, 1)，只看新資料時最好的權重是 w* = (3, 3)，α = 1。L2-SP 的結果落在兩者中間：((3 + 1 × 2) ÷ 2, (3 + 1 × 1) ÷ 2) = (2.5, 2)，權重往預訓練值靠。一般 L2 是往 0 拉：(3 ÷ 2, 3 ÷ 2) = (1.5, 1.5)，連原本學好的知識也一起被壓小。</p>
+      </div>
     </div></details>
   </div>
 
