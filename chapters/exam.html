@@ -4,12 +4,16 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>期中考題問答</title>
-  <meta name="description" content="電腦視覺期中考範圍 C1～C5 的問答題：先作答，再按「正確答案」對照">
+  <meta name="description" content="電腦視覺期中考範圍 C1～C5 的內容整理，每段內容下面接對應的問答題">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
   <link rel="stylesheet" href="../assets/style.css">
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"></script>
   <script defer src="../assets/common.js"></script>
+  <script defer src="exam-content.js"></script>
   <script defer src="exam-data.js"></script>
   <script defer src="exam.js"></script>
 </head>
@@ -18,15 +22,15 @@
 <main>
   <p class="eyebrow">期中考 2026-10-29 · 範圍 C1～C5</p>
   <h1>✍️ 考題問答</h1>
-  <p class="lead">把各章要考的內容整理成問答題，重點在 CNN（C2）與進階 CNN（C4）。先在輸入框寫下答案，再按「正確答案」對照。講義標 (Skip) 的內容與太難的推導不列。</p>
+  <p class="lead">以各章要考的內容整理為主，每段內容下面接對應的考題：先在輸入框寫下答案，再按「正確答案」對照。重點在 CNN（C2）、C3、C4、C5，排在前面；C1 是基礎，放在最後。講義標 (Skip) 的內容與太難的推導不列。</p>
 
   <div class="qz-bar" aria-label="章節">
     <span class="seg" id="ex-chs"></span>
   </div>
 
-  <ol class="ex-list" id="ex-list"></ol>
+  <div class="ex-list" id="ex-list"></div>
 
-  <footer>題目依各章「❓ 問答閱讀筆記」整理；輸入的答案只存在這台裝置的瀏覽器裡。</footer>
+  <footer>內容與題目依各章「❓ 問答閱讀筆記」整理；輸入的答案只存在這台裝置的瀏覽器裡。</footer>
 </main>
 </div>
 </body>

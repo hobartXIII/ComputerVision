@@ -318,11 +318,21 @@ footer { color: var(--text-2); font-size: .85rem; margin-top: 60px; }
 .qz-nav { display: flex; flex-wrap: wrap; gap: 8px; justify-content: space-between; align-items: center; margin: 12px 0; }
 
 /* 考題問答（exam.html） */
-.ex-list { list-style: none; padding: 0; margin: 0; counter-reset: ex; }
-.ex-item { counter-increment: ex; margin: 0 0 20px; padding: 14px 16px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); }
+.ex-list { counter-reset: ex; }
+.ex-ch { margin-top: 1.6em; }
+.ex-badge { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: .8rem; font-weight: 600; color: var(--accent); background: var(--accent-soft); vertical-align: 3px; }
+.ex-badge.base { color: var(--text-2); background: var(--surface-2); }
+.ex-group { margin: 1.4em 0 .6em; }
+.ex-sec { margin: 0 0 24px; }
+.ex-note { padding: 12px 16px; border: 1px solid var(--border); border-left: 4px solid var(--accent); border-radius: var(--radius); background: var(--surface); }
+.ex-note h4 { margin: 0 0 6px; font-size: 1rem; }
+.ex-note ul, .ex-note ol { padding-left: 1.4em; }
+.ex-note li { margin: .3em 0; }
+.ex-note > div > :last-child { margin-bottom: 0; }
+.ex-label { margin: 14px 0 6px; font-size: .9rem; font-weight: 600; color: var(--text-2); }
+.ex-item { counter-increment: ex; margin: 0 0 12px; padding: 12px 16px; border: 1px dashed var(--border); border-radius: var(--radius); background: var(--surface); }
 .ex-q { margin: 0 0 10px; font-weight: 600; }
 .ex-q::before { content: counter(ex) ". "; }
-.ex-tag { display: inline-block; margin-right: 6px; padding: 0 6px; border-radius: 999px; font-size: .75rem; font-weight: 500; color: var(--accent); background: var(--accent-soft); vertical-align: 2px; }
 .ex-input { display: block; box-sizing: border-box; width: 100%; min-height: 4.5em; margin: 0 0 8px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface-2); color: var(--text); font: inherit; font-size: .95rem; resize: vertical; }
 .ex-input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
 .ex-ans { margin-top: 10px; padding: 10px 14px; border-left: 4px solid var(--accent); background: var(--surface-2); border-radius: 8px; font-size: .95rem; }

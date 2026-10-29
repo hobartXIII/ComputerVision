@@ -51,6 +51,7 @@ assets/highlighter.js 螢光筆（獨立模組，window.Highlighter；可直接�
 assets/highlighter.css 螢光筆樣式與 --mk-* 色彩 tokens
 assets/highlights.js  共享螢光筆標記 window.HL_SHARED（由 tools/merge-highlights.js 產生）
 tools/merge-highlights.js  把頁面匯出的螢光筆 JSON 合併進 highlights.js（Node）
+tools/build-exam-content.js 從各章問答閱讀筆記產生 chapters/exam-content.js（Node）
 chapters/c<n>.html    每章一頁，檔名與講義章號一致
 chapters/c<n>.js      該章的互動元件，每個元件一個 IIFE，對應 HTML 裡的 .widget#w-xxx
 chapters/quiz.html    期中模擬題庫（練習、模擬考、錯題本），見下方「期中模擬題庫」
@@ -58,6 +59,7 @@ chapters/quiz.js      題庫的畫面與作答邏輯
 chapters/quiz-data.js 題庫資料 window.QUIZ_DATA（選擇 210 題、問答 85 題）
 chapters/exam.html    考題問答（題目 → 輸入框 → 正確答案），見下方「考題問答」
 chapters/exam.js      考題問答的畫面；輸入的答案存在 localStorage `cv-exam-input`
+chapters/exam-content.js 考題頁的內容整理 window.EXAM_CONTENT（由 tools/build-exam-content.js 產生）
 chapters/exam-data.js 考題問答資料 window.EXAM_DATA（68 題）
 ```
 
@@ -187,9 +189,11 @@ C3 門檻元件的分數是依常態分位數排列產生的，讓門檻 0.5 剛
 
 ## 考題問答
 
-- `chapters/exam.html`：使用者 2026-10-29 要求的「考題分頁」，把 C1～C5 要考的內容整理成問答題，格式是題目 → 輸入框（Please Input）→ 按「正確答案」顯示答案；可依章節篩選（C4-2 併入 C4）。頁首「考題」連結在 `buildTopbar()`，首頁有入口卡片。
-- 題目改寫自各章「❓ 問答閱讀筆記」，用考卷問法（「請說明…」「…的主要目的為何？」）；答案是**完整句子**，不要摘要成關鍵字。使用者貼的範例題（ML vs DL、SVM vs KNN、PCA、Forward Propagation、Precision／Recall／Accuracy、SqueezeNet 縮小模型的好處等）題目與答案照抄。(Skip) 的內容與太難的推導不出。
-- 資料格式：`{ ch, q, a }`，`a` 是純文字（用 `textContent` 顯示、`white-space: pre-line`），換行就是分段，不寫 HTML 也不寫 KaTeX。
+- `chapters/exam.html`：使用者 2026-10-29 要求的「考題分頁」。**以內容整理為主**，每段內容下面接對應的考題；考題格式是題目 → 輸入框（Please Input）→ 按「正確答案」顯示答案。頁首「考題」連結在 `buildTopbar()`，首頁有入口卡片。
+- 章節順序：使用者說重點在 CNN（C2）、C3、C4、C5，所以這四章（含 C4-2）排前面、標「⭐ 重點」，C1 標「基礎」放最後；可依章節篩選（C4-2 併入 C4）。
+- 內容整理：`chapters/exam-content.js`（`window.EXAM_CONTENT`）由 `node tools/build-exam-content.js` 從各章「❓ 問答閱讀筆記」抽出，**不要手改**；改了任何一章的問答閱讀筆記要重跑。每段的標題寫在腳本的 `LABELS`，題數對不上時腳本會報錯。
+- 考題：`chapters/exam-data.js`（`window.EXAM_DATA`，68 題），格式 `{ ch, at, q, a }`，`at` 是放在哪段內容下面（`章:問答閱讀筆記第幾題`，例如 `c4-2:3`）。題目用考卷問法（「請說明…」「…的主要目的為何？」）；答案是**完整句子**，不要摘要成關鍵字。`a` 是純文字（`textContent`、`white-space: pre-line`），換行就是分段，不寫 HTML 或 KaTeX。使用者貼的範例題（ML vs DL、SVM vs KNN、PCA、Forward Propagation、Precision／Recall／Accuracy、SqueezeNet 縮小模型的好處等）題目與答案照抄。(Skip) 的內容與太難的推導不出。
+- 輸入的答案存在 localStorage `cv-exam-input`（以題目在 `EXAM_DATA` 的位置為 key，新題目接在各章最後面以免錯位）。
 
 ## 新增一章的流程
 
